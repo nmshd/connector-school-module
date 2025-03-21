@@ -1,0 +1,39 @@
+version: "3"
+
+tasks:
+  prepare:
+    desc: Prepare the environment
+    cmds:
+      - npm i
+
+  build:
+    deps: [prepare]
+    dir: school-module
+    desc: Build the school module
+    cmds:
+      - npm i
+      - tsc
+
+  watch:
+    deps: [prepare]
+    dir: school-module
+    desc: Watch the school module and build on changes
+    cmds:
+      - npm i
+      - tsc -w
+
+  up:
+    deps: [build]
+    desc: Start the Connector
+    cmds:
+      - docker compose up -d
+
+  restart:
+    desc: Restart the Connector
+    cmds:
+      - docker compose restart connector
+
+  logs:
+    desc: Show Connector logs
+    cmds:
+      - docker compose logs -f connector

@@ -1,0 +1,16 @@
+{
+    "name": "@nmshd/connector-school-module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "access": "public",
+        "provenance": true
+    },
+    "dependencies": {
+        "zod": "^3.24.2",
+        "zod-validation-error": "^3.4.0"
+    }
+}
