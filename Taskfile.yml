@@ -57,5 +57,15 @@ tasks:
     cmds:
       - "http -b GET localhost:8099/students 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
 
+  send-file:
+    desc: Call the send-file endpoint
+    cmds:
+      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "filename": "Abiturzeugnis.pdf", "mimetype": "application/pdf"}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}}/files ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
+    vars:
+      FILE_BASE64:
+        sh: "cat assets/Abizeugnis_Muster.pdf | base64"
+    requires:
+      vars: [STUDENT_ID]
+
 vars:
   STUDENT_ID: student-1

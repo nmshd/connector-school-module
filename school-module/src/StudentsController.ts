@@ -4,13 +4,13 @@ import { CoreDate } from "@nmshd/core-types";
 import { RelationshipTemplateDTO, RuntimeServices } from "@nmshd/runtime";
 import { Student } from "./Student";
 
-export class StudentsRepository {
+export class StudentsController {
     #students: Student[] = [];
 
     private constructor(public readonly displayName: LocalAttributeJSON, private readonly services: RuntimeServices) {}
 
-    public static create(displayName: LocalAttributeJSON, services: RuntimeServices): StudentsRepository {
-        return new StudentsRepository(displayName, services);
+    public static create(displayName: LocalAttributeJSON, services: RuntimeServices): StudentsController {
+        return new StudentsController(displayName, services);
     }
 
     public async createStudent(

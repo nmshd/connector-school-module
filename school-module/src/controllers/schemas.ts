@@ -19,3 +19,10 @@ export const createStudentRequestSchema = z.object({
         .optional()
         .default([])
 });
+
+export const sendFileRequestSchema = z.object({
+    file: z.string().base64(),
+    filename: z.string().min(5).max(255),
+    mimetype: z.string(),
+    tags: z.array(z.string()).optional()
+});

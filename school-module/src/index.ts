@@ -6,7 +6,7 @@ import { OutgoingRequestFromRelationshipCreationCreatedAndCompletedEvent, Relati
 import { Container, Scope } from "@nmshd/typescript-ioc";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
-import { StudentsRepository } from "./StudentsRepository";
+import { StudentsController } from "./StudentsController";
 
 interface SchoolModuleConfiguration extends ConnectorRuntimeModuleConfiguration {
     database: {
@@ -25,16 +25,16 @@ const schoolModuleConfigurationSchema = z.object({
 });
 
 export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleConfiguration> {
-    #studentsRepository: StudentsRepository;
+    #studentsRepository: StudentsController;
 
     public async init(): Promise<void> {
         const result = schoolModuleConfigurationSchema.safeParse(this.configuration);
         if (!result.success) throw new Error(`Invalid configuration: ${fromError(result.error)}`);
 
         const displayName = await this.getOrCreateDisplayNameAttribute();
-        this.#studentsRepository = StudentsRepository.create(displayName, this.runtime.getServices());
+        this.#studentsRepository = StudentsController.create(displayName, this.runtime.getServices());
 
-        Container.bind(StudentsRepository)
+        Container.bind(StudentsController)
             .factory(() => this.#studentsRepository)
             .scope(Scope.Singleton);
 
