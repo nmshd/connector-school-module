@@ -1,6 +1,6 @@
 services:
   connector:
-    image: ghcr.io/nmshd/connector:6.16.3
+    image: ghcr.io/nmshd/connector:6.17.0
     container_name: connector-with-school-module
     ports:
       - "8099:80"
