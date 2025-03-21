@@ -66,6 +66,3 @@ tasks:
         sh: "cat assets/Abizeugnis_Muster.pdf | base64"
     requires:
       vars: [STUDENT_ID]
-
-vars:
-  STUDENT_ID: student-1

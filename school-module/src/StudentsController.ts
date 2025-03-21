@@ -1,5 +1,6 @@
+import { ApplicationError } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
-import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
+import { MailJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate } from "@nmshd/core-types";
 import { RelationshipTemplateDTO, RuntimeServices } from "@nmshd/runtime";
 import { Student } from "./Student";
@@ -113,5 +114,33 @@ export class StudentsController {
 
     public async existsStudent(id: string): Promise<boolean> {
         return this.#students.some((student) => student.id.toString() === id);
+    }
+
+    public async sendFile(student: Student, data: { file: string; filename: string; mimetype: string; tags?: string[] | undefined }) {
+        if (!student.correspondingRelationship) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationship!.toString() });
+
+        const file = await this.services.transportServices.files.uploadOwnFile({
+            content: Buffer.from(data.file, "utf8"),
+            tags: data.tags,
+            filename: data.filename,
+            mimetype: data.mimetype
+        });
+
+        const request = await this.services.consumptionServices.outgoingRequests.create({
+            content: { items: [{ "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, fileReference: file.value.truncatedReference }] },
+            peer: relationship.value.peer
+        });
+
+        await this.services.transportServices.messages.sendMessage({
+            content: request.value.content,
+            recipients: [relationship.value.peer]
+        });
+
+        await this.services.transportServices.messages.sendMessage({
+            content: { "@type": "Mail", subject: "Zeugnis", body: "Dein Zeugnis ist da!", to: [relationship.value.peer] } satisfies MailJSON,
+            attachments: [file.value.id],
+            recipients: [relationship.value.peer]
+        });
     }
 }

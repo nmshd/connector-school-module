@@ -57,32 +57,11 @@ export class StudentsRESTController {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        if (!student.correspondingRelationship) {
-            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
-        }
-
         const validationResult = sendFileRequestSchema.safeParse(body);
         if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
         const data = validationResult.data;
 
-        const file = await this.transportServices.files.uploadOwnFile({
-            content: Buffer.from(data.file, "utf8"),
-            tags: data.tags,
-            filename: data.filename,
-            mimetype: data.mimetype
-        });
-
-        const relationship = await this.transportServices.relationships.getRelationship({ id: student.correspondingRelationship.toString() });
-
-        const request = await this.consumptionServices.outgoingRequests.create({
-            content: { items: [{ "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, fileReference: file.value.truncatedReference }] },
-            peer: relationship.value.peer
-        });
-
-        await this.transportServices.messages.sendMessage({
-            content: request.value.content,
-            recipients: [relationship.value.peer]
-        });
+        await this.studentsController.sendFile(student, data);
 
         return this.ok(Result.ok(student));
     }

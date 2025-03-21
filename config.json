@@ -9,7 +9,7 @@
         }
     },
     "modules": {
-        "coreHttpApi": { "enabled": true },
+        "coreHttpApi": { "enabled": true, "docs": { "enabled": true } },
         "sync": { "enabled": true, "interval": 1 },
         "customModule": {
             "enabled": true,
