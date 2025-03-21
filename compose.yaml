@@ -1,0 +1,33 @@
+services:
+  connector:
+    build:
+      context: .
+      dockerfile: Dockerfile.debug
+      args:
+        CONNECTOR_VERSION: $CONNECTOR_VERSION
+    container_name: connector-with-school-module
+    ports:
+      - "8099:80"
+    environment:
+      - CUSTOM_CONFIG_LOCATION=/config.json
+      - transportLibrary__baseUrl
+      - transportLibrary__platformClientId
+      - transportLibrary__platformClientSecret
+    volumes:
+      - ./config.json:/config.json:ro
+      - ./dist:/usr/app/custom-modules/school-module/dist
+      - ./assets:/assets
+    depends_on:
+      - mongo
+
+  mongo:
+    container_name: mongodb
+    hostname: mongo
+    image: mongo
+    volumes:
+      - mongo_data:/data/db
+    logging:
+      driver: none
+
+volumes:
+  mongo_data:

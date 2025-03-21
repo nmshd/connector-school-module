@@ -1,0 +1,39 @@
+{
+    "name": "@nmshd/connector-school-module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "lint": "npm run lint:tsc && npm run lint:prettier && npm run lint:eslint",
+        "lint:eslint": "eslint --ext .ts ./src",
+        "lint:prettier": "prettier --check .",
+        "lint:tsc": "npm run build"
+    },
+    "dependencies": {
+        "pdf-lib": "1.17.1",
+        "qrcode": "1.5.4",
+        "zod": "^3.24.2",
+        "zod-validation-error": "^3.4.0"
+    },
+    "devDependencies": {
+        "@js-soft/docdb-access-mongo": "^1.2.0",
+        "@js-soft/eslint-config-ts": "^1.6.14",
+        "@js-soft/license-check": "^1.0.9",
+        "@js-soft/ts-utils": "^2.3.3",
+        "@nmshd/connector-types": "^6.18.0",
+        "@nmshd/typescript-rest": "^3.1.2",
+        "@types/express": "^5.0.1",
+        "@types/luxon": "^3.4.2",
+        "@types/qrcode": "^1.5.5",
+        "eslint": "^8.57.1",
+        "prettier": "^3.5.3",
+        "typescript": "^5.8.2"
+    },
+    "publishConfig": {
+        "access": "public",
+        "provenance": false
+    }
+}

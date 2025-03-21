@@ -1,0 +1,25 @@
+{
+    "debug": true,
+    "database": {
+        "connectionString": "mongodb://mongodb:27017"
+    },
+    "infrastructure": {
+        "httpServer": {
+            "apiKey": "This_is_a_test_APIKEY_with_30_chars+"
+        }
+    },
+    "modules": {
+        "coreHttpApi": { "enabled": true, "docs": { "enabled": true } },
+        "sync": { "enabled": true, "interval": 1 },
+        "school": {
+            "enabled": true,
+            "location": "/usr/app/custom-modules/school-module",
+            "schoolName": "My School",
+            "database": {
+                "connectionString": "mongodb://mongodb:27017",
+                "dbName": "school-module"
+            },
+            "assetsLocation": "/assets"
+        }
+    }
+}

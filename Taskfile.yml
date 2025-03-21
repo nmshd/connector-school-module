@@ -1,0 +1,105 @@
+version: "3"
+
+tasks:
+  build:
+    desc: Build the school module
+    cmds:
+      - npm i
+      - npx tsc
+
+  watch:
+    desc: Watch the school module and build on changes
+    cmds:
+      - npm i
+      - npx tsc -w
+
+  up:
+    deps: [build]
+    desc: Start the Connector
+    cmds:
+      - docker compose --env-file .env --env-file .env.connector up -d --build
+
+  restart:
+    desc: Restart the Connector
+    cmds:
+      - docker compose --env-file .env --env-file .env.connector restart connector
+
+  logs:
+    desc: Show Connector logs
+    cmds:
+      - docker compose --env-file .env --env-file .env.connector logs -f connector
+
+  create-student:
+    desc: Call the create-student endpoint
+    cmds:
+      - 'echo -n ''{"id": "{{.STUDENT_ID}}", "pin": "1234", "givenname": "Max", "surname": "Mustermann", "additionalConsents": [{"title": "aTitle", "consent": "A Consent Bla", "link": "https://example.com"}]}'' | http -b POST localhost:8099/students ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
+    requires:
+      vars: [STUDENT_ID]
+
+  get-onboarding-pdf:
+    desc: Gets the onboarding document as PDF
+    cmds:
+      - "http --download localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'"
+    requires:
+      vars: [STUDENT_ID]
+
+  get-onboarding-png:
+    desc: Gets the onboarding document as PNG
+    cmds:
+      - "http --download localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:image/png 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'"
+    requires:
+      vars: [STUDENT_ID]
+
+  get-onboarding-link:
+    desc: Gets the onboarding document as link
+    cmds:
+      - "http -b GET localhost:8099/students/{{ .STUDENT_ID }}/onboarding 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq -r .result.link"
+    requires:
+      vars: [STUDENT_ID]
+
+  get-onboarding-terminal:
+    desc: Gets the onboarding document as a QR-Code in the terminal
+    cmds:
+      - "http -b GET localhost:8099/students/{{ .STUDENT_ID }}/onboarding 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq -r .result.link | qrencode -t ansiutf8"
+    requires:
+      vars: [STUDENT_ID]
+
+  get-fileBase64:
+    desc: Get the Base64 of file
+    cmds:
+      - 'echo "{{.FILE_BASE64}}"'
+    vars:
+      FILE_BASE64:
+        sh: 'cat assets/Zeugnis.pdf | {{if eq OS "darwin"}}base64{{else}}base64 -w 0{{end}}'
+
+  get-student:
+    desc: Call the get-student endpoint
+    cmds:
+      - "http -b GET localhost:8099/students/{{.STUDENT_ID}} 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
+    requires:
+      vars: [STUDENT_ID]
+
+  get-students:
+    desc: Call the get-students endpoint
+    cmds:
+      - "http -b GET localhost:8099/students 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
+
+  send-file:
+    desc: Call the send-file endpoint
+    cmds:
+      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "filename": "Abiturzeugnis.pdf", "title": "Abiturzeugnis", "mimetype": "application/pdf"}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}}/files ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
+    vars:
+      FILE_BASE64:
+        sh: 'cat assets/Zeugnis.pdf | {{if eq OS "darwin"}}base64{{else}}base64 -w 0{{end}}'
+    requires:
+      vars: [STUDENT_ID]
+
+  send-degree:
+    desc: Call the send-file endpoint
+    cmds:
+      - 'echo -n ''{"file": "{{.FILE_BASE64}}"}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}}/files/abiturzeugnis ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
+    vars:
+      FILE_BASE64:
+        sh: 'cat assets/Zeugnis.pdf | {{if eq OS "darwin"}}base64{{else}}base64 -w 0{{end}}'
+    requires:
+      vars: [STUDENT_ID]
