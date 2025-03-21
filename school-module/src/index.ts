@@ -75,15 +75,14 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
         this.subscribeToEvent(RelationshipChangedEvent, async (event) => {
             if (event.data.status !== RelationshipStatus.DeletionProposed) return;
+
             const relationshipId = event.data.id;
 
             const student = await this.#studentsRepository.getStudentByRelationshipId(relationshipId);
             await this.#studentsRepository.deleteStudent(student);
 
             await this.runtime.getServices().transportServices.relationships.decomposeRelationship({ relationshipId });
-            await this.runtime
-                .getServices()
-                .transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: student.correspondingRelationshipTemplate.toString() });
+            await this.runtime.getServices().transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: event.data.template.id });
         });
     }
 }
