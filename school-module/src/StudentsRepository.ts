@@ -1,0 +1,117 @@
+import { LocalAttributeJSON } from "@nmshd/consumption";
+import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
+import { CoreDate } from "@nmshd/core-types";
+import { RelationshipTemplateDTO, RuntimeServices } from "@nmshd/runtime";
+import { Student } from "./Student";
+
+export class StudentsRepository {
+    #students: Student[] = [];
+
+    private constructor(public readonly displayName: LocalAttributeJSON, private readonly services: RuntimeServices) {}
+
+    public static create(displayName: LocalAttributeJSON, services: RuntimeServices): StudentsRepository {
+        return new StudentsRepository(displayName, services);
+    }
+
+    public async createStudent(
+        id: string,
+        data: {
+            givenname: string;
+            surname: string;
+            pin?: string;
+            additionalConsents: Array<{ title: string; mustBeAccepted?: boolean; consent: string; link: string }>;
+        }
+    ): Promise<{ student: Student; template: RelationshipTemplateDTO }> {
+        const request: RequestJSON = {
+            "@type": "Request",
+            items: [
+                {
+                    "@type": "RequestItemGroup",
+                    title: "Bereitgestellte Kontaktdaten",
+                    description: "Hier finden Sie alle Daten, die der neue Kontakt mit Ihnen teilen möchte.",
+                    items: [
+                        {
+                            "@type": "ShareAttributeRequestItem",
+                            attribute: this.displayName.content,
+                            sourceAttributeId: this.displayName.id,
+                            mustBeAccepted: true
+                        } satisfies ShareAttributeRequestItemJSON
+                    ]
+                },
+                {
+                    "@type": "RequestItemGroup",
+                    title: "Geteilte Daten",
+                    items: [
+                        {
+                            "@type": "ProposeAttributeRequestItem",
+                            attribute: { "@type": "IdentityAttribute", owner: "", value: { "@type": "GivenName", value: data.givenname } },
+                            query: { "@type": "IdentityAttributeQuery", valueType: "GivenName" },
+                            mustBeAccepted: true
+                        },
+                        {
+                            "@type": "ProposeAttributeRequestItem",
+                            attribute: { "@type": "IdentityAttribute", owner: "", value: { "@type": "Surname", value: data.surname } },
+                            query: { "@type": "IdentityAttributeQuery", valueType: "Surname" },
+                            mustBeAccepted: true
+                        }
+                    ]
+                }
+            ]
+        };
+
+        if (data.additionalConsents.length > 0) {
+            request.items.push({
+                "@type": "RequestItemGroup",
+                title: "Einverständniserklärungen",
+                items: data.additionalConsents.map((consent) => ({
+                    "@type": "ConsentRequestItem",
+                    mustBeAccepted: consent.mustBeAccepted ?? false,
+                    consent: consent.consent,
+                    link: consent.link
+                }))
+            });
+        }
+
+        const template = await this.services.transportServices.relationshipTemplates.createOwnRelationshipTemplate({
+            maxNumberOfAllocations: 1,
+            content: { "@type": "RelationshipTemplateContent", onNewRelationship: request } satisfies RelationshipTemplateContentJSON,
+            expiresAt: CoreDate.utc().add({ years: 1 }).toISOString(),
+            passwordProtection: data.pin ? { password: data.pin, passwordIsPin: true } : undefined
+        });
+
+        const student = Student.from({ id: id, correspondingRelationshipTemplate: template.value.id });
+
+        this.#students.push(student);
+
+        return { student, template: template.value };
+    }
+
+    public async getStudents(): Promise<Student[]> {
+        return this.#students;
+    }
+
+    public async getStudent(id: string): Promise<Student | undefined> {
+        return this.#students.find((student) => student.id.toString() === id);
+    }
+
+    public async getStudentByTemplateId(templateId: string): Promise<Student> {
+        return this.#students.find((student) => student.correspondingRelationshipTemplate.equals(templateId))!;
+    }
+
+    public async getStudentByRelationshipId(relationshipId: string): Promise<Student> {
+        return this.#students.find((student) => student.correspondingRelationship?.equals(relationshipId))!;
+    }
+
+    public async updateStudent(student: Student): Promise<void> {
+        const index = this.#students.findIndex((s) => s.id.toString() === student.id.toString());
+        this.#students[index] = student;
+    }
+
+    public async deleteStudent(student: Student): Promise<void> {
+        this.#students = this.#students.filter((s) => !s.id.equals(student.id));
+    }
+
+    public async existsStudent(id: string): Promise<boolean> {
+        return this.#students.some((student) => student.id.toString() === id);
+    }
+}

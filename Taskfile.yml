@@ -37,3 +37,25 @@ tasks:
     desc: Show Connector logs
     cmds:
       - docker compose logs -f connector
+
+  create-student:
+    desc: Call the create-student endpoint
+    cmds:
+      - 'echo -n ''{"pin": "1234", "givenname": "Max", "surname": "Mustermann", "additionalConsents": [{"title": "aTitle", "consent": "A Consent Bla", "link": "https://example.com"}]}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}} ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | echo "$(jq -r ''.result.qrContent'')" | qrencode -t ansiutf8'
+    requires:
+      vars: [STUDENT_ID]
+
+  get-student:
+    desc: Call the get-student endpoint
+    cmds:
+      - "http -b GET localhost:8099/students/{{.STUDENT_ID}} 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
+    requires:
+      vars: [STUDENT_ID]
+
+  get-students:
+    desc: Call the get-students endpoint
+    cmds:
+      - "http -b GET localhost:8099/students 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
+
+vars:
+  STUDENT_ID: student-1
