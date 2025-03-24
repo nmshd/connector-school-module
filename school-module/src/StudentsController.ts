@@ -116,17 +116,38 @@ export class StudentsController {
         return this.#students.some((student) => student.id.toString() === id);
     }
 
-    public async sendFile(student: Student, data: { file: string; filename: string; mimetype: string; tags?: string[] | undefined }) {
+    public async sendAbiturzeugnis(student: Student, data: { file: string; title?:string, filename?: string; mimetype?: string; tags?: string[] }) {
+        const title = data.title ? data.title : "Abiturzeugnis"
+        const filename = data.filename ? data.filename : "Abiturzeugnis.pdf"
+        const mimetype = data.mimetype ? data.mimetype : "application/pdf"
+
+        const tags = ["schulzeugnis"]
+        if (data.tags) {
+            tags.push(...data.tags)
+        }
+
+        await this.sendFile(student, {
+            file: data.file,
+            title,
+            filename,
+            mimetype,
+            tags
+        })
+    }
+
+    public async sendFile(student: Student, data: { file: string; title:string, filename: string; mimetype: string; tags?: string[] | undefined }) {
         if (!student.correspondingRelationship) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationship!.toString() });
 
         const file = await this.services.transportServices.files.uploadOwnFile({
-            content: Buffer.from(data.file, "utf8"),
+            content: Buffer.from(data.file, "base64"),
             tags: data.tags,
             filename: data.filename,
-            mimetype: data.mimetype
+            mimetype: data.mimetype,
+            title: data.title
         });
 
+        /*
         const request = await this.services.consumptionServices.outgoingRequests.create({
             content: { items: [{ "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, fileReference: file.value.truncatedReference }] },
             peer: relationship.value.peer
@@ -136,11 +157,33 @@ export class StudentsController {
             content: request.value.content,
             recipients: [relationship.value.peer]
         });
+        */
+
+        
+        const request = await this.services.consumptionServices.outgoingRequests.create({
+            content: { items: [{ "@type": "CreateAttributeRequestItem", title:"Abiturzeugnis", mustBeAccepted: true, attribute: {
+                "@type": "IdentityAttribute",
+                "tags": data.tags,
+                "owner": "",
+                "value": {
+                    "@type": "IdentityFileReference",
+                    "value": file.value.truncatedReference
+                }
+            }}]},
+            peer: relationship.value.peer
+        });
 
         await this.services.transportServices.messages.sendMessage({
-            content: { "@type": "Mail", subject: "Zeugnis", body: "Dein Zeugnis ist da!", to: [relationship.value.peer] } satisfies MailJSON,
+            content: request.value.content,
+            recipients: [relationship.value.peer]
+        });
+        
+/*
+        await this.services.transportServices.messages.sendMessage({
+            content: { "@type": "Mail", subject: "Abiturzeugnis", body: "Herzlichen Glückwunsch zu deinem Zeugnis.", to: [relationship.value.peer] } satisfies MailJSON,
             attachments: [file.value.id],
             recipients: [relationship.value.peer]
         });
+        */
     }
 }
