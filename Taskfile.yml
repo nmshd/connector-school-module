@@ -12,7 +12,7 @@ tasks:
     desc: Build the school module
     cmds:
       - npm i
-      - tsc
+      - npx tsc
 
   watch:
     deps: [prepare]
@@ -20,7 +20,7 @@ tasks:
     desc: Watch the school module and build on changes
     cmds:
       - npm i
-      - tsc -w
+      - npx tsc -w
 
   up:
     deps: [build]
@@ -63,6 +63,16 @@ tasks:
       - 'echo -n ''{"file": "{{.FILE_BASE64}}", "filename": "Abiturzeugnis.pdf", "mimetype": "application/pdf"}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}}/files ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
     vars:
       FILE_BASE64:
-        sh: "cat assets/Abizeugnis_Muster.pdf | base64"
+        sh: "cat assets/Zeugnis.pdf | base64 -w 0"
+    requires:
+      vars: [STUDENT_ID]
+
+  send-degree:
+    desc: Call the send-file endpoint
+    cmds:
+      - 'echo -n ''{"file": "{{.FILE_BASE64}}"}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}}/files/abiturzeugnis ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
+    vars:
+      FILE_BASE64:
+        sh: "cat assets/Zeugnis.pdf | base64 -w 0"
     requires:
       vars: [STUDENT_ID]
