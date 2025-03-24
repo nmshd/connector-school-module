@@ -6,7 +6,7 @@ import { Accept, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
 import { fromError } from "zod-validation-error";
 import { Student } from "../Student";
 import { StudentsController } from "../StudentsController";
-import { createStudentRequestSchema, sendFileRequestSchema } from "./schemas";
+import { createStudentRequestSchema, sendFileRequestSchema, sendAbiturzeugnisRequestSchema } from "./schemas";
 
 @Path("/students")
 export class StudentsRESTController {
@@ -62,6 +62,22 @@ export class StudentsRESTController {
         const data = validationResult.data;
 
         await this.studentsController.sendFile(student, data);
+
+        return this.ok(Result.ok(student));
+    }
+
+    @POST
+    @Path(":id/files/abiturzeugnis")
+    @Accept("application/json")
+    public async sendAbiturzeugnis(@PathParam("id") id: string, body: any): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const validationResult = sendAbiturzeugnisRequestSchema.safeParse(body);
+        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        const data = validationResult.data;
+
+        await this.studentsController.sendAbiturzeugnis(student, data);
 
         return this.ok(Result.ok(student));
     }
