@@ -1,7 +1,7 @@
 import { MongoDbCollection, MongoDbCollectionProvider } from "@js-soft/docdb-access-mongo";
 import { ApplicationError } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
-import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
+import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate } from "@nmshd/core-types";
 import { RuntimeServices } from "@nmshd/runtime";
 import fs from "node:fs";
@@ -110,7 +110,7 @@ export class StudentsController {
 
         const onboardingPdfAsBase64 = await this.createOnboardingPDF(
             {
-                organization_display_name: "" + (this.displayName.content.value as any).value,
+                organization_display_name: (this.displayName.content.value as DisplayNameJSON).value,
                 name: `${student.givenname} ${student.surname}`,
                 givenname: student.givenname,
                 surname: student.surname,
