@@ -5,6 +5,7 @@
         "@nmshd/typescript-rest": "^3.1.1",
         "@types/express": "^5.0.1",
         "@types/luxon": "^3.4.2",
-        "prettier": "^3.5.3"
+        "prettier": "^3.5.3",
+        "typescript": "^5.8.2"
     }
 }
