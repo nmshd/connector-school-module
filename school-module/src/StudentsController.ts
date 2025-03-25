@@ -5,10 +5,10 @@ import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItem
 import { CoreDate } from "@nmshd/core-types";
 import { RelationshipTemplateDTO, RuntimeServices } from "@nmshd/runtime";
 import { OnboardingPDFData, Student, StudentDTO, StudentStatus } from "./types";
-import { PDFDocument } from 'pdf-lib'
-import fs from 'node:fs';
+import { PDFDocument } from "pdf-lib";
+import fs from "node:fs";
 import path from "path";
-import QRCode from 'qrcode';
+import QRCode from "qrcode";
 
 export class StudentsController {
     #studentsCollection: MongoDbCollection;
@@ -33,7 +33,7 @@ export class StudentsController {
             pin?: string;
             additionalConsents: Array<{ title: string; mustBeAccepted?: boolean; consent: string; link: string }>;
         }
-    ): Promise<{ student: Student; template: RelationshipTemplateDTO, onboardingPdfAsBase64: string }> {
+    ): Promise<{ student: Student; template: RelationshipTemplateDTO; onboardingPdfAsBase64: string }> {
         const request: RequestJSON = {
             "@type": "Request",
             items: [
@@ -99,34 +99,34 @@ export class StudentsController {
             givenname: data.givenname,
             surname: data.surname,
             templateReference: template.value.truncatedReference
-        })
+        });
 
         this.#studentsCollection.create(student.toJSON());
 
-        return { student, template: template.value, onboardingPdfAsBase64:onboardingPdfAsBase64 };
+        return { student, template: template.value, onboardingPdfAsBase64: onboardingPdfAsBase64 };
     }
 
-    private async createOnboardingPDF(data:OnboardingPDFData, templatePath:string = "/usr/app/node_modules/school-module/assets/template_onboarding.pdf") {
-        const formPdfBytes = await fs.promises.readFile(path.resolve("", templatePath))
-        const pdfDoc = await PDFDocument.load(formPdfBytes)
+    private async createOnboardingPDF(data: OnboardingPDFData, templatePath: string = "/usr/app/node_modules/school-module/assets/template_onboarding.pdf") {
+        const formPdfBytes = await fs.promises.readFile(path.resolve("", templatePath));
+        const pdfDoc = await PDFDocument.load(formPdfBytes);
 
-        const base64image = await QRCode.toDataURL("nmshd://qr#" + data.templateReference, {type:"image/png"})
-        console.log("Image", base64image)
+        const base64image = await QRCode.toDataURL("nmshd://qr#" + data.templateReference, { type: "image/png" });
+        console.log("Image", base64image);
         // Starts with "data:image/png;base64,"
-        const image = Buffer.from(base64image.substring(22, base64image.length-1), "base64")
-        const qrImage = await pdfDoc.embedPng(image)
-        const form = pdfDoc.getForm()
-        form.getTextField('CharacterName 2').setText(`${data.givenname} ${data.surname}`);
-        form.getTextField('Allies').setText(data.organization_display_name);
-        form.getButton('CHARACTER IMAGE').setImage(qrImage);
+        const image = Buffer.from(base64image.substring(22, base64image.length - 1), "base64");
+        const qrImage = await pdfDoc.embedPng(image);
+        const form = pdfDoc.getForm();
+        form.getTextField("CharacterName 2").setText(`${data.givenname} ${data.surname}`);
+        form.getTextField("Allies").setText(data.organization_display_name);
+        form.getButton("CHARACTER IMAGE").setImage(qrImage);
         //form.getTextField('Vorname').setText(data.givenname);
         //form.getTextField('Nachname').setText(data.surname);
 
         form.flatten();
-        const pdfBytes = await pdfDoc.save()
-        const base64 = Buffer.from(pdfBytes).toString("base64")
-        await fs.promises.writeFile("/usr/app/node_modules/school-module/assets/created.pdf", pdfBytes)
-        return base64
+        const pdfBytes = await pdfDoc.save();
+        const base64 = Buffer.from(pdfBytes).toString("base64");
+        await fs.promises.writeFile("/usr/app/node_modules/school-module/assets/created.pdf", pdfBytes);
+        return base64;
     }
 
     public async getStudents(): Promise<Student[]> {
