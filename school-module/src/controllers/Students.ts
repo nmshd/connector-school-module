@@ -1,20 +1,16 @@
 import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { Envelope } from "@nmshd/connector-types";
-import { ConsumptionServices, RuntimeErrors, TransportServices } from "@nmshd/runtime";
+import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
 import { Accept, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
 import { fromError } from "zod-validation-error";
-import { Student } from "../Student";
 import { StudentsController } from "../StudentsController";
+import { Student } from "../types";
 import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema } from "./schemas";
 
 @Path("/students")
 export class StudentsRESTController {
-    public constructor(
-        @Inject private readonly studentsController: StudentsController,
-        @Inject private readonly transportServices: TransportServices,
-        @Inject private readonly consumptionServices: ConsumptionServices
-    ) {}
+    public constructor(@Inject private readonly studentsController: StudentsController) {}
 
     @POST
     @Path(":id")
@@ -40,14 +36,19 @@ export class StudentsRESTController {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        return this.ok(Result.ok(student));
+        const dto = await this.studentsController.toStudentDTO(student);
+        return this.ok(Result.ok(dto));
     }
 
     @GET
     @Accept("application/json")
     public async getStudents(): Promise<Envelope> {
         const students = await this.studentsController.getStudents();
-        return this.ok(Result.ok(students));
+
+        const dtoPromises = students.map((student) => this.studentsController.toStudentDTO(student));
+        const dtos = await Promise.all(dtoPromises);
+
+        return this.ok(Result.ok(dtos));
     }
 
     @POST
@@ -63,7 +64,8 @@ export class StudentsRESTController {
 
         await this.studentsController.sendFile(student, data);
 
-        return this.ok(Result.ok(student));
+        const dto = await this.studentsController.toStudentDTO(student);
+        return this.ok(Result.ok(dto));
     }
 
     @POST
@@ -83,7 +85,8 @@ export class StudentsRESTController {
         const data = { title: "Abiturzeugnis", filename: "Abiturzeugnis.pdf", mimetype: "application/pdf", ...validationResult.data, tags: Array.from(tags) };
         await this.studentsController.sendFile(student, data);
 
-        return this.ok(Result.ok(student));
+        const dto = await this.studentsController.toStudentDTO(student);
+        return this.ok(Result.ok(dto));
     }
 
     protected ok<T>(result: Result<T>): Envelope {

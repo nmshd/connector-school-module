@@ -3,7 +3,7 @@ import { LocalAttributeJSON } from "@nmshd/consumption";
 import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate } from "@nmshd/core-types";
 import { RelationshipTemplateDTO, RuntimeServices } from "@nmshd/runtime";
-import { Student, StudentStatus } from "./Student";
+import { Student, StudentDTO, StudentStatus } from "./types";
 
 export class StudentsController {
     #students: Student[] = [];
@@ -83,14 +83,7 @@ export class StudentsController {
             passwordProtection: data.pin ? { password: data.pin, passwordIsPin: true } : undefined
         });
 
-        const student = Student.from({
-            id: id,
-            givenname: data.givenname,
-            surname: data.surname,
-            pin: data.pin,
-            status: "onboarding",
-            correspondingRelationshipTemplateId: template.value.id
-        });
+        const student = Student.from({ id: id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
 
         this.#students.push(student);
 
@@ -103,28 +96,6 @@ export class StudentsController {
 
     public async getStudent(id: string): Promise<Student | undefined> {
         const student = this.#students.find((student) => student.id.toString() === id);
-
-        if (student?.correspondingRelationshipTemplateId) {
-            student.status = StudentStatus.onboarding;
-        }
-
-        if (student?.correspondingRelationshipId) {
-            const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId!.toString() });
-            switch (relationship.value.status) {
-                case "Rejected":
-                case "Revoked":
-                case "Terminated":
-                case "DeletionProposed":
-                    student.status = StudentStatus.rejected;
-                    break;
-                case "Pending":
-                    student.status = StudentStatus.onboarding;
-                    break;
-                case "Active":
-                    student.status = StudentStatus.active;
-                    break;
-            }
-        }
 
         return student;
     }
@@ -208,5 +179,29 @@ export class StudentsController {
             recipients: [relationship.value.peer]
         });
         */
+    }
+
+    public async toStudentDTO(student: Student): Promise<StudentDTO> {
+        let status: StudentStatus = "onboarding";
+
+        if (student.correspondingRelationshipId) {
+            const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId!.toString() });
+            switch (relationship.value.status) {
+                case "Rejected":
+                case "Revoked":
+                case "Terminated":
+                case "DeletionProposed":
+                    status = "rejected";
+                    break;
+                case "Pending":
+                    status = "onboarding";
+                    break;
+                case "Active":
+                    status = "active";
+                    break;
+            }
+        }
+
+        return { ...student.toJSON(), status: status };
     }
 }
