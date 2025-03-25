@@ -6,7 +6,7 @@ import { Accept, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
 import { fromError } from "zod-validation-error";
 import { Student } from "../Student";
 import { StudentsController } from "../StudentsController";
-import { createStudentRequestSchema, sendFileRequestSchema, sendAbiturzeugnisRequestSchema } from "./schemas";
+import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema } from "./schemas";
 
 @Path("/students")
 export class StudentsRESTController {
@@ -75,9 +75,13 @@ export class StudentsRESTController {
 
         const validationResult = sendAbiturzeugnisRequestSchema.safeParse(body);
         if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
-        const data = validationResult.data;
 
-        await this.studentsController.sendAbiturzeugnis(student, data);
+        const tags = new Set(validationResult.data.tags ?? []);
+        tags.add("schulzeugnis");
+        tags.add("abiturzeugnis");
+
+        const data = { title: "Abiturzeugnis", filename: "Abiturzeugnis.pdf", mimetype: "application/pdf", ...validationResult.data, tags: Array.from(tags) };
+        await this.studentsController.sendFile(student, data);
 
         return this.ok(Result.ok(student));
     }
