@@ -1,3 +1,4 @@
+import { MongoDbCollection, MongoDbCollectionProvider } from "@js-soft/docdb-access-mongo";
 import { ApplicationError } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
@@ -6,15 +7,18 @@ import { RelationshipTemplateDTO, RuntimeServices } from "@nmshd/runtime";
 import { Student, StudentDTO, StudentStatus } from "./types";
 
 export class StudentsController {
-    #students: Student[] = [];
+    #studentsCollection: MongoDbCollection;
 
-    private constructor(
+    public constructor(
         public readonly displayName: LocalAttributeJSON,
-        private readonly services: RuntimeServices
+        private readonly services: RuntimeServices,
+        private readonly database: MongoDbCollectionProvider
     ) {}
 
-    public static create(displayName: LocalAttributeJSON, services: RuntimeServices): StudentsController {
-        return new StudentsController(displayName, services);
+    public async init(): Promise<this> {
+        this.#studentsCollection = await this.database.getCollection("students");
+
+        return this;
     }
 
     public async createStudent(
@@ -85,40 +89,45 @@ export class StudentsController {
 
         const student = Student.from({ id: id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
 
-        this.#students.push(student);
+        this.#studentsCollection.create(student.toJSON());
 
         return { student, template: template.value };
     }
 
     public async getStudents(): Promise<Student[]> {
-        return this.#students;
+        const docs = await this.#studentsCollection.find({});
+
+        const students = docs.map((doc: any) => Student.from(doc));
+        return students;
     }
 
     public async getStudent(id: string): Promise<Student | undefined> {
-        const student = this.#students.find((student) => student.id.toString() === id);
-
-        return student;
+        const doc = await this.#studentsCollection.read(id);
+        return doc ? Student.from(doc) : undefined;
     }
 
     public async getStudentByTemplateId(templateId: string): Promise<Student> {
-        return this.#students.find((student) => student.correspondingRelationshipTemplateId.equals(templateId))!;
+        const doc = await this.#studentsCollection.findOne({ correspondingRelationshipTemplateId: templateId });
+        return Student.from(doc);
     }
 
     public async getStudentByRelationshipId(relationshipId: string): Promise<Student> {
-        return this.#students.find((student) => student.correspondingRelationshipId?.equals(relationshipId))!;
+        const doc = await this.#studentsCollection.findOne({ correspondingRelationshipId: relationshipId });
+        return Student.from(doc);
     }
 
     public async updateStudent(student: Student): Promise<void> {
-        const index = this.#students.findIndex((s) => s.id.toString() === student.id.toString());
-        this.#students[index] = student;
+        const oldDoc = await this.#studentsCollection.read(student.id.toString());
+
+        await this.#studentsCollection.update(oldDoc, student.toJSON());
     }
 
     public async deleteStudent(student: Student): Promise<void> {
-        this.#students = this.#students.filter((s) => !s.id.equals(student.id));
+        await this.#studentsCollection.delete({ id: student.id.toString() });
     }
 
     public async existsStudent(id: string): Promise<boolean> {
-        return this.#students.some((student) => student.id.toString() === id);
+        return await this.#studentsCollection.exists({ id: id });
     }
 
     public async sendFile(student: Student, data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined }) {

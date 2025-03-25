@@ -1,3 +1,5 @@
+import { MongoDbConnection } from "@js-soft/docdb-access-mongo";
+import { sleep } from "@js-soft/ts-utils";
 import { ConnectorRuntimeModule, ConnectorRuntimeModuleConfiguration } from "@nmshd/connector-types";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON } from "@nmshd/content";
@@ -31,8 +33,18 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
         const result = schoolModuleConfigurationSchema.safeParse(this.configuration);
         if (!result.success) throw new Error(`Invalid configuration: ${fromError(result.error)}`);
 
+        const mongodbConnection = new MongoDbConnection(this.configuration.database.connectionString);
+
+        try {
+            await mongodbConnection.connect();
+        } catch (e) {
+            throw new Error("Could not connect to the configured database. Try to check the connection string and the database status. Root error: " + e);
+        }
+
+        const database = await mongodbConnection.getDatabase(this.configuration.database.dbName);
+
         const displayName = await this.getOrCreateDisplayNameAttribute();
-        this.#studentsController = StudentsController.create(displayName, this.runtime.getServices());
+        this.#studentsController = await new StudentsController(displayName, this.runtime.getServices(), database).init();
 
         Container.bind(StudentsController)
             .factory(() => this.#studentsController)
@@ -81,8 +93,10 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             const student = await this.#studentsController.getStudentByRelationshipId(relationshipId);
             await this.#studentsController.deleteStudent(student);
 
+            // wait for 500ms to ensure that no race conditions occur with other external events from the same sync run that triggered this event
+            await sleep(500);
+
             await this.runtime.getServices().transportServices.relationships.decomposeRelationship({ relationshipId });
-            await this.runtime.getServices().transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: event.data.template.id });
         });
     }
 }
