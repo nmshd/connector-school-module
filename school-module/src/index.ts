@@ -1,4 +1,5 @@
 import { MongoDbConnection } from "@js-soft/docdb-access-mongo";
+import { sleep } from "@js-soft/ts-utils";
 import { ConnectorRuntimeModule, ConnectorRuntimeModuleConfiguration } from "@nmshd/connector-types";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON } from "@nmshd/content";
@@ -91,6 +92,9 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
             const student = await this.#studentsController.getStudentByRelationshipId(relationshipId);
             await this.#studentsController.deleteStudent(student);
+
+            // wait for 500ms to ensure that no race conditions occur with other external events from the same sync run that triggered this event
+            await sleep(500);
 
             await this.runtime.getServices().transportServices.relationships.decomposeRelationship({ relationshipId });
         });
