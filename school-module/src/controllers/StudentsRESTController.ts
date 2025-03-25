@@ -43,6 +43,19 @@ export class StudentsRESTController {
     }
 
     @GET
+    @Path(":id/onboarding")
+    @Accept("application/json")
+    public async getStudentOnboarding(@PathParam("id") id: string): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        
+
+        const dto = await this.studentsController.toStudentDTO(student);
+        return this.ok(Result.ok(dto));
+    }
+
+    @GET
     @Accept("application/json")
     public async getStudents(): Promise<Envelope> {
         const students = await this.studentsController.getStudents();

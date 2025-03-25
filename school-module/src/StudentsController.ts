@@ -4,7 +4,7 @@ import { LocalAttributeJSON } from "@nmshd/consumption";
 import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate } from "@nmshd/core-types";
 import { RelationshipTemplateDTO, RuntimeServices } from "@nmshd/runtime";
-import { OnboardingPDFData, Student, StudentDTO, StudentStatus } from "./types";
+import { OnboardingData, OnboardingPDFData, Student, StudentDTO, StudentStatus } from "./types";
 import { PDFDocument } from "pdf-lib";
 import fs from "node:fs";
 import path from "path";
@@ -33,7 +33,7 @@ export class StudentsController {
             pin?: string;
             additionalConsents: Array<{ title: string; mustBeAccepted?: boolean; consent: string; link: string }>;
         }
-    ): Promise<{ student: Student; template: RelationshipTemplateDTO; onboardingPdfAsBase64: string }> {
+    ): Promise<{ student: Student; template: RelationshipTemplateDTO; onboardingData: OnboardingData }> {
         const request: RequestJSON = {
             "@type": "Request",
             items: [
@@ -93,28 +93,50 @@ export class StudentsController {
 
         const student = Student.from({ id: id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
 
-        const onboardingPdfAsBase64 = await this.createOnboardingPDF({
-            organization_display_name: "" + (this.displayName.content.value as any).value,
-            name: `${data.givenname} ${data.surname}`,
-            givenname: data.givenname,
-            surname: data.surname,
-            templateReference: template.value.truncatedReference
-        });
-
         this.#studentsCollection.create(student.toJSON());
 
-        return { student, template: template.value, onboardingPdfAsBase64: onboardingPdfAsBase64 };
+
+
+        return { student, template: template.value, onboardingData: await this.getOnboardingDataForStudent(id) };
     }
 
-    private async createOnboardingPDF(data: OnboardingPDFData, templatePath: string = "/usr/app/node_modules/school-module/assets/template_onboarding.pdf") {
+    public async getOnboardingDataForStudent(id:string) {
+        const student = await this.getStudent(id);
+        if (!student) throw new ApplicationError("error.schoolModule.unknownStudent", "The student does not exist.");
+
+        const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate(student.correspondingRelationshipTemplateId);
+        if (template.isError) {
+            throw template.error;
+        }
+
+        const link = `nmshd://qr#${template.value.truncatedReference}`
+        const base64image = await QRCode.toDataURL(link, { type: "image/png" });
+        // Starts with "data:image/png;base64,"
+        const image = Buffer.from(base64image.substring(22, base64image.length - 1), "base64");
+
+        const onboardingPdfAsBase64 = await this.createOnboardingPDF({
+            organization_display_name: "" + (this.displayName.content.value as any).value,
+            name: `${student.givenname} ${student.surname}`,
+            givenname: student.givenname,
+            surname: student.surname,
+            templateReference: template.value.truncatedReference
+        },
+        image);
+
+        const data:OnboardingData = {
+            link: template.value.truncatedReference,
+            png: image.toString("base64"),
+            pdf: onboardingPdfAsBase64
+        }
+
+        return data
+    }
+
+    public async createOnboardingPDF(data: OnboardingPDFData, pngAsBuffer:Buffer, templatePath: string = "/usr/app/node_modules/school-module/assets/template_onboarding.pdf") {
         const formPdfBytes = await fs.promises.readFile(path.resolve("", templatePath));
         const pdfDoc = await PDFDocument.load(formPdfBytes);
 
-        const base64image = await QRCode.toDataURL("nmshd://qr#" + data.templateReference, { type: "image/png" });
-        console.log("Image", base64image);
-        // Starts with "data:image/png;base64,"
-        const image = Buffer.from(base64image.substring(22, base64image.length - 1), "base64");
-        const qrImage = await pdfDoc.embedPng(image);
+        const qrImage = await pdfDoc.embedPng(pngAsBuffer);
         const form = pdfDoc.getForm();
         form.getTextField("CharacterName 2").setText(`${data.givenname} ${data.surname}`);
         form.getTextField("Allies").setText(data.organization_display_name);

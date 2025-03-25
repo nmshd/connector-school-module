@@ -5,3 +5,9 @@ export interface OnboardingPDFData {
     surname: string;
     templateReference: string;
 }
+
+export interface OnboardingData {
+    pdf: string;
+    png: string;
+    link: string;
+}
