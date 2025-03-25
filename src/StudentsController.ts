@@ -104,9 +104,9 @@ export class StudentsController {
         }
 
         const link = `nmshd://tr#${template.value.truncatedReference}`;
-        const base64image = await qrCodeLib.toDataURL(link, { type: "image/png" });
-        // Starts with "data:image/png;base64,"
-        const image = Buffer.from(base64image.substring(22, base64image.length - 1), "base64");
+
+        const pngAsBuffer = await qrCodeLib.toBuffer(link);
+        const base64image = pngAsBuffer.toString("base64");
 
         const onboardingPdfAsBase64 = await this.createOnboardingPDF(
             {
@@ -116,14 +116,10 @@ export class StudentsController {
                 surname: student.surname,
                 templateReference: template.value.truncatedReference
             },
-            image
+            pngAsBuffer
         );
 
-        return {
-            link: link,
-            png: image.toString("base64"),
-            pdf: onboardingPdfAsBase64
-        };
+        return { link: link, png: base64image, pdf: onboardingPdfAsBase64 };
     }
 
     private async createOnboardingPDF(data: { organizationDisplayName: string; name: string; givenname: string; surname: string; templateReference: string }, pngAsBuffer: Buffer) {
