@@ -1,22 +1,13 @@
 version: "3"
 
 tasks:
-  prepare:
-    desc: Prepare the environment
-    cmds:
-      - npm i
-
   build:
-    deps: [prepare]
-    dir: school-module
     desc: Build the school module
     cmds:
       - npm i
       - npx tsc
 
   watch:
-    deps: [prepare]
-    dir: school-module
     desc: Watch the school module and build on changes
     cmds:
       - npm i

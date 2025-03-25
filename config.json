@@ -13,7 +13,7 @@
         "sync": { "enabled": true, "interval": 1 },
         "customModule": {
             "enabled": true,
-            "location": "school-module",
+            "location": "/usr/app/custom-modules/school-module",
             "displayName": "School Module",
             "schoolName": "My School",
             "database": {
