@@ -13,7 +13,7 @@ services:
       - transportLibrary__platformClientSecret
     volumes:
       - ./config.json:/config.json:ro
-      - ./school-module/dist:/usr/app/custom-modules/school-module/dist
+      - ./dist:/usr/app/custom-modules/school-module/dist
     depends_on:
       - mongo
 
