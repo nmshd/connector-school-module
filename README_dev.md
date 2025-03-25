@@ -9,7 +9,7 @@
 - [jq](https://jqlang.org/download/)
   `sudo apt-get install jq`
 - [qrencode](https://github.com/fukuchi/libqrencode)
-  `sudo apt-get install qrencode `
+  `sudo apt-get install qrencode`
 
 ## Taskfile tasks
 
