@@ -27,21 +27,22 @@ const schoolModuleConfigurationSchema = z.object({
 });
 
 export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleConfiguration> {
+    #mongoDbConnection: MongoDbConnection | undefined;
     #studentsController: StudentsController;
 
     public async init(): Promise<void> {
         const result = schoolModuleConfigurationSchema.safeParse(this.configuration);
         if (!result.success) throw new Error(`Invalid configuration: ${fromError(result.error)}`);
 
-        const mongodbConnection = new MongoDbConnection(this.configuration.database.connectionString);
+        this.#mongoDbConnection = new MongoDbConnection(this.configuration.database.connectionString);
 
         try {
-            await mongodbConnection.connect();
+            await this.#mongoDbConnection.connect();
         } catch (e) {
             throw new Error("Could not connect to the configured database. Try to check the connection string and the database status. Root error: " + e);
         }
 
-        const database = await mongodbConnection.getDatabase(this.configuration.database.dbName);
+        const database = await this.#mongoDbConnection.getDatabase(this.configuration.database.dbName);
 
         const displayName = await this.getOrCreateDisplayNameAttribute();
         this.#studentsController = await new StudentsController(displayName, this.runtime.getServices(), database).init();
@@ -98,5 +99,9 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
             await this.runtime.getServices().transportServices.relationships.decomposeRelationship({ relationshipId });
         });
+    }
+
+    public async stop(): Promise<void> {
+        await this.#mongoDbConnection?.close();
     }
 }
