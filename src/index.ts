@@ -39,7 +39,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
         try {
             await this.#mongoDbConnection.connect();
         } catch (e) {
-            throw new Error("Could not connect to the configured database. Try to check the connection string and the database status. Root error: " + e);
+            throw new Error(`Could not connect to the configured database. Try to check the connection string and the database status. Root error: ${e}`);
         }
 
         const database = await this.#mongoDbConnection.getDatabase(this.configuration.database.dbName);
@@ -74,7 +74,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
         return createdAttribute;
     }
 
-    public async start(): Promise<void> {
+    public start(): void {
         this.subscribeToEvent(OutgoingRequestFromRelationshipCreationCreatedAndCompletedEvent, async (event) => {
             const student = await this.#studentsController.getStudentByTemplateId(event.data.source!.reference);
 
