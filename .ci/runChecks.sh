@@ -8,4 +8,4 @@ npx tsc
 npx prettier . --check
 
 # auditing
-npx better-npm-audit audit && cd school-module && npx better-npm-audit audit && cd ..
+npx better-npm-audit audit
