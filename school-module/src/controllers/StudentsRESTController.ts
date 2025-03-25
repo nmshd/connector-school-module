@@ -13,18 +13,17 @@ export class StudentsRESTController {
     public constructor(@Inject private readonly studentsController: StudentsController) {}
 
     @POST
-    @Path(":id")
     @Accept("application/json")
-    public async createStudent(@PathParam("id") id: string, body: any): Promise<Envelope> {
+    public async createStudent(body: any): Promise<Envelope> {
         const validationResult = createStudentRequestSchema.safeParse(body);
         if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
         const data = validationResult.data;
 
-        if (await this.studentsController.existsStudent(id)) {
+        if (await this.studentsController.existsStudent(data.id)) {
             throw new ApplicationError("error.schoolModule.studentAlreadyExists", "The student already exists.");
         }
 
-        const { student, template } = await this.studentsController.createStudent(id, data);
+        const { student, template } = await this.studentsController.createStudent(data);
 
         const dto = await this.studentsController.toStudentDTO(student);
 
