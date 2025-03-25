@@ -8,10 +8,7 @@ import { Student } from "./Student";
 export class StudentsController {
     #students: Student[] = [];
 
-    private constructor(
-        public readonly displayName: LocalAttributeJSON,
-        private readonly services: RuntimeServices
-    ) {}
+    private constructor(public readonly displayName: LocalAttributeJSON, private readonly services: RuntimeServices) {}
 
     public static create(displayName: LocalAttributeJSON, services: RuntimeServices): StudentsController {
         return new StudentsController(displayName, services);
@@ -124,7 +121,7 @@ export class StudentsController {
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationship!.toString() });
 
         const file = await this.services.transportServices.files.uploadOwnFile({
-            content: Buffer.from(data.file, "utf8"),
+            content: Buffer.from(data.file, "base64"),
             tags: data.tags,
             filename: data.filename,
             mimetype: data.mimetype
