@@ -1,3 +1,4 @@
+import { MongoDbConnection } from "@js-soft/docdb-access-mongo";
 import { ConnectorRuntimeModule, ConnectorRuntimeModuleConfiguration } from "@nmshd/connector-types";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON } from "@nmshd/content";
@@ -31,8 +32,18 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
         const result = schoolModuleConfigurationSchema.safeParse(this.configuration);
         if (!result.success) throw new Error(`Invalid configuration: ${fromError(result.error)}`);
 
+        const mongodbConnection = new MongoDbConnection(this.configuration.database.connectionString);
+
+        try {
+            await mongodbConnection.connect();
+        } catch (e) {
+            throw new Error("Could not connect to the configured database. Try to check the connection string and the database status. Root error: " + e);
+        }
+
+        const database = await mongodbConnection.getDatabase(this.configuration.database.dbName);
+
         const displayName = await this.getOrCreateDisplayNameAttribute();
-        this.#studentsController = StudentsController.create(displayName, this.runtime.getServices());
+        this.#studentsController = await new StudentsController(displayName, this.runtime.getServices(), database).init();
 
         Container.bind(StudentsController)
             .factory(() => this.#studentsController)
