@@ -97,7 +97,7 @@ export class StudentsController {
     public async getStudents(): Promise<Student[]> {
         const docs = await this.#studentsCollection.find({});
 
-        const students = docs.map(Student.from);
+        const students = docs.map((doc: any) => Student.from(doc));
         return students;
     }
 
