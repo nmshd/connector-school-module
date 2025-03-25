@@ -2,10 +2,9 @@ set -e
 set -x
 
 npm i
-npm i --prefix school-module
 
 # linting
-npx tsc -p school-module/tsconfig.json
+npx tsc
 npx prettier . --check
 
 # auditing
