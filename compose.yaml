@@ -1,6 +1,8 @@
 services:
   connector:
-    image: ghcr.io/nmshd/connector:6.17.1
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: connector-with-school-module
     ports:
       - "8099:80"
@@ -11,7 +13,7 @@ services:
       - transportLibrary__platformClientSecret
     volumes:
       - ./config.json:/config.json:ro
-      - ./school-module:/usr/app/node_modules/school-module
+      - ./school-module/dist:/usr/app/custom-modules/school-module/dist
     depends_on:
       - mongo
 
