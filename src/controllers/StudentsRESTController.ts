@@ -48,7 +48,7 @@ export class StudentsRESTController {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        const onboardingData = (await this.studentsController.getOnboardingDataForStudent(id)) satisfies StudentOnboardingDTO;
+        const onboardingData = (await this.studentsController.getOnboardingDataForStudent(student)) satisfies StudentOnboardingDTO;
         return this.ok(Result.ok(onboardingData));
     }
 

@@ -3,7 +3,7 @@ import { ApplicationError } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate } from "@nmshd/core-types";
-import { RuntimeErrors, RuntimeServices } from "@nmshd/runtime";
+import { RuntimeServices } from "@nmshd/runtime";
 import fs from "node:fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
@@ -97,10 +97,7 @@ export class StudentsController {
         return student;
     }
 
-    public async getOnboardingDataForStudent(id: string): Promise<OnboardingData> {
-        const student = await this.getStudent(id);
-        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
-
+    public async getOnboardingDataForStudent(student: Student): Promise<OnboardingData> {
         const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
         if (template.isError) {
             throw template.error;
