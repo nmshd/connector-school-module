@@ -25,15 +25,13 @@ export class StudentsController {
         return this;
     }
 
-    public async createStudent(
-        id: string,
-        data: {
-            givenname: string;
-            surname: string;
-            pin?: string;
-            additionalConsents: Array<{ title: string; mustBeAccepted?: boolean; consent: string; link: string }>;
-        }
-    ): Promise<{ student: Student; template: RelationshipTemplateDTO; onboardingData: OnboardingData }> {
+    public async createStudent(data: {
+        id: string;
+        givenname: string;
+        surname: string;
+        pin?: string;
+        additionalConsents: Array<{ title: string; mustBeAccepted?: boolean; consent: string; link: string }>;
+    }): Promise<{ student: Student; template: RelationshipTemplateDTO; onboardingData: OnboardingData }> {
         const request: RequestJSON = {
             "@type": "Request",
             items: [
@@ -91,13 +89,11 @@ export class StudentsController {
             passwordProtection: data.pin ? { password: data.pin, passwordIsPin: true } : undefined
         });
 
-        const student = Student.from({ id: id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
+        const student = Student.from({ id: data.id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
 
         this.#studentsCollection.create(student.toJSON());
 
-
-
-        return { student, template: template.value, onboardingData: await this.getOnboardingDataForStudent(id) };
+        return { student, template: template.value, onboardingData: await this.getOnboardingDataForStudent(data.id) };
     }
 
     public async getOnboardingDataForStudent(id:string) {

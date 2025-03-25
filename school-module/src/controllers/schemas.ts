@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const createStudentRequestSchema = z.object({
+    id: z.string().min(1).max(64),
     pin: z
         .string()
         .regex(/^[0-9]{4,16}$/, "a pin must be 4-16 digits")
