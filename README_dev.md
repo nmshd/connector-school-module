@@ -64,10 +64,3 @@ To get started with development, follow these steps:
     ```bash
     task restart
     ```
-
-## Repository Structure
-
-The repository is structured as follows:
-
-- `./`: Contains the main configuration files like `Taskfile.yml`, `compose.yml`, configuration for formatter etc. and the dependencies `tsc` needs to build the custom module. See [package.json](./package.json) to see which dependencies are needed to build the module. It's important that those dependencies are not installed in the custom module directory to avoid conflicts when mounting the custom module inside the Connector container.
-- `./school-module`: Contains the school module's code and its dependencies.
