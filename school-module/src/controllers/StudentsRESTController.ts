@@ -13,7 +13,6 @@ export class StudentsRESTController {
     public constructor(@Inject private readonly studentsController: StudentsController) {}
 
     @POST
-    @Path(":id")
     @Accept("application/json")
     public async createStudent(body: any): Promise<Envelope> {
         const validationResult = createStudentRequestSchema.safeParse(body);
