@@ -103,7 +103,7 @@ export class StudentsController {
             throw template.error;
         }
 
-        const link = `nmshd://qr#${template.value.truncatedReference}`;
+        const link = `nmshd://tr#${template.value.truncatedReference}`;
         const base64image = await qrCodeLib.toDataURL(link, { type: "image/png" });
         // Starts with "data:image/png;base64,"
         const image = Buffer.from(base64image.substring(22, base64image.length - 1), "base64");
