@@ -1,9 +1,13 @@
 import { MongoDbCollection, MongoDbCollectionProvider } from "@js-soft/docdb-access-mongo";
 import { ApplicationError } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
-import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
+import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate } from "@nmshd/core-types";
-import { RelationshipStatus, RelationshipTemplateDTO, RuntimeServices } from "@nmshd/runtime";
+import { RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import fs from "node:fs";
+import path from "path";
+import { PDFDocument } from "pdf-lib";
+import qrCodeLib from "qrcode";
 import { Student, StudentDTO, StudentStatus } from "./types";
 
 export class StudentsController {
@@ -12,7 +16,8 @@ export class StudentsController {
     public constructor(
         public readonly displayName: LocalAttributeJSON,
         private readonly services: RuntimeServices,
-        private readonly database: MongoDbCollectionProvider
+        private readonly database: MongoDbCollectionProvider,
+        private readonly assetsLocation: string
     ) {}
 
     public async init(): Promise<this> {
@@ -27,7 +32,7 @@ export class StudentsController {
         surname: string;
         pin?: string;
         additionalConsents: { title: string; mustBeAccepted?: boolean; consent: string; link: string }[];
-    }): Promise<{ student: Student; template: RelationshipTemplateDTO }> {
+    }): Promise<Student> {
         const request: RequestJSON = {
             "@type": "Request",
             items: [
@@ -89,7 +94,52 @@ export class StudentsController {
 
         await this.#studentsCollection.create(student.toJSON());
 
-        return { student, template: template.value };
+        return student;
+    }
+
+    public async getOnboardingDataForStudent(student: Student): Promise<{ pdf: string; png: string; link: string }> {
+        const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
+        if (template.isError) {
+            throw template.error;
+        }
+
+        const link = `nmshd://tr#${template.value.truncatedReference}`;
+
+        const pngAsBuffer = await qrCodeLib.toBuffer(link);
+        const base64image = pngAsBuffer.toString("base64");
+
+        const onboardingPdfAsBase64 = await this.createOnboardingPDF(
+            {
+                organizationDisplayName: (this.displayName.content.value as DisplayNameJSON).value,
+                name: `${student.givenname} ${student.surname}`,
+                givenname: student.givenname,
+                surname: student.surname,
+                templateReference: template.value.truncatedReference
+            },
+            pngAsBuffer
+        );
+
+        return { link: link, png: base64image, pdf: onboardingPdfAsBase64 };
+    }
+
+    private async createOnboardingPDF(data: { organizationDisplayName: string; name: string; givenname: string; surname: string; templateReference: string }, pngAsBuffer: Buffer) {
+        const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, "template_onboarding.pdf")));
+        const pdfDoc = await PDFDocument.load(formPdfBytes);
+
+        const qrImage = await pdfDoc.embedPng(pngAsBuffer);
+        const form = pdfDoc.getForm();
+
+        form.getTextField("CharacterName 2").setText(`${data.givenname} ${data.surname}`);
+        form.getTextField("Allies").setText(data.organizationDisplayName);
+        form.getButton("CHARACTER IMAGE").setImage(qrImage);
+        // form.getTextField('Vorname').setText(data.givenname);
+        // form.getTextField('Nachname').setText(data.surname);
+
+        form.flatten();
+        const pdfBytes = await pdfDoc.save();
+        const base64 = Buffer.from(pdfBytes).toString("base64");
+
+        return base64;
     }
 
     public async getStudents(): Promise<Student[]> {

@@ -5,7 +5,7 @@ import { Inject } from "@nmshd/typescript-ioc";
 import { Accept, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
-import { Student } from "../types";
+import { Student, StudentOnboardingDTO } from "../types";
 import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema } from "./schemas";
 
 @Path("/students")
@@ -23,11 +23,11 @@ export class StudentsRESTController {
             throw new ApplicationError("error.schoolModule.studentAlreadyExists", "The student already exists.");
         }
 
-        const { student, template } = await this.studentsController.createStudent(data);
+        const student = await this.studentsController.createStudent(data);
 
         const dto = await this.studentsController.toStudentDTO(student);
 
-        return Envelope.ok({ student: dto, qrContent: `nmshd://tr#${template.truncatedReference}` });
+        return Envelope.ok(dto);
     }
 
     @GET
@@ -39,6 +39,17 @@ export class StudentsRESTController {
 
         const dto = await this.studentsController.toStudentDTO(student);
         return this.ok(Result.ok(dto));
+    }
+
+    @GET
+    @Path(":id/onboarding")
+    @Accept("application/json")
+    public async getStudentOnboarding(@PathParam("id") id: string): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const onboardingData: StudentOnboardingDTO = await this.studentsController.getOnboardingDataForStudent(student);
+        return this.ok(Result.ok(onboardingData));
     }
 
     @GET

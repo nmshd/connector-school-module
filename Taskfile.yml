@@ -36,6 +36,14 @@ tasks:
     requires:
       vars: [STUDENT_ID]
 
+  get-fileBase64:
+    desc: Get the Base64 of file
+    cmds:
+      - 'echo "{{.FILE_BASE64}}"'
+    vars:
+      FILE_BASE64:
+        sh: 'cat assets/Zeugnis.pdf | {{if eq OS "darwin"}}base64{{else}}base64 -w 0{{end}}'
+
   get-student:
     desc: Call the get-student endpoint
     cmds:

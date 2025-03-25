@@ -13,6 +13,8 @@
         "lint:tsc": "npm run build"
     },
     "dependencies": {
+        "pdf-lib": "1.17.1",
+        "qrcode": "1.5.4",
         "zod": "^3.24.2",
         "zod-validation-error": "^3.4.0"
     },
@@ -25,6 +27,7 @@
         "@nmshd/typescript-rest": "^3.1.1",
         "@types/express": "^5.0.1",
         "@types/luxon": "^3.4.2",
+        "@types/qrcode": "^1.5.5",
         "eslint": "^8.57.1",
         "prettier": "^3.5.3",
         "typescript": "^5.8.2"
