@@ -5,15 +5,11 @@
     "files": [
         "dist"
     ],
-    "publishConfig": {
-        "access": "public",
-        "provenance": true
-    },
     "dependencies": {
-        "zod": "^3.24.2",
-        "zod-validation-error": "^3.4.0",
         "pdf-lib": "1.17.1",
-        "qrcode": "1.5.4"
+        "qrcode": "1.5.4",
+        "zod": "^3.24.2",
+        "zod-validation-error": "^3.4.0"
     },
     "devDependencies": {
         "@js-soft/docdb-access-mongo": "^1.2.0",
@@ -26,5 +22,9 @@
         "@types/qrcode": "^1.5.5",
         "prettier": "^3.5.3",
         "typescript": "^5.8.2"
+    },
+    "publishConfig": {
+        "access": "public",
+        "provenance": true
     }
 }
