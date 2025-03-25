@@ -25,17 +25,17 @@ const schoolModuleConfigurationSchema = z.object({
 });
 
 export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleConfiguration> {
-    #studentsRepository: StudentsController;
+    #studentsController: StudentsController;
 
     public async init(): Promise<void> {
         const result = schoolModuleConfigurationSchema.safeParse(this.configuration);
         if (!result.success) throw new Error(`Invalid configuration: ${fromError(result.error)}`);
 
         const displayName = await this.getOrCreateDisplayNameAttribute();
-        this.#studentsRepository = StudentsController.create(displayName, this.runtime.getServices());
+        this.#studentsController = StudentsController.create(displayName, this.runtime.getServices());
 
         Container.bind(StudentsController)
-            .factory(() => this.#studentsRepository)
+            .factory(() => this.#studentsController)
             .scope(Scope.Singleton);
 
         this.runtime.infrastructure.httpServer.addControllers(["controllers/*.js", "controllers/*.ts", "!controllers/*.d.ts"], __dirname);
@@ -63,12 +63,12 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
     public async start(): Promise<void> {
         this.subscribeToEvent(OutgoingRequestFromRelationshipCreationCreatedAndCompletedEvent, async (event) => {
-            const student = await this.#studentsRepository.getStudentByTemplateId(event.data.source!.reference);
+            const student = await this.#studentsController.getStudentByTemplateId(event.data.source!.reference);
 
             const relationshipId = event.data.response!.source!.reference;
             student.correspondingRelationship = CoreId.from(relationshipId);
 
-            await this.#studentsRepository.updateStudent(student);
+            await this.#studentsController.updateStudent(student);
 
             await this.runtime.getServices().transportServices.relationships.acceptRelationship({ relationshipId });
         });
@@ -78,8 +78,8 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
             const relationshipId = event.data.id;
 
-            const student = await this.#studentsRepository.getStudentByRelationshipId(relationshipId);
-            await this.#studentsRepository.deleteStudent(student);
+            const student = await this.#studentsController.getStudentByRelationshipId(relationshipId);
+            await this.#studentsController.deleteStudent(student);
 
             await this.runtime.getServices().transportServices.relationships.decomposeRelationship({ relationshipId });
             await this.runtime.getServices().transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: event.data.template.id });
