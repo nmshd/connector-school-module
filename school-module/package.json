@@ -11,6 +11,8 @@
     },
     "dependencies": {
         "zod": "^3.24.2",
-        "zod-validation-error": "^3.4.0"
+        "zod-validation-error": "^3.4.0",
+        "pdf-lib": "1.17.1",
+        "qrcode": "1.5.4"
     }
 }
