@@ -24,9 +24,11 @@ export class StudentsRESTController {
             throw new ApplicationError("error.schoolModule.studentAlreadyExists", "The student already exists.");
         }
 
-        const { template } = await this.studentsController.createStudent(id, data);
+        const { student, template } = await this.studentsController.createStudent(id, data);
 
-        return Envelope.ok({ studentId: id, templateId: template.id, qrContent: `nmshd://tr#${template.truncatedReference}` });
+        const dto = await this.studentsController.toStudentDTO(student);
+
+        return Envelope.ok({ student: dto, qrContent: `nmshd://tr#${template.truncatedReference}` });
     }
 
     @GET
