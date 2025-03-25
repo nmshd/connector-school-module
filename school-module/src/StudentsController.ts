@@ -100,7 +100,7 @@ export class StudentsController {
         const student = await this.getStudent(id);
         if (!student) throw new ApplicationError("error.schoolModule.unknownStudent", "The student does not exist.");
 
-        const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate(student.correspondingRelationshipTemplateId);
+        const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({id: student.correspondingRelationshipTemplateId.toString()} );
         if (template.isError) {
             throw template.error;
         }
@@ -120,7 +120,7 @@ export class StudentsController {
         image);
 
         const data:OnboardingData = {
-            link: template.value.truncatedReference,
+            link: link,
             png: image.toString("base64"),
             pdf: onboardingPdfAsBase64
         }

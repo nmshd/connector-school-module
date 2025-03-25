@@ -5,7 +5,7 @@ import { Inject } from "@nmshd/typescript-ioc";
 import { Accept, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
-import { Student } from "../types";
+import { Student, StudentOnboardingDTO } from "../types";
 import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema } from "./schemas";
 
 @Path("/students")
@@ -48,10 +48,8 @@ export class StudentsRESTController {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        
-
-        const dto = await this.studentsController.toStudentDTO(student);
-        return this.ok(Result.ok(dto));
+        const onboardingData = await this.studentsController.getOnboardingDataForStudent(id) as StudentOnboardingDTO
+        return this.ok(Result.ok(onboardingData));
     }
 
     @GET
