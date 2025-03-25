@@ -14,7 +14,7 @@ services:
     volumes:
       - ./config.json:/config.json:ro
       - ./dist:/usr/app/custom-modules/school-module/dist
-      - ./assets:/usr/app/custom-modules/school-module/assets
+      - ./assets:/assets
     depends_on:
       - mongo
 

@@ -16,6 +16,7 @@ interface SchoolModuleConfiguration extends ConnectorRuntimeModuleConfiguration 
         dbName: string;
     };
     schoolName: string;
+    assetsLocation: string;
 }
 
 const schoolModuleConfigurationSchema = z.object({
@@ -23,7 +24,8 @@ const schoolModuleConfigurationSchema = z.object({
         connectionString: z.string(),
         dbName: z.string()
     }),
-    schoolName: z.string()
+    schoolName: z.string(),
+    assetsLocation: z.string()
 });
 
 export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleConfiguration> {
@@ -45,7 +47,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
         const database = await this.#mongoDbConnection.getDatabase(this.configuration.database.dbName);
 
         const displayName = await this.getOrCreateDisplayNameAttribute();
-        this.#studentsController = await new StudentsController(displayName, this.runtime.getServices(), database).init();
+        this.#studentsController = await new StudentsController(displayName, this.runtime.getServices(), database, this.configuration.assetsLocation).init();
 
         Container.bind(StudentsController)
             .factory(() => this.#studentsController)

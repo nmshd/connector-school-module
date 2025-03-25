@@ -3,12 +3,12 @@ import { ApplicationError } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate } from "@nmshd/core-types";
-import { RelationshipTemplateDTO, RuntimeServices } from "@nmshd/runtime";
-import { OnboardingData, OnboardingPDFData, Student, StudentDTO, StudentStatus } from "./types";
-import { PDFDocument } from "pdf-lib";
+import { RuntimeServices } from "@nmshd/runtime";
 import fs from "node:fs";
 import path from "path";
+import { PDFDocument } from "pdf-lib";
 import QRCode from "qrcode";
+import { OnboardingData, OnboardingPDFData, Student, StudentDTO, StudentStatus } from "./types";
 
 export class StudentsController {
     #studentsCollection: MongoDbCollection;
@@ -16,7 +16,8 @@ export class StudentsController {
     public constructor(
         public readonly displayName: LocalAttributeJSON,
         private readonly services: RuntimeServices,
-        private readonly database: MongoDbCollectionProvider
+        private readonly database: MongoDbCollectionProvider,
+        private readonly assetsLocation: string
     ) {}
 
     public async init(): Promise<this> {
@@ -96,40 +97,42 @@ export class StudentsController {
         return student;
     }
 
-    public async getOnboardingDataForStudent(id:string) {
+    public async getOnboardingDataForStudent(id: string): Promise<OnboardingData> {
         const student = await this.getStudent(id);
         if (!student) throw new ApplicationError("error.schoolModule.unknownStudent", "The student does not exist.");
 
-        const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({id: student.correspondingRelationshipTemplateId.toString()} );
+        const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
         if (template.isError) {
             throw template.error;
         }
 
-        const link = `nmshd://qr#${template.value.truncatedReference}`
+        const link = `nmshd://qr#${template.value.truncatedReference}`;
         const base64image = await QRCode.toDataURL(link, { type: "image/png" });
         // Starts with "data:image/png;base64,"
         const image = Buffer.from(base64image.substring(22, base64image.length - 1), "base64");
 
-        const onboardingPdfAsBase64 = await this.createOnboardingPDF({
-            organization_display_name: "" + (this.displayName.content.value as any).value,
-            name: `${student.givenname} ${student.surname}`,
-            givenname: student.givenname,
-            surname: student.surname,
-            templateReference: template.value.truncatedReference
-        },
-        image);
+        const onboardingPdfAsBase64 = await this.createOnboardingPDF(
+            {
+                organization_display_name: "" + (this.displayName.content.value as any).value,
+                name: `${student.givenname} ${student.surname}`,
+                givenname: student.givenname,
+                surname: student.surname,
+                templateReference: template.value.truncatedReference
+            },
+            image
+        );
 
-        const data:OnboardingData = {
+        const data: OnboardingData = {
             link: link,
             png: image.toString("base64"),
             pdf: onboardingPdfAsBase64
-        }
+        };
 
-        return data
+        return data;
     }
 
-    public async createOnboardingPDF(data: OnboardingPDFData, pngAsBuffer:Buffer, templatePath: string = "assets/template_onboarding.pdf") {
-        const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(__dirname, "..", templatePath)));
+    public async createOnboardingPDF(data: OnboardingPDFData, pngAsBuffer: Buffer) {
+        const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, "template_onboarding.pdf")));
         const pdfDoc = await PDFDocument.load(formPdfBytes);
 
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
