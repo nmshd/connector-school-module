@@ -31,7 +31,7 @@ export class StudentsController {
         surname: string;
         pin?: string;
         additionalConsents: Array<{ title: string; mustBeAccepted?: boolean; consent: string; link: string }>;
-    }): Promise<{ student: Student; template: RelationshipTemplateDTO; onboardingData: OnboardingData }> {
+    }): Promise<Student> {
         const request: RequestJSON = {
             "@type": "Request",
             items: [
@@ -91,9 +91,9 @@ export class StudentsController {
 
         const student = Student.from({ id: data.id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
 
-        this.#studentsCollection.create(student.toJSON());
+        await this.#studentsCollection.create(student.toJSON());
 
-        return { student, template: template.value, onboardingData: await this.getOnboardingDataForStudent(data.id) };
+        return student;
     }
 
     public async getOnboardingDataForStudent(id:string) {
@@ -128,8 +128,8 @@ export class StudentsController {
         return data
     }
 
-    public async createOnboardingPDF(data: OnboardingPDFData, pngAsBuffer:Buffer, templatePath: string = "/usr/app/node_modules/school-module/assets/template_onboarding.pdf") {
-        const formPdfBytes = await fs.promises.readFile(path.resolve("", templatePath));
+    public async createOnboardingPDF(data: OnboardingPDFData, pngAsBuffer:Buffer, templatePath: string = "assets/template_onboarding.pdf") {
+        const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(__dirname, "..", templatePath)));
         const pdfDoc = await PDFDocument.load(formPdfBytes);
 
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
@@ -143,7 +143,7 @@ export class StudentsController {
         form.flatten();
         const pdfBytes = await pdfDoc.save();
         const base64 = Buffer.from(pdfBytes).toString("base64");
-        await fs.promises.writeFile("/usr/app/node_modules/school-module/assets/created.pdf", pdfBytes);
+        await fs.promises.writeFile(path.resolve(path.join(__dirname, "../assets/Zeugnis.pdf")), pdfBytes);
         return base64;
     }
 
