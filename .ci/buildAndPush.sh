@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-if [ -z "$(which jq)" ]; then
-    echo "jq could not be found"
-    exit 1
-fi
-
 if [ -z "$VERSION" ]; then
     echo "The environment variable 'VERSION' must be set."
     exit 1
