@@ -133,21 +133,11 @@ export class StudentsController {
             title: data.title
         });
 
-        /*
-        const request = await this.services.consumptionServices.outgoingRequests.create({
-            content: { items: [{ "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, fileReference: file.value.truncatedReference }] },
-            peer: relationship.value.peer
-        });
-
-        await this.services.transportServices.messages.sendMessage({
-            content: request.value.content,
-            recipients: [relationship.value.peer]
-        });
-        */
-
         const request = await this.services.consumptionServices.outgoingRequests.create({
             content: {
                 items: [
+                    // TODO: switch to TransferFileOwnershipRequestItem when the app supports it
+                    // { "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, fileReference: file.value.truncatedReference },
                     {
                         "@type": "CreateAttributeRequestItem",
                         title: "Abiturzeugnis",
@@ -156,10 +146,7 @@ export class StudentsController {
                             "@type": "IdentityAttribute",
                             tags: data.tags,
                             owner: "",
-                            value: {
-                                "@type": "IdentityFileReference",
-                                value: file.value.truncatedReference
-                            }
+                            value: { "@type": "IdentityFileReference", value: file.value.truncatedReference }
                         }
                     }
                 ]
@@ -167,18 +154,7 @@ export class StudentsController {
             peer: relationship.value.peer
         });
 
-        await this.services.transportServices.messages.sendMessage({
-            content: request.value.content,
-            recipients: [relationship.value.peer]
-        });
-
-        /*
-        await this.services.transportServices.messages.sendMessage({
-            content: { "@type": "Mail", subject: "Abiturzeugnis", body: "Herzlichen Glückwunsch zu deinem Zeugnis.", to: [relationship.value.peer] } satisfies MailJSON,
-            attachments: [file.value.id],
-            recipients: [relationship.value.peer]
-        });
-        */
+        await this.services.transportServices.messages.sendMessage({ content: request.value.content, recipients: [relationship.value.peer] });
     }
 
     public async toStudentDTO(student: Student): Promise<StudentDTO> {
