@@ -66,7 +66,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             const student = await this.#studentsController.getStudentByTemplateId(event.data.source!.reference);
 
             const relationshipId = event.data.response!.source!.reference;
-            student.correspondingRelationship = CoreId.from(relationshipId);
+            student.correspondingRelationshipId = CoreId.from(relationshipId);
 
             await this.#studentsController.updateStudent(student);
 

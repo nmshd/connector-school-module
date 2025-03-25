@@ -1,14 +1,17 @@
 import { ApplicationError } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
-import { MailJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
+import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate } from "@nmshd/core-types";
 import { RelationshipTemplateDTO, RuntimeServices } from "@nmshd/runtime";
-import { Student } from "./Student";
+import { Student, StudentDTO, StudentStatus } from "./types";
 
 export class StudentsController {
     #students: Student[] = [];
 
-    private constructor(public readonly displayName: LocalAttributeJSON, private readonly services: RuntimeServices) {}
+    private constructor(
+        public readonly displayName: LocalAttributeJSON,
+        private readonly services: RuntimeServices
+    ) {}
 
     public static create(displayName: LocalAttributeJSON, services: RuntimeServices): StudentsController {
         return new StudentsController(displayName, services);
@@ -80,7 +83,7 @@ export class StudentsController {
             passwordProtection: data.pin ? { password: data.pin, passwordIsPin: true } : undefined
         });
 
-        const student = Student.from({ id: id, correspondingRelationshipTemplate: template.value.id });
+        const student = Student.from({ id: id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
 
         this.#students.push(student);
 
@@ -92,15 +95,17 @@ export class StudentsController {
     }
 
     public async getStudent(id: string): Promise<Student | undefined> {
-        return this.#students.find((student) => student.id.toString() === id);
+        const student = this.#students.find((student) => student.id.toString() === id);
+
+        return student;
     }
 
     public async getStudentByTemplateId(templateId: string): Promise<Student> {
-        return this.#students.find((student) => student.correspondingRelationshipTemplate.equals(templateId))!;
+        return this.#students.find((student) => student.correspondingRelationshipTemplateId.equals(templateId))!;
     }
 
     public async getStudentByRelationshipId(relationshipId: string): Promise<Student> {
-        return this.#students.find((student) => student.correspondingRelationship?.equals(relationshipId))!;
+        return this.#students.find((student) => student.correspondingRelationshipId?.equals(relationshipId))!;
     }
 
     public async updateStudent(student: Student): Promise<void> {
@@ -116,31 +121,63 @@ export class StudentsController {
         return this.#students.some((student) => student.id.toString() === id);
     }
 
-    public async sendFile(student: Student, data: { file: string; filename: string; mimetype: string; tags?: string[] | undefined }) {
-        if (!student.correspondingRelationship) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
-        const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationship!.toString() });
+    public async sendFile(student: Student, data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined }) {
+        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId!.toString() });
 
         const file = await this.services.transportServices.files.uploadOwnFile({
             content: Buffer.from(data.file, "base64"),
             tags: data.tags,
             filename: data.filename,
-            mimetype: data.mimetype
+            mimetype: data.mimetype,
+            title: data.title
         });
 
         const request = await this.services.consumptionServices.outgoingRequests.create({
-            content: { items: [{ "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, fileReference: file.value.truncatedReference }] },
+            content: {
+                items: [
+                    // TODO: switch to TransferFileOwnershipRequestItem when the app supports it
+                    // { "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, fileReference: file.value.truncatedReference },
+                    {
+                        "@type": "CreateAttributeRequestItem",
+                        title: "Abiturzeugnis",
+                        mustBeAccepted: true,
+                        attribute: {
+                            "@type": "IdentityAttribute",
+                            tags: data.tags,
+                            owner: "",
+                            value: { "@type": "IdentityFileReference", value: file.value.truncatedReference }
+                        }
+                    }
+                ]
+            },
             peer: relationship.value.peer
         });
 
-        await this.services.transportServices.messages.sendMessage({
-            content: request.value.content,
-            recipients: [relationship.value.peer]
-        });
+        await this.services.transportServices.messages.sendMessage({ content: request.value.content, recipients: [relationship.value.peer] });
+    }
 
-        await this.services.transportServices.messages.sendMessage({
-            content: { "@type": "Mail", subject: "Zeugnis", body: "Dein Zeugnis ist da!", to: [relationship.value.peer] } satisfies MailJSON,
-            attachments: [file.value.id],
-            recipients: [relationship.value.peer]
-        });
+    public async toStudentDTO(student: Student): Promise<StudentDTO> {
+        let status: StudentStatus = "onboarding";
+
+        if (student.correspondingRelationshipId) {
+            const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId!.toString() });
+            switch (relationship.value.status) {
+                case "Rejected":
+                case "Revoked":
+                case "Terminated":
+                case "DeletionProposed":
+                    status = "rejected";
+                    break;
+                case "Pending":
+                    status = "onboarding";
+                    break;
+                case "Active":
+                    status = "active";
+                    break;
+            }
+        }
+
+        return { ...student.toJSON(), status: status };
     }
 }

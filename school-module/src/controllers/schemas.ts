@@ -22,7 +22,16 @@ export const createStudentRequestSchema = z.object({
 
 export const sendFileRequestSchema = z.object({
     file: z.string().base64(),
+    title: z.string().min(5).max(255),
     filename: z.string().min(5).max(255),
     mimetype: z.string(),
+    tags: z.array(z.string()).optional()
+});
+
+export const sendAbiturzeugnisRequestSchema = z.object({
+    file: z.string().base64(),
+    title: z.string().min(5).max(255).optional(),
+    filename: z.string().min(5).max(255).optional(),
+    mimetype: z.string().optional(),
     tags: z.array(z.string()).optional()
 });
