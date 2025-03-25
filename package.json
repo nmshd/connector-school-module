@@ -1,5 +1,6 @@
 {
     "devDependencies": {
+        "@js-soft/docdb-access-mongo": "^1.2.0",
         "@js-soft/ts-utils": "^2.3.3",
         "@nmshd/connector-types": "^6.17.0",
         "@nmshd/typescript-rest": "^3.1.1",

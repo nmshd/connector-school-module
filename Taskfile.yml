@@ -60,7 +60,7 @@ tasks:
   send-file:
     desc: Call the send-file endpoint
     cmds:
-      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "filename": "Abiturzeugnis.pdf", "mimetype": "application/pdf"}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}}/files ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
+      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "filename": "Abiturzeugnis.pdf", "title": "Abiturzeugnis", "mimetype": "application/pdf"}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}}/files ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
     vars:
       FILE_BASE64:
         sh: 'cat assets/Zeugnis.pdf | {{if eq OS "darwin"}}base64{{else}}base64 -w 0{{end}}'
