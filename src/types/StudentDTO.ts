@@ -8,9 +8,3 @@ export interface StudentDTO {
     correspondingRelationshipId?: string;
     status: StudentStatus;
 }
-
-export interface StudentOnboardingDTO {
-    pdf: string;
-    png: string;
-    link: string;
-}

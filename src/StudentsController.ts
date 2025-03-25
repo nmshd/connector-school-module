@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
 import QRCode from "qrcode";
-import { OnboardingData, OnboardingPDFData, Student, StudentDTO, StudentStatus } from "./types";
+import { Student, StudentDTO, StudentStatus } from "./types";
 
 export class StudentsController {
     #studentsCollection: MongoDbCollection;
@@ -97,7 +97,7 @@ export class StudentsController {
         return student;
     }
 
-    public async getOnboardingDataForStudent(student: Student): Promise<OnboardingData> {
+    public async getOnboardingDataForStudent(student: Student): Promise<{ pdf: string; png: string; link: string }> {
         const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
         if (template.isError) {
             throw template.error;
@@ -110,7 +110,7 @@ export class StudentsController {
 
         const onboardingPdfAsBase64 = await this.createOnboardingPDF(
             {
-                organization_display_name: (this.displayName.content.value as DisplayNameJSON).value,
+                organizationDisplayName: (this.displayName.content.value as DisplayNameJSON).value,
                 name: `${student.givenname} ${student.surname}`,
                 givenname: student.givenname,
                 surname: student.surname,
@@ -119,16 +119,14 @@ export class StudentsController {
             image
         );
 
-        const data: OnboardingData = {
+        return {
             link: link,
             png: image.toString("base64"),
             pdf: onboardingPdfAsBase64
         };
-
-        return data;
     }
 
-    private async createOnboardingPDF(data: OnboardingPDFData, pngAsBuffer: Buffer) {
+    private async createOnboardingPDF(data: { organizationDisplayName: string; name: string; givenname: string; surname: string; templateReference: string }, pngAsBuffer: Buffer) {
         const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, "template_onboarding.pdf")));
         const pdfDoc = await PDFDocument.load(formPdfBytes);
 
@@ -136,7 +134,7 @@ export class StudentsController {
         const form = pdfDoc.getForm();
 
         form.getTextField("CharacterName 2").setText(`${data.givenname} ${data.surname}`);
-        form.getTextField("Allies").setText(data.organization_display_name);
+        form.getTextField("Allies").setText(data.organizationDisplayName);
         form.getButton("CHARACTER IMAGE").setImage(qrImage);
         //form.getTextField('Vorname').setText(data.givenname);
         //form.getTextField('Nachname').setText(data.surname);

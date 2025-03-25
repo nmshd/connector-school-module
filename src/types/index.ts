@@ -1,3 +1,3 @@
 export * from "./Student";
 export * from "./StudentDTO";
-export * from "./PDFData";
+export * from "./StudentOnboardingDTO";
