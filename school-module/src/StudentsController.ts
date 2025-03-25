@@ -8,7 +8,10 @@ import { Student } from "./Student";
 export class StudentsController {
     #students: Student[] = [];
 
-    private constructor(public readonly displayName: LocalAttributeJSON, private readonly services: RuntimeServices) {}
+    private constructor(
+        public readonly displayName: LocalAttributeJSON,
+        private readonly services: RuntimeServices
+    ) {}
 
     public static create(displayName: LocalAttributeJSON, services: RuntimeServices): StudentsController {
         return new StudentsController(displayName, services);

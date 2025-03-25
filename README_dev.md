@@ -2,22 +2,22 @@
 
 ## Prerequisites
 
--   Docker
--   [Taskfile](https://taskfile.dev/installation/)
--   [httpie cli](https://httpie.io/cli)
--   Node.js / npm
+- Docker
+- [Taskfile](https://taskfile.dev/installation/)
+- [httpie cli](https://httpie.io/cli)
+- Node.js / npm
 
 ## Taskfile tasks
 
 The `Taskfile.yml` in this repository defines various tasks to help with the development and management of the custom Connector module. Here are the tasks defined:
 
--   **prepare**: Prepares the environment by installing necessary npm packages.
--   **build**: Builds the custom module after preparing the environment.
--   **watch**: Watches the custom module and rebuilds it on changes.
--   **up**: Starts the Connector using Docker Compose.
--   **restart**: Restarts the Connector.
--   **logs**: Shows the logs of the Connector.
--   ... -> run `task --list` to see all available tasks
+- **prepare**: Prepares the environment by installing necessary npm packages.
+- **build**: Builds the custom module after preparing the environment.
+- **watch**: Watches the custom module and rebuilds it on changes.
+- **up**: Starts the Connector using Docker Compose.
+- **restart**: Restarts the Connector.
+- **logs**: Shows the logs of the Connector.
+- ... -> run `task --list` to see all available tasks
 
 These tasks can be run using the `task` command followed by the task name, for example, `task build` to build the custom module.
 
@@ -65,5 +65,5 @@ To get started with development, follow these steps:
 
 The repository is structured as follows:
 
--   `./`: Contains the main configuration files like `Taskfile.yml`, `compose.yml`, configuration for formatter etc. and the dependencies `tsc` needs to build the custom module. See [package.json](./package.json) to see which dependencies are needed to build the module. It's important that those dependencies are not installed in the custom module directory to avoid conflicts when mounting the custom module inside the Connector container.
--   `./school-module`: Contains the school module's code and its dependencies.
+- `./`: Contains the main configuration files like `Taskfile.yml`, `compose.yml`, configuration for formatter etc. and the dependencies `tsc` needs to build the custom module. See [package.json](./package.json) to see which dependencies are needed to build the module. It's important that those dependencies are not installed in the custom module directory to avoid conflicts when mounting the custom module inside the Connector container.
+- `./school-module`: Contains the school module's code and its dependencies.
