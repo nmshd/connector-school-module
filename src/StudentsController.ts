@@ -3,7 +3,7 @@ import { ApplicationError } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate } from "@nmshd/core-types";
-import { RuntimeServices } from "@nmshd/runtime";
+import { RuntimeErrors, RuntimeServices } from "@nmshd/runtime";
 import fs from "node:fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
@@ -99,7 +99,7 @@ export class StudentsController {
 
     public async getOnboardingDataForStudent(id: string): Promise<OnboardingData> {
         const student = await this.getStudent(id);
-        if (!student) throw new ApplicationError("error.schoolModule.unknownStudent", "The student does not exist.");
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
         const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
         if (template.isError) {
@@ -131,12 +131,13 @@ export class StudentsController {
         return data;
     }
 
-    public async createOnboardingPDF(data: OnboardingPDFData, pngAsBuffer: Buffer) {
+    private async createOnboardingPDF(data: OnboardingPDFData, pngAsBuffer: Buffer) {
         const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, "template_onboarding.pdf")));
         const pdfDoc = await PDFDocument.load(formPdfBytes);
 
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
         const form = pdfDoc.getForm();
+
         form.getTextField("CharacterName 2").setText(`${data.givenname} ${data.surname}`);
         form.getTextField("Allies").setText(data.organization_display_name);
         form.getButton("CHARACTER IMAGE").setImage(qrImage);
@@ -146,7 +147,7 @@ export class StudentsController {
         form.flatten();
         const pdfBytes = await pdfDoc.save();
         const base64 = Buffer.from(pdfBytes).toString("base64");
-        await fs.promises.writeFile(path.resolve(path.join(__dirname, "../assets/Zeugnis.pdf")), pdfBytes);
+
         return base64;
     }
 
