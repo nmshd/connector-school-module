@@ -93,7 +93,6 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             await this.#studentsController.deleteStudent(student);
 
             await this.runtime.getServices().transportServices.relationships.decomposeRelationship({ relationshipId });
-            await this.runtime.getServices().transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: event.data.template.id });
         });
     }
 }
