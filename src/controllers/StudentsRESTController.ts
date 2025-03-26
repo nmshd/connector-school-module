@@ -1,5 +1,5 @@
 import { ApplicationError, Result } from "@js-soft/ts-utils";
-import { Envelope } from "@nmshd/connector-types";
+import { BaseController, Envelope } from "@nmshd/connector-types";
 import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
 import { Accept, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
@@ -9,8 +9,10 @@ import { Student, StudentOnboardingDTO } from "../types";
 import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema } from "./schemas";
 
 @Path("/students")
-export class StudentsRESTController {
-    public constructor(@Inject private readonly studentsController: StudentsController) {}
+export class StudentsRESTController extends BaseController {
+    public constructor(@Inject private readonly studentsController: StudentsController) {
+        super();
+    }
 
     @POST
     @Accept("application/json")
@@ -99,20 +101,5 @@ export class StudentsRESTController {
 
         const dto = await this.studentsController.toStudentDTO(student);
         return this.ok(Result.ok(dto));
-    }
-
-    protected ok<T>(result: Result<T>): Envelope {
-        return this.json(result);
-    }
-
-    private json<T>(result: Result<T>): Envelope {
-        this.guard(result);
-        return Envelope.ok(result.value);
-    }
-
-    private guard<T>(result: Result<T>) {
-        if (result.isError) {
-            throw result.error;
-        }
     }
 }
