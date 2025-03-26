@@ -103,7 +103,7 @@ export class StudentsController {
 
         const link = `nmshd://tr#${template.value.truncatedReference}`;
 
-        const pngAsBuffer = await qrCodeLib.toBuffer(link);
+        const pngAsBuffer = await qrCodeLib.toBuffer(link, { type: "png" });
 
         const onboardingPdf = await this.createOnboardingPDF(
             {
