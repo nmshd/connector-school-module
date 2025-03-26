@@ -2,7 +2,7 @@ import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { BaseController, Envelope, Mimetype } from "@nmshd/connector-types";
 import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
-import { Accept, ContextAccept, ContextResponse, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
+import { Accept, ContextAccept, ContextResponse, Errors, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
 import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
@@ -81,7 +81,7 @@ export class StudentsRESTController extends BaseController {
                     200
                 );
             default:
-                throw new ApplicationError("error.schoolModule.invalidAcceptHeader", "The accept header is invalid.");
+                throw new Errors.NotAcceptableError();
         }
     }
 
