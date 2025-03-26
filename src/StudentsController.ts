@@ -1,5 +1,5 @@
 import { MongoDbCollection, MongoDbCollectionProvider } from "@js-soft/docdb-access-mongo";
-import { ApplicationError } from "@js-soft/ts-utils";
+import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate } from "@nmshd/core-types";
@@ -97,18 +97,15 @@ export class StudentsController {
         return student;
     }
 
-    public async getOnboardingDataForStudent(student: Student): Promise<{ pdf: string; png: string; link: string }> {
+    public async getOnboardingDataForStudent(student: Student): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
         const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
-        if (template.isError) {
-            throw template.error;
-        }
+        if (template.isError) return Result.fail(template.error);
 
         const link = `nmshd://tr#${template.value.truncatedReference}`;
 
-        const pngAsBuffer = await qrCodeLib.toBuffer(link);
-        const base64image = pngAsBuffer.toString("base64");
+        const pngAsBuffer = await qrCodeLib.toBuffer(link, { type: "png" });
 
-        const onboardingPdfAsBase64 = await this.createOnboardingPDF(
+        const onboardingPdf = await this.createOnboardingPDF(
             {
                 organizationDisplayName: (this.displayName.content.value as DisplayNameJSON).value,
                 name: `${student.givenname} ${student.surname}`,
@@ -119,7 +116,7 @@ export class StudentsController {
             pngAsBuffer
         );
 
-        return { link: link, png: base64image, pdf: onboardingPdfAsBase64 };
+        return Result.ok({ link: link, png: pngAsBuffer, pdf: onboardingPdf });
     }
 
     private async createOnboardingPDF(data: { organizationDisplayName: string; name: string; givenname: string; surname: string; templateReference: string }, pngAsBuffer: Buffer) {
@@ -137,9 +134,7 @@ export class StudentsController {
 
         form.flatten();
         const pdfBytes = await pdfDoc.save();
-        const base64 = Buffer.from(pdfBytes).toString("base64");
-
-        return base64;
+        return Buffer.from(pdfBytes);
     }
 
     public async getStudents(): Promise<Student[]> {
