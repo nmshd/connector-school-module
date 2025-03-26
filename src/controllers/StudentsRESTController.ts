@@ -46,7 +46,7 @@ export class StudentsRESTController extends BaseController {
 
     @GET
     @Path(":id/onboarding")
-    @Accept("application/json", "application/pdf", "image/png")
+    // do not declare an @Accept here because the combination of @Accept and @GET causes an error that is logged but the functionality is not affected
     public async getStudentOnboarding(@PathParam("id") id: string, @ContextAccept accept: string, @ContextResponse response: express.Response): Promise<Envelope | void> {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
