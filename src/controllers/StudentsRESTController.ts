@@ -67,7 +67,7 @@ export class StudentsRESTController extends BaseController {
                     result,
                     (r) => r.value.pdf,
                     () => `${id}_onboarding.pdf`,
-                    (_) => Mimetype.pdf(),
+                    () => Mimetype.pdf(),
                     response,
                     200
                 );
@@ -76,7 +76,7 @@ export class StudentsRESTController extends BaseController {
                     result,
                     (r) => r.value.png,
                     () => `${id}_onboarding.png`,
-                    (_) => Mimetype.png(),
+                    () => Mimetype.png(),
                     response,
                     200
                 );
