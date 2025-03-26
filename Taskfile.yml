@@ -17,7 +17,7 @@ tasks:
     deps: [build]
     desc: Start the Connector
     cmds:
-      - docker compose up -d
+      - docker compose up -d --build
 
   restart:
     desc: Restart the Connector
@@ -32,7 +32,35 @@ tasks:
   create-student:
     desc: Call the create-student endpoint
     cmds:
-      - 'echo -n ''{"id": "{{.STUDENT_ID}}", "pin": "1234", "givenname": "Max", "surname": "Mustermann", "additionalConsents": [{"title": "aTitle", "consent": "A Consent Bla", "link": "https://example.com"}]}'' | http -b POST localhost:8099/students ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | echo "$(jq -r ''.result.qrContent'')" | qrencode -t ansiutf8'
+      - 'echo -n ''{"id": "{{.STUDENT_ID}}", "pin": "1234", "givenname": "Max", "surname": "Mustermann", "additionalConsents": [{"title": "aTitle", "consent": "A Consent Bla", "link": "https://example.com"}]}'' | http -b POST localhost:8099/students ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
+    requires:
+      vars: [STUDENT_ID]
+
+  get-onboarding-pdf:
+    desc: Gets the onboarding document as PDF
+    cmds:
+      - "http --download localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'"
+    requires:
+      vars: [STUDENT_ID]
+
+  get-onboarding-png:
+    desc: Gets the onboarding document as PNG
+    cmds:
+      - "http --download localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:image/png 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'"
+    requires:
+      vars: [STUDENT_ID]
+
+  get-onboarding-link:
+    desc: Gets the onboarding document as link
+    cmds:
+      - "http -b GET localhost:8099/students/{{ .STUDENT_ID }}/onboarding 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq -r .result.link"
+    requires:
+      vars: [STUDENT_ID]
+
+  get-onboarding-terminal:
+    desc: Gets the onboarding document as a QR-Code in the terminal
+    cmds:
+      - "http -b GET localhost:8099/students/{{ .STUDENT_ID }}/onboarding 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq -r .result.link | qrencode -t ansiutf8"
     requires:
       vars: [STUDENT_ID]
 

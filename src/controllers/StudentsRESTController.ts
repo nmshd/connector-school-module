@@ -2,7 +2,7 @@ import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { BaseController, Envelope, Mimetype } from "@nmshd/connector-types";
 import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
-import { Accept, ContextAccept, ContextResponse, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
+import { Accept, ContextAccept, ContextResponse, Errors, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
 import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
@@ -46,7 +46,7 @@ export class StudentsRESTController extends BaseController {
 
     @GET
     @Path(":id/onboarding")
-    @Accept("application/json", "application/pdf", "image/png")
+    // do not declare an @Accept here because the combination of @Accept and @GET causes an error that is logged but the functionality is not affected
     public async getStudentOnboarding(@PathParam("id") id: string, @ContextAccept accept: string, @ContextResponse response: express.Response): Promise<Envelope | void> {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
@@ -67,7 +67,7 @@ export class StudentsRESTController extends BaseController {
                     result,
                     (r) => r.value.pdf,
                     () => `${id}_onboarding.pdf`,
-                    (_) => Mimetype.pdf(),
+                    () => Mimetype.pdf(),
                     response,
                     200
                 );
@@ -76,12 +76,12 @@ export class StudentsRESTController extends BaseController {
                     result,
                     (r) => r.value.png,
                     () => `${id}_onboarding.png`,
-                    (_) => Mimetype.png(),
+                    () => Mimetype.png(),
                     response,
                     200
                 );
             default:
-                throw new ApplicationError("error.schoolModule.invalidAcceptHeader", "The accept header is invalid.");
+                throw new Errors.NotAcceptableError();
         }
     }
 
