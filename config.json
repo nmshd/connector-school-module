@@ -11,7 +11,7 @@
     "modules": {
         "coreHttpApi": { "enabled": true, "docs": { "enabled": true } },
         "sync": { "enabled": true, "interval": 1 },
-        "customModule": {
+        "school": {
             "enabled": true,
             "location": "/usr/app/custom-modules/school-module",
             "displayName": "School Module",
