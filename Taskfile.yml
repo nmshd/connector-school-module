@@ -17,17 +17,17 @@ tasks:
     deps: [build]
     desc: Start the Connector
     cmds:
-      - docker compose up -d --build
+      - docker compose --env-file .env --env-file .env.connector up -d --build
 
   restart:
     desc: Restart the Connector
     cmds:
-      - docker compose restart connector
+      - docker compose --env-file .env --env-file .env.connector restart connector
 
   logs:
     desc: Show Connector logs
     cmds:
-      - docker compose logs -f connector
+      - docker compose --env-file .env --env-file .env.connector logs -f connector
 
   create-student:
     desc: Call the create-student endpoint
