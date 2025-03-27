@@ -77,9 +77,7 @@ jobs:
           registry: https://registry.npmjs.org
       - run: bash .ci/buildConnectorZip.sh
         env:
-          BUILD_NUMBER: ${{ github.run_number }}
-          COMMIT_HASH: ${{ github.sha }}
-          VERSION: ${{ github.ref_name }}
+          SCHOOL_MODULE_VERSION: ${{ github.ref_name }}
       - name: Add zipped Connector to release
         uses: softprops/action-gh-release@v2
         with:
