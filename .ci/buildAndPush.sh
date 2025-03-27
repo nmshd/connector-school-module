@@ -35,6 +35,4 @@ docker buildx build --push \
     --sbom=true \
     --platform linux/amd64,linux/arm64 \
     $TAGS \
-    --build-arg COMMIT_HASH=$COMMIT_HASH \
-    --build-arg BUILD_NUMBER=$BUILD_NUMBER \
     --build-arg VERSION=$VERSION .
