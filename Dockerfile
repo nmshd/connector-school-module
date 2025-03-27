@@ -6,7 +6,7 @@ COPY . .
 
 RUN npm install && npx tsc
 
-FROM ghcr.io/nmshd/connector:6.17.3
+FROM ghcr.io/nmshd/connector:6.18.0
 
 LABEL org.opencontainers.image.source="https://github.com/nmshd/connector-school-module"
 
