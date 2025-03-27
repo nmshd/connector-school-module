@@ -6,6 +6,6 @@ LABEL org.opencontainers.image.source="https://github.com/nmshd/connector-school
 
 USER root
 
-RUN npm install @nmshd/connector-school-module@${SCHOOL_MODULE_VERSION}
+RUN npm install @nmshd/connector-school-module@${SCHOOL_MODULE_VERSION} --omit=dev
 
 USER node
