@@ -14,6 +14,25 @@ jobs:
           node-version: current
       - run: bash .ci/runChecks.sh
 
+  publish-npm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: current
+          registry-url: https://registry.npmjs.org/
+      - run: npm ci
+      - run: npm run build
+      - run: bash .ci/publishNpm.sh
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ github.ref_name }}
+    needs: ["run-checks"]
+
   publish-docker:
     runs-on: ubuntu-latest
     permissions:
@@ -31,9 +50,14 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - uses: gr2m/await-npm-package-version-action@v1
+        with:
+          package: "@nmshd/connector-school-module"
+          version: ${{ github.ref_name }}
+          registry: https://registry.npmjs.org
       - run: bash .ci/buildAndPush.sh
         env:
           BUILD_NUMBER: ${{ github.run_number }}
           COMMIT_HASH: ${{ github.sha }}
-          VERSION: ${{ github.ref_name }}
-    needs: ["run-checks"]
+          SCHOOL_MODULE_VERSION: ${{ github.ref_name }}
+    needs: ["run-checks", "publish-npm"]

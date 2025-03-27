@@ -2,7 +2,7 @@ services:
   connector:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.debug
     container_name: connector-with-school-module
     ports:
       - "8099:80"
