@@ -1,4 +1,4 @@
-ARG CONNECTOR_VERSION=non-working-default
+ARG CONNECTOR_VERSION=non-existing-default-tag
 ARG SCHOOL_MODULE_VERSION
 
 FROM ghcr.io/nmshd/connector:${CONNECTOR_VERSION}

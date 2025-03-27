@@ -1,4 +1,4 @@
-ARG CONNECTOR_VERSION=non-working-default
+ARG CONNECTOR_VERSION=non-existing-default-tag
 
 FROM node:23.10.0 AS module-builder
 
