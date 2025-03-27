@@ -14,7 +14,7 @@ if [ -z "$SCHOOL_MODULE_VERSION" ]; then
     exit 1
 fi
 
-mkdir work && cd work
+mkdir zipworkdir && cd zipworkdir
 
 wget https://github.com/nmshd/connector/releases/download/${CONNECTOR_VERSION}/connector-${CONNECTOR_VERSION}.zip
 
@@ -24,4 +24,4 @@ npm install --save-exact @nmshd/connector-school-module@${SCHOOL_MODULE_VERSION}
 
 zip -r "../connector-${SCHOOL_MODULE_VERSION}.zip" dist package.json package-lock.json
 
-cd .. && rm -rf work
+cd .. && rm -rf zipworkdir
