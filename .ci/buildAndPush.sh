@@ -35,4 +35,5 @@ docker buildx build --push \
     --sbom=true \
     --platform linux/amd64,linux/arm64 \
     $TAGS \
+    $(sed 's/^/--build-arg /' .env.connector) \
     --build-arg SCHOOL_MODULE_VERSION=$SCHOOL_MODULE_VERSION .

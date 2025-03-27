@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.debug
+      args:
+        CONNECTOR_VERSION: $CONNECTOR_VERSION
     container_name: connector-with-school-module
     ports:
       - "8099:80"

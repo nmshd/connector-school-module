@@ -1,3 +1,5 @@
+ARG CONNECTOR_VERSION=non-existing-default-tag
+
 FROM node:23.10.0 AS module-builder
 
 WORKDIR /usr/app
@@ -6,7 +8,7 @@ COPY . .
 
 RUN npm install && npx tsc
 
-FROM ghcr.io/nmshd/connector:6.18.0
+FROM ghcr.io/nmshd/connector:$CONNECTOR_VERSION
 
 LABEL org.opencontainers.image.source="https://github.com/nmshd/connector-school-module"
 
