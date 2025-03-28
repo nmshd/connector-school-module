@@ -13,11 +13,7 @@
         "sync": { "interval": 1 },
         "school": {
             "location": "/usr/app/custom-modules/school-module",
-            "schoolName": "My School",
-            "database": {
-                "connectionString": "mongodb://mongodb:27017",
-                "dbName": "school-module"
-            }
+            "schoolName": "My School"
         }
     }
 }

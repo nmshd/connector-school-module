@@ -1,4 +1,4 @@
-import { MongoDbCollection, MongoDbCollectionProvider } from "@js-soft/docdb-access-mongo";
+import { IDatabaseCollection, IDatabaseCollectionProvider } from "@js-soft/docdb-access-abstractions";
 import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
@@ -11,12 +11,12 @@ import qrCodeLib from "qrcode";
 import { Student, StudentDTO, StudentStatus } from "./types";
 
 export class StudentsController {
-    #studentsCollection: MongoDbCollection;
+    #studentsCollection: IDatabaseCollection;
 
     public constructor(
         public readonly displayName: LocalAttributeJSON,
         private readonly services: RuntimeServices,
-        private readonly database: MongoDbCollectionProvider,
+        private readonly database: IDatabaseCollectionProvider,
         private readonly assetsLocation: string
     ) {}
 
