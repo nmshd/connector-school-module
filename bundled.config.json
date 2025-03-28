@@ -1,0 +1,7 @@
+{
+    "modules": {
+        "coreHttpApi": { "enabled": false },
+        "sync": { "enabled": true },
+        "school": { "enabled": true, "location": "@nmshd/connector-school-module" }
+    }
+}

@@ -10,9 +10,8 @@
     },
     "modules": {
         "coreHttpApi": { "enabled": true, "docs": { "enabled": true } },
-        "sync": { "enabled": true, "interval": 1 },
+        "sync": { "interval": 1 },
         "school": {
-            "enabled": true,
             "location": "/usr/app/custom-modules/school-module",
             "schoolName": "My School",
             "database": {
