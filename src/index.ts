@@ -1,3 +1,4 @@
+import { IDatabaseConnection } from "@js-soft/docdb-access-abstractions";
 import { MongoDbConnection } from "@js-soft/docdb-access-mongo";
 import { sleep } from "@js-soft/ts-utils";
 import { ConnectorRuntimeModule, ConnectorRuntimeModuleConfiguration } from "@nmshd/connector-types";
@@ -10,41 +11,27 @@ import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "./StudentsController";
 
-interface SchoolModuleConfiguration extends ConnectorRuntimeModuleConfiguration {
-    database: {
-        connectionString: string;
-        dbName: string;
-    };
-    schoolName: string;
-    assetsLocation: string;
-}
-
 const schoolModuleConfigurationSchema = z.object({
-    database: z.object({
-        connectionString: z.string(),
-        dbName: z.string()
-    }),
+    database: z.object({ connectionString: z.string().optional(), dbName: z.string().optional() }).optional(),
     schoolName: z.string(),
-    assetsLocation: z.string()
+    assetsLocation: z.string().optional().default("/assets")
 });
 
+type SchoolModuleConfiguration = ConnectorRuntimeModuleConfiguration & z.infer<typeof schoolModuleConfigurationSchema>;
+
 export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleConfiguration> {
-    #mongoDbConnection: MongoDbConnection | undefined;
+    #dbConnection: IDatabaseConnection | undefined;
     #studentsController: StudentsController;
 
     public async init(): Promise<void> {
         const result = schoolModuleConfigurationSchema.safeParse(this.configuration);
         if (!result.success) throw new Error(`Invalid configuration: ${fromError(result.error)}`);
 
-        this.#mongoDbConnection = new MongoDbConnection(this.configuration.database.connectionString);
+        const dbConnection = await this.getOrCreateDbConnection();
 
-        try {
-            await this.#mongoDbConnection.connect();
-        } catch (e) {
-            throw new Error(`Could not connect to the configured database. Try to check the connection string and the database status. Root error: ${e}`);
-        }
-
-        const database = await this.#mongoDbConnection.getDatabase(this.configuration.database.dbName);
+        const database = await dbConnection.getDatabase(
+            this.configuration.database?.dbName ?? `${this.runtime.runtimeConfig.database.dbNamePrefix}${this.runtime.runtimeConfig.database.dbName}`
+        );
 
         const displayName = await this.getOrCreateDisplayNameAttribute();
         this.#studentsController = await new StudentsController(displayName, this.runtime.getServices(), database, this.configuration.assetsLocation).init();
@@ -54,6 +41,21 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             .scope(Scope.Singleton);
 
         this.runtime.infrastructure.httpServer.addControllers(["controllers/*.js", "controllers/*.ts", "!controllers/*.d.ts"], __dirname);
+    }
+
+    private async getOrCreateDbConnection(): Promise<IDatabaseConnection> {
+        if (!this.configuration.database?.connectionString) return this.runtime.databaseConnection;
+
+        const mongoDbConnection = new MongoDbConnection(this.configuration.database.connectionString);
+        this.#dbConnection = mongoDbConnection;
+
+        try {
+            await mongoDbConnection.connect();
+
+            return mongoDbConnection;
+        } catch (e) {
+            throw new Error(`Could not connect to the configured database. Try to check the connection string and the database status. Root error: ${e}`);
+        }
     }
 
     private async getOrCreateDisplayNameAttribute(): Promise<LocalAttributeJSON> {
@@ -104,6 +106,6 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
     }
 
     public async stop(): Promise<void> {
-        await this.#mongoDbConnection?.close();
+        await this.#dbConnection?.close();
     }
 }

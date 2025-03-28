@@ -12,6 +12,8 @@ FROM ghcr.io/nmshd/connector:$CONNECTOR_VERSION
 
 LABEL org.opencontainers.image.source="https://github.com/nmshd/connector-school-module"
 
+ADD bundled.config.json /usr/app/bundled.config.json
+
 COPY --from=module-builder /usr/app/dist /usr/app/custom-modules/school-module/dist
 COPY --from=module-builder /usr/app/package.json /usr/app/custom-modules/school-module/package.json
 COPY --from=module-builder /usr/app/package-lock.json /usr/app/custom-modules/school-module/package-lock.json
