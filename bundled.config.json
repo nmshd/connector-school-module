@@ -2,6 +2,6 @@
     "modules": {
         "coreHttpApi": { "enabled": false },
         "sync": { "enabled": true, "interval": 10 },
-        "school": { "enabled": true, "location": "@nmshd/connector-school-module" }
+        "school": { "enabled": true, "location": "@nmshd/connector-school-module", "assetsLocation": "/assets" }
     }
 }
