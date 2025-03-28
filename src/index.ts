@@ -14,7 +14,7 @@ import { StudentsController } from "./StudentsController";
 const schoolModuleConfigurationSchema = z.object({
     database: z.object({ connectionString: z.string().optional(), dbName: z.string().optional() }).optional(),
     schoolName: z.string(),
-    assetsLocation: z.string().optional().default("/assets")
+    assetsLocation: z.string()
 });
 
 type SchoolModuleConfiguration = ConnectorRuntimeModuleConfiguration & z.infer<typeof schoolModuleConfigurationSchema>;
