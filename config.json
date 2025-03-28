@@ -17,8 +17,7 @@
             "database": {
                 "connectionString": "mongodb://mongodb:27017",
                 "dbName": "school-module"
-            },
-            "assetsLocation": "/assets"
+            }
         }
     }
 }
