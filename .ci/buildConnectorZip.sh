@@ -21,7 +21,7 @@ wget https://github.com/nmshd/connector/releases/download/${CONNECTOR_VERSION}/c
 unzip connector-${CONNECTOR_VERSION}.zip
 
 npm install --save-exact @nmshd/connector-school-module@${SCHOOL_MODULE_VERSION} --omit=dev
-cp ../bundled.config.json ./bundled.config.json
+cat ../bundled.config.json | jq -r 'del(.modules.school.assetsLocation)' >./bundled.config.json
 
 zip -r "../connector-${SCHOOL_MODULE_VERSION}.zip" dist package.json package-lock.json bundled.config.json
 
