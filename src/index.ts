@@ -96,7 +96,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             const relationshipId = event.data.id;
 
             const student = await this.#studentsController.getStudentByRelationshipId(relationshipId);
-            await this.#studentsController.deleteStudent(student);
+            await this.#studentsController.pseudonymizeStudent(student);
 
             // wait for 500ms to ensure that no race conditions occur with other external events from the same sync run that triggered this event
             await sleep(500);

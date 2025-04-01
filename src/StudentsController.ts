@@ -98,6 +98,8 @@ export class StudentsController {
     }
 
     public async getOnboardingDataForStudent(student: Student): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
+        if (!student.correspondingRelationshipTemplateId || !student.givenname || !student.surname)
+            throw new ApplicationError("error.schoolModule.deletedStudent", "The student seems to be deleted.");
         const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
         if (template.isError) return Result.fail(template.error);
 
@@ -165,6 +167,18 @@ export class StudentsController {
         await this.#studentsCollection.update(oldDoc, student.toJSON());
     }
 
+    public async pseudonymizeStudent(student: Student): Promise<Student> {
+        const oldDoc = await this.#studentsCollection.read(student.id.toString());
+        const pseudonymizedDoc = {
+            id: oldDoc.id,
+            status: "deleted"
+        };
+
+        await this.#studentsCollection.update(oldDoc, pseudonymizedDoc);
+
+        return Student.from(pseudonymizedDoc);
+    }
+
     public async deleteStudent(student: Student): Promise<void> {
         await this.#studentsCollection.delete({ id: student.id.toString() });
     }
@@ -210,7 +224,7 @@ export class StudentsController {
     }
 
     public async toStudentDTO(student: Student): Promise<StudentDTO> {
-        let status: StudentStatus = "onboarding";
+        let status: StudentStatus = "deleted";
 
         if (student.correspondingRelationshipId) {
             const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
