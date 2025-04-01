@@ -98,8 +98,10 @@ export class StudentsController {
     }
 
     public async getOnboardingDataForStudent(student: Student): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
-        if (!student.correspondingRelationshipTemplateId || !student.givenname || !student.surname)
+        if (!student.correspondingRelationshipTemplateId || !student.givenname || !student.surname) {
             throw new ApplicationError("error.schoolModule.deletedStudent", "The student seems to be deleted.");
+        }
+
         const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
         if (template.isError) return Result.fail(template.error);
 
