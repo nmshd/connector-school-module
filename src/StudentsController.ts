@@ -168,6 +168,7 @@ export class StudentsController {
     }
 
     public async pseudonymizeStudent(student: Student): Promise<Student> {
+        // Only keep id and status of student (also works for future student properties)
         const oldDoc = await this.#studentsCollection.read(student.id.toString());
         const pseudonymizedDoc = {
             id: oldDoc.id,
@@ -180,6 +181,22 @@ export class StudentsController {
     }
 
     public async deleteStudent(student: Student): Promise<void> {
+        if (student.correspondingRelationshipId) {
+            const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+
+            // TODO: What about
+            // RelationshipStatus.Pending
+            // RelationshipStatus.Rejected
+            // RelationshipStatus.Revoked
+
+            if (relationship.value.status === RelationshipStatus.Active) {
+                await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+            }
+
+            if (relationship.value.status === RelationshipStatus.Terminated || relationship.value.status === RelationshipStatus.DeletionProposed) {
+                await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+            }
+        }
         await this.#studentsCollection.delete({ id: student.id.toString() });
     }
 
@@ -224,7 +241,7 @@ export class StudentsController {
     }
 
     public async toStudentDTO(student: Student): Promise<StudentDTO> {
-        let status: StudentStatus = "deleted";
+        let status: StudentStatus = "onboarding";
 
         if (student.correspondingRelationshipId) {
             const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
@@ -242,6 +259,10 @@ export class StudentsController {
                     status = "active";
                     break;
             }
+        }
+
+        if (!student.correspondingRelationshipTemplateId) {
+            status = "deleted";
         }
 
         return { ...student.toJSON(), status: status };
