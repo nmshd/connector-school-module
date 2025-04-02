@@ -185,14 +185,10 @@ export class StudentsController {
         if (student.correspondingRelationshipId) {
             let relationship = await this.getRelationship(student.correspondingRelationshipId);
 
-            if (relationship.status === RelationshipStatus.Active) {
-                await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
-            }
-
-            relationship = await this.getRelationship(student.correspondingRelationshipId);
-
             if (relationship.status === RelationshipStatus.Pending) {
                 await this.services.transportServices.relationships.rejectRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+            } else if (relationship.status === RelationshipStatus.Active) {
+                await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
             }
 
             relationship = await this.getRelationship(student.correspondingRelationshipId);
