@@ -183,18 +183,20 @@ export class StudentsController {
 
     public async deleteStudent(student: Student): Promise<void> {
         if (student.correspondingRelationshipId) {
-            const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+            const getRelationshipResult = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
-            // TODO: What about
-            // RelationshipStatus.Pending
-            // RelationshipStatus.Rejected
-            // RelationshipStatus.Revoked
+            const relationship = getRelationshipResult.value;
 
-            if (relationship.value.status === RelationshipStatus.Active) {
+            if (relationship.status === RelationshipStatus.Active) {
                 await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
             }
 
-            if (relationship.value.status === RelationshipStatus.Terminated || relationship.value.status === RelationshipStatus.DeletionProposed) {
+            if (
+                relationship.status === RelationshipStatus.Terminated ||
+                relationship.status === RelationshipStatus.Rejected ||
+                relationship.status === RelationshipStatus.Revoked ||
+                relationship.status === RelationshipStatus.DeletionProposed
+            ) {
                 await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
             }
         }
