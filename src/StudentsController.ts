@@ -170,11 +170,10 @@ export class StudentsController {
     }
 
     public async pseudonymizeStudent(student: Student): Promise<Student> {
-        // Only keep id and status of student (also works for future student properties)
+        // Only keep the id of the student
         const oldDoc = await this.#studentsCollection.read(student.id.toString());
         const pseudonymizedDoc = {
-            id: oldDoc.id,
-            status: "deleted"
+            id: oldDoc.id
         };
 
         await this.#studentsCollection.update(oldDoc, pseudonymizedDoc);
