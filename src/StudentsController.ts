@@ -191,6 +191,11 @@ export class StudentsController {
                 await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
             }
 
+            // TODO: is it okay to reject?
+            // if (relationship.status === RelationshipStatus.Pending) {
+            //     await this.services.transportServices.relationships.rejectRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+            // }
+
             if (
                 relationship.status === RelationshipStatus.Terminated ||
                 relationship.status === RelationshipStatus.Rejected ||
