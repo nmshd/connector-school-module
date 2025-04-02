@@ -4,6 +4,7 @@ import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
 import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
 import express from "express";
+import { unknown } from "zod";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
 import { Student, StudentOnboardingDTO } from "../types";
@@ -46,12 +47,12 @@ export class StudentsRESTController extends BaseController {
 
     @DELETE
     @Path(":id")
-    public async deleteStudent(@PathParam("id") id: string): Promise<Envelope> {
+    public async deleteStudent(@PathParam("id") id: string): Promise<void> {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
         await this.studentsController.deleteStudent(student);
-        return this.ok(Result.ok(undefined));
+        return this.noContent(Result.ok<unknown, ApplicationError>(unknown));
     }
 
     @GET
