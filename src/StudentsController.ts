@@ -2,7 +2,7 @@ import { IDatabaseCollection, IDatabaseCollectionProvider } from "@js-soft/docdb
 import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
-import { CoreDate } from "@nmshd/core-types";
+import { CoreDate, CoreId } from "@nmshd/core-types";
 import { RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
 import fs from "node:fs";
 import path from "path";
@@ -183,18 +183,19 @@ export class StudentsController {
 
     public async deleteStudent(student: Student): Promise<void> {
         if (student.correspondingRelationshipId) {
-            const getRelationshipResult = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
-
-            const relationship = getRelationshipResult.value;
+            let relationship = await this.getRelationship(student.correspondingRelationshipId);
 
             if (relationship.status === RelationshipStatus.Active) {
                 await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
             }
 
-            // TODO: is it okay to reject?
-            // if (relationship.status === RelationshipStatus.Pending) {
-            //     await this.services.transportServices.relationships.rejectRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
-            // }
+            relationship = await this.getRelationship(student.correspondingRelationshipId);
+
+            if (relationship.status === RelationshipStatus.Pending) {
+                await this.services.transportServices.relationships.rejectRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+            }
+
+            relationship = await this.getRelationship(student.correspondingRelationshipId);
 
             if (
                 relationship.status === RelationshipStatus.Terminated ||
@@ -205,7 +206,14 @@ export class StudentsController {
                 await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
             }
         }
+
         await this.#studentsCollection.delete({ id: student.id.toString() });
+    }
+
+    private async getRelationship(relationshipId: CoreId) {
+        const getRelationshipResult = await this.services.transportServices.relationships.getRelationship({ id: relationshipId.toString() });
+        const relationship = getRelationshipResult.value;
+        return relationship;
     }
 
     public async existsStudent(id: string): Promise<boolean> {
