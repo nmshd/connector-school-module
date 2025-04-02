@@ -207,6 +207,10 @@ export class StudentsController {
             }
         }
 
+        if (student.correspondingRelationshipId) {
+            await this.services.transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: student.correspondingRelationshipId.toString() });
+        }
+
         await this.#studentsCollection.delete({ id: student.id.toString() });
     }
 
