@@ -2,7 +2,7 @@ import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { BaseController, Envelope, Mimetype } from "@nmshd/connector-types";
 import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
-import { Accept, ContextAccept, ContextResponse, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
+import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
 import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
@@ -42,6 +42,16 @@ export class StudentsRESTController extends BaseController {
 
         const dto = await this.studentsController.toStudentDTO(student);
         return this.ok(Result.ok(dto));
+    }
+
+    @DELETE
+    @Path(":id")
+    public async deleteStudent(@PathParam("id") id: string): Promise<void> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        await this.studentsController.deleteStudent(student);
+        return this.noContent(Result.ok<unknown, ApplicationError>(undefined));
     }
 
     @GET

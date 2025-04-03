@@ -3,17 +3,17 @@ import { CoreId, ICoreId } from "@nmshd/core-types";
 
 export interface StudentJSON {
     id: string;
-    givenname: string;
-    surname: string;
-    correspondingRelationshipTemplateId: string;
+    givenname?: string;
+    surname?: string;
+    correspondingRelationshipTemplateId?: string;
     correspondingRelationshipId?: string;
 }
 
 export interface IStudent extends ISerializable {
     id: ICoreId;
-    givenname: string;
-    surname: string;
-    correspondingRelationshipTemplateId: ICoreId;
+    givenname?: string;
+    surname?: string;
+    correspondingRelationshipTemplateId?: ICoreId;
     correspondingRelationshipId?: ICoreId;
 }
 
@@ -23,16 +23,16 @@ export class Student extends Serializable implements IStudent {
     public id: CoreId;
 
     @serialize()
-    @validate()
-    public givenname: string;
+    @validate({ nullable: true })
+    public givenname?: string;
 
     @serialize()
-    @validate()
-    public surname: string;
+    @validate({ nullable: true })
+    public surname?: string;
 
     @serialize()
-    @validate()
-    public correspondingRelationshipTemplateId: CoreId;
+    @validate({ nullable: true })
+    public correspondingRelationshipTemplateId?: CoreId;
 
     @serialize()
     @validate({ nullable: true })
