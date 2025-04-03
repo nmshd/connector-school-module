@@ -170,7 +170,6 @@ export class StudentsController {
     }
 
     public async pseudonymizeStudent(student: Student): Promise<Student> {
-        // Only keep the id of the student
         const oldDoc = await this.#studentsCollection.read(student.id.toString());
         const pseudonymizedDoc = {
             id: oldDoc.id
