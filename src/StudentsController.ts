@@ -182,28 +182,21 @@ export class StudentsController {
 
     public async deleteStudent(student: Student): Promise<void> {
         if (student.correspondingRelationshipId) {
-            let relationship = await this.getRelationship(student.correspondingRelationshipId);
+            const relationship = await this.getRelationship(student.correspondingRelationshipId);
 
-            if (relationship.status === RelationshipStatus.Pending) {
-                await this.services.transportServices.relationships.rejectRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
-            } else if (relationship.status === RelationshipStatus.Active) {
-                await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+            switch (relationship.status) {
+                case RelationshipStatus.Pending:
+                    await this.services.transportServices.relationships.rejectRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                case RelationshipStatus.Active:
+                    await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                case RelationshipStatus.Rejected:
+                case RelationshipStatus.Revoked:
+                case RelationshipStatus.Terminated:
+                case RelationshipStatus.DeletionProposed:
+                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
             }
-
-            relationship = await this.getRelationship(student.correspondingRelationshipId);
-
-            if (
-                relationship.status === RelationshipStatus.Terminated ||
-                relationship.status === RelationshipStatus.Rejected ||
-                relationship.status === RelationshipStatus.Revoked ||
-                relationship.status === RelationshipStatus.DeletionProposed
-            ) {
-                await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
-            }
-        }
-
-        if (student.correspondingRelationshipId) {
-            await this.services.transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: student.correspondingRelationshipId.toString() });
         }
 
         await this.#studentsCollection.delete({ id: student.id.toString() });
