@@ -158,9 +158,10 @@ export class StudentsController {
         return Student.from(doc);
     }
 
-    public async getStudentByRelationshipId(relationshipId: string): Promise<Student> {
+    public async getStudentByRelationshipId(relationshipId: string): Promise<Student | undefined> {
         const doc = await this.#studentsCollection.findOne({ correspondingRelationshipId: relationshipId });
-        return Student.from(doc);
+
+        return doc ? Student.from(doc) : undefined;
     }
 
     public async updateStudent(student: Student): Promise<void> {
