@@ -173,6 +173,21 @@ export class StudentsController {
         return await this.#studentsCollection.exists({ id: id });
     }
 
+    public async sendMail(student: Student, subject: string, rawBody: string): Promise<void> {
+        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+
+        const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+        await this.services.transportServices.messages.sendMessage({
+            recipients: [relationship.value.peer],
+            content: {
+                "@type": "Mail",
+                to: [relationship.value.peer],
+                subject: subject,
+                body: rawBody
+            }
+        });
+    }
+
     public async sendFile(student: Student, data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined }): Promise<void> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
