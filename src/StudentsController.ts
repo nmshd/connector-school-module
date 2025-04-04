@@ -2,7 +2,7 @@ import { IDatabaseCollection, IDatabaseCollectionProvider } from "@js-soft/docdb
 import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
-import { CoreDate } from "@nmshd/core-types";
+import { CoreDate, CoreId } from "@nmshd/core-types";
 import { RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
 import fs from "node:fs";
 import path from "path";
@@ -98,6 +98,10 @@ export class StudentsController {
     }
 
     public async getOnboardingDataForStudent(student: Student): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
+        if (!student.correspondingRelationshipTemplateId || !student.givenname || !student.surname) {
+            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
+        }
+
         const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
         if (template.isError) return Result.fail(template.error);
 
@@ -154,9 +158,10 @@ export class StudentsController {
         return Student.from(doc);
     }
 
-    public async getStudentByRelationshipId(relationshipId: string): Promise<Student> {
+    public async getStudentByRelationshipId(relationshipId: string): Promise<Student | undefined> {
         const doc = await this.#studentsCollection.findOne({ correspondingRelationshipId: relationshipId });
-        return Student.from(doc);
+
+        return doc ? Student.from(doc) : undefined;
     }
 
     public async updateStudent(student: Student): Promise<void> {
@@ -165,8 +170,43 @@ export class StudentsController {
         await this.#studentsCollection.update(oldDoc, student.toJSON());
     }
 
+    public async pseudonymizeStudent(student: Student): Promise<Student> {
+        const oldDoc = await this.#studentsCollection.read(student.id.toString());
+        const pseudonymizedDoc = {
+            id: oldDoc.id
+        };
+
+        await this.#studentsCollection.update(oldDoc, pseudonymizedDoc);
+
+        return Student.from(pseudonymizedDoc);
+    }
+
     public async deleteStudent(student: Student): Promise<void> {
+        if (student.correspondingRelationshipId) {
+            const relationship = await this.getRelationship(student.correspondingRelationshipId);
+
+            switch (relationship.status) {
+                case RelationshipStatus.Pending:
+                    await this.services.transportServices.relationships.rejectRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                case RelationshipStatus.Active:
+                    await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                case RelationshipStatus.Rejected:
+                case RelationshipStatus.Revoked:
+                case RelationshipStatus.Terminated:
+                case RelationshipStatus.DeletionProposed:
+                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+            }
+        }
+
         await this.#studentsCollection.delete({ id: student.id.toString() });
+    }
+
+    private async getRelationship(relationshipId: CoreId) {
+        const getRelationshipResult = await this.services.transportServices.relationships.getRelationship({ id: relationshipId.toString() });
+        const relationship = getRelationshipResult.value;
+        return relationship;
     }
 
     public async existsStudent(id: string): Promise<boolean> {
@@ -243,6 +283,10 @@ export class StudentsController {
                     status = "active";
                     break;
             }
+        }
+
+        if (!student.correspondingRelationshipTemplateId) {
+            status = "deleted";
         }
 
         return { ...student.toJSON(), status: status };
