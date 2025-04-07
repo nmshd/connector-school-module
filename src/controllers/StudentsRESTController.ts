@@ -158,18 +158,6 @@ export class StudentsRESTController extends BaseController {
         return this.ok(Result.ok(dto));
     }
 
-    @GET
-    @Path(":id/files")
-    public async getStudentFiles(@PathParam("id") id: string): Promise<Envelope> {
-        const student = await this.studentsController.getStudent(id);
-        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
-
-        // TODO: Change to files, just like within the app
-
-        const dto = await this.studentsController.toStudentDTO(student);
-        return this.ok(Result.ok(dto));
-    }
-
     @POST
     @Path(":id/files/abiturzeugnis")
     @Accept("application/json")
