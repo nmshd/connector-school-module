@@ -7,7 +7,7 @@ import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
 import { Student, StudentOnboardingDTO } from "../types";
-import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailBasedOnNamedTemplateRequestSchema, sendMailRequestSchema } from "./schemas";
+import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailRequestSchema } from "./schemas";
 
 @Path("/students")
 export class StudentsRESTController extends BaseController {
@@ -115,7 +115,7 @@ export class StudentsRESTController extends BaseController {
         if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
         const data = validationResult.data;
 
-        const mail = await this.studentsController.sendMailBasedOnTemplate(student, data.subject, data.body);
+        const mail = await this.studentsController.sendMail(student, data.subject, data.body);
 
         return Envelope.ok(mail);
     }
@@ -133,16 +133,11 @@ export class StudentsRESTController extends BaseController {
     @POST
     @Path(":id/mails/:templateName")
     @Accept("application/json")
-    public async sendMailBasedOnNamedTemplate(@PathParam("id") id: string, @PathParam("templateName") templateName: string, body: any): Promise<Envelope> {
+    public async sendMailBasedOnNamedTemplate(@PathParam("id") id: string, @PathParam("templateName") templateName: string): Promise<Envelope> {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        const validationResult = sendMailBasedOnNamedTemplateRequestSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
-        const _data = validationResult.data;
-
         const mail = await this.studentsController.sendMailBasedOnTemplateName(student, templateName);
-
         return Envelope.ok(mail);
     }
 
