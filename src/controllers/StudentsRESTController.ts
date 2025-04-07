@@ -7,7 +7,7 @@ import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
 import { Student, StudentOnboardingDTO } from "../types";
-import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema } from "./schemas";
+import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailBasedOnNamedTemplateRequestSchema, sendMailRequestSchema } from "./schemas";
 
 @Path("/students")
 export class StudentsRESTController extends BaseController {
@@ -105,6 +105,48 @@ export class StudentsRESTController extends BaseController {
     }
 
     @POST
+    @Path(":id/mails")
+    @Accept("application/json")
+    public async sendMail(@PathParam("id") id: string, body: any): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const validationResult = sendMailRequestSchema.safeParse(body);
+        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        const data = validationResult.data;
+
+        const mail = await this.studentsController.sendMailBasedOnTemplate(student, data.subject, data.body);
+
+        return Envelope.ok(mail);
+    }
+
+    @GET
+    @Path(":id/mails")
+    public async getStudentMails(@PathParam("id") id: string): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const dvos = await this.studentsController.getMails(student);
+        return this.ok(Result.ok(dvos));
+    }
+
+    @POST
+    @Path(":id/mails/:templateName")
+    @Accept("application/json")
+    public async sendMailBasedOnNamedTemplate(@PathParam("id") id: string, @PathParam("templateName") templateName: string, body: any): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const validationResult = sendMailBasedOnNamedTemplateRequestSchema.safeParse(body);
+        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        const _data = validationResult.data;
+
+        const mail = await this.studentsController.sendMailBasedOnTemplateName(student, templateName);
+
+        return Envelope.ok(mail);
+    }
+
+    @POST
     @Path(":id/files")
     @Accept("application/json")
     public async sendFile(@PathParam("id") id: string, body: any): Promise<Envelope> {
@@ -116,6 +158,18 @@ export class StudentsRESTController extends BaseController {
         const data = validationResult.data;
 
         await this.studentsController.sendFile(student, data);
+
+        const dto = await this.studentsController.toStudentDTO(student);
+        return this.ok(Result.ok(dto));
+    }
+
+    @GET
+    @Path(":id/files")
+    public async getStudentFiles(@PathParam("id") id: string): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        // TODO: Change to files, just like within the app
 
         const dto = await this.studentsController.toStudentDTO(student);
         return this.ok(Result.ok(dto));
