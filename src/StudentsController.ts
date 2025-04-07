@@ -3,7 +3,7 @@ import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
-import { IdentityDVO, MailDVO, MessageDTO, MessageDVO, RelationshipStatus, RequestMessageDVO, RequestMessageErrorDVO, RuntimeServices } from "@nmshd/runtime";
+import { IdentityDVO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
@@ -214,15 +214,13 @@ export class StudentsController {
         return await this.#studentsCollection.exists({ id: id });
     }
 
-    public async getMails(student: Student): Promise<(MailDVO | MessageDVO | RequestMessageDVO | RequestMessageErrorDVO)[]> {
+    public async getMails(student: Student): Promise<MessageDTO[]> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
         if (relationship.isError) throw relationship.error;
 
         const result = await this.services.transportServices.messages.getMessages({ query: { participant: relationship.value.peer } });
-
-        const dvos = await this.services.dataViewExpander.expandMessageDTOs(result.value);
-        return dvos;
+        return result.value;
     }
 
     public async sendMailBasedOnTemplateName(student: Student, templateName: string, additionalData: any = {}): Promise<MessageDTO> {
