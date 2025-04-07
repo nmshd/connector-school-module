@@ -3,7 +3,8 @@ import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
-import { RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import { IdentityDVO, MailDVO, MessageDVO, RelationshipStatus, RequestMessageDVO, RequestMessageErrorDVO, RuntimeServices } from "@nmshd/runtime";
+import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
@@ -123,6 +124,29 @@ export class StudentsController {
         return Result.ok({ link: link, png: pngAsBuffer, pdf: onboardingPdf });
     }
 
+    public async fillTemplateWithStudentData(student: Student, template: string, additionalData: any = {}): Promise<string> {
+        if (!student.correspondingRelationshipTemplateId) {
+            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
+        }
+
+        let contact: IdentityDVO | undefined;
+        if (student.correspondingRelationshipId) {
+            const relationship = await this.getRelationship(student.correspondingRelationshipId);
+            const identity = await this.services.dataViewExpander.expandAddress(relationship.peer);
+
+            contact = identity;
+        }
+
+        const data = {
+            student,
+            contact,
+            requestBody: additionalData
+        };
+
+        const text = mustache.render(template, data);
+        return text;
+    }
+
     private async createOnboardingPDF(data: { organizationDisplayName: string; name: string; givenname: string; surname: string; templateReference: string }, pngAsBuffer: Buffer) {
         const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, "template_onboarding.pdf")));
         const pdfDoc = await PDFDocument.load(formPdfBytes);
@@ -213,17 +237,62 @@ export class StudentsController {
         return await this.#studentsCollection.exists({ id: id });
     }
 
-    public async sendMail(student: Student, subject: string, rawBody: string): Promise<void> {
+    public async sendMail(student: Student, subject: string, rawBody: string): Promise<MailDVO | MessageDVO | RequestMessageDVO | RequestMessageErrorDVO> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
 
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
-        await this.services.transportServices.messages.sendMessage({
+        const message = await this.services.transportServices.messages.sendMessage({
             recipients: [relationship.value.peer],
             content: {
                 "@type": "Mail",
                 to: [relationship.value.peer],
                 subject: subject,
                 body: rawBody
+            }
+        });
+        if (message.isError) {
+            throw message.error;
+        }
+        const dvo = await this.services.dataViewExpander.expandMessageDTO(message.value);
+        return dvo;
+    }
+
+    public async getMails(student: Student): Promise<(MailDVO | MessageDVO | RequestMessageDVO | RequestMessageErrorDVO)[]> {
+        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+        if (relationship.isError) throw relationship.error;
+
+        const result = await this.services.transportServices.messages.getMessages({ query: { participant: relationship.value.peer } });
+
+        const dvos = await this.services.dataViewExpander.expandMessageDTOs(result.value);
+        return dvos;
+    }
+
+    public async sendMailBasedOnTemplateName(student: Student, templateName: string, additionalData: any = {}): Promise<void> {
+        const mailTemplate = (await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, `mail_${templateName}.txt`)))).toString("utf-8");
+        // First line of file => subject, the rest is body
+        const splitTemplate = mailTemplate.split(/\n\r|\r|\n/);
+        const subject = splitTemplate.shift();
+        const body = splitTemplate.join("\n");
+
+        return await this.sendMailBasedOnTemplate(student, subject!, body, additionalData);
+    }
+
+    public async sendMailBasedOnTemplate(student: Student, rawSubject: string, rawBody: string, additionalData: any = {}): Promise<void> {
+        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+
+        const subject = await this.fillTemplateWithStudentData(student, rawSubject, additionalData);
+        const body = await this.fillTemplateWithStudentData(student, rawBody, additionalData);
+
+        const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+
+        await this.services.transportServices.messages.sendMessage({
+            recipients: [relationship.value.peer],
+            content: {
+                "@type": "Mail",
+                to: [relationship.value.peer],
+                subject: subject,
+                body: body
             }
         });
     }
