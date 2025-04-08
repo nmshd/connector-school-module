@@ -21,6 +21,11 @@ export const createStudentRequestSchema = z.object({
         .default([])
 });
 
+export const sendMailRequestSchema = z.object({
+    subject: z.string().min(3).max(255),
+    body: z.string().min(5).max(4000)
+});
+
 export const sendFileRequestSchema = z.object({
     file: z.string().base64(),
     title: z.string().min(5).max(255),

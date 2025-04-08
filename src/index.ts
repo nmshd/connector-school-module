@@ -14,7 +14,8 @@ import { StudentsController } from "./StudentsController";
 const schoolModuleConfigurationSchema = z.object({
     database: z.object({ connectionString: z.string().optional(), dbName: z.string().optional() }).optional(),
     schoolName: z.string(),
-    assetsLocation: z.string()
+    assetsLocation: z.string(),
+    autoGreet: z.boolean().optional()
 });
 
 type SchoolModuleConfiguration = ConnectorRuntimeModuleConfiguration & z.infer<typeof schoolModuleConfigurationSchema>;
@@ -88,6 +89,10 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             await this.#studentsController.updateStudent(student);
 
             await this.runtime.getServices().transportServices.relationships.acceptRelationship({ relationshipId });
+
+            if (this.configuration.autoGreet) {
+                await this.#studentsController.sendMailBasedOnTemplateName(student, "onboarding");
+            }
         });
 
         this.subscribeToEvent(RelationshipChangedEvent, async (event) => {

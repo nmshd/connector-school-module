@@ -3,7 +3,8 @@ import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
-import { RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import { MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
@@ -211,6 +212,81 @@ export class StudentsController {
 
     public async existsStudent(id: string): Promise<boolean> {
         return await this.#studentsCollection.exists({ id: id });
+    }
+
+    public async getMails(student: Student): Promise<MessageDTO[]> {
+        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+        if (relationship.isError) throw relationship.error;
+
+        const result = await this.services.transportServices.messages.getMessages({ query: { participant: relationship.value.peer } });
+        return result.value;
+    }
+
+    public async sendMailBasedOnTemplateName(student: Student, templateName: string, additionalData: any = {}): Promise<MessageDTO> {
+        const templatePath = path.resolve(path.join(this.assetsLocation, `mail_${templateName}.txt`));
+        if (!fs.existsSync(templatePath)) {
+            throw new ApplicationError(
+                "error.schoolModule.templateNotFound",
+                "The template could not be found. Make sure to add the template with the name mail_<templateName>.txt to the assets folder."
+            );
+        }
+
+        const mailTemplate = await fs.promises.readFile(templatePath, "utf8");
+
+        const splitTemplate = mailTemplate.split(/\n\r|\r|\n/);
+        if (splitTemplate.length < 2) {
+            throw new ApplicationError("error.schoolModule.templateInvalid", "The template is invalid. Make sure to add a subject and a body.");
+        }
+
+        const subject = splitTemplate.shift()!;
+        const body = splitTemplate.join("\n");
+
+        return await this.sendMail(student, subject, body, additionalData);
+    }
+
+    public async sendMail(student: Student, rawSubject: string, rawBody: string, additionalData: any = {}): Promise<MessageDTO> {
+        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+
+        const subject = await this.fillMailTemplateWithStudentData(student, rawSubject, additionalData);
+        const body = await this.fillMailTemplateWithStudentData(student, rawBody, additionalData);
+
+        const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+
+        const result = await this.services.transportServices.messages.sendMessage({
+            recipients: [relationship.value.peer],
+            content: { "@type": "Mail", to: [relationship.value.peer], subject, body }
+        });
+
+        return result.value;
+    }
+
+    private async fillMailTemplateWithStudentData(student: Student, template: string, additionalData: any = {}): Promise<string> {
+        if (!student.correspondingRelationshipTemplateId) {
+            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
+        }
+
+        if (!student.correspondingRelationshipId) {
+            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        }
+
+        const relationship = await this.getRelationship(student.correspondingRelationshipId);
+        if (relationship.status !== RelationshipStatus.Active) {
+            throw new ApplicationError("error.schoolModule.noActiveRelationship", "The relationship to the student is not active, so sending a mail is not possible.");
+        }
+
+        const contact = await this.services.dataViewExpander.expandAddress(relationship.peer);
+
+        const data = {
+            student: {
+                givenname: contact.relationship?.nameMap["GivenName"] ?? student.givenname,
+                surname: contact.relationship?.nameMap["Surname"] ?? student.surname
+            },
+            requestBody: additionalData
+        };
+
+        const text = mustache.render(template, data);
+        return text;
     }
 
     public async sendFile(student: Student, data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined }): Promise<void> {

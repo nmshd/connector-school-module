@@ -8,4 +8,5 @@ dist
 !.env.connector
 
 # assets
-assets/*.pdf
+assets/*
+!assets/.gitkeep

@@ -7,7 +7,7 @@ import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
 import { Student, StudentOnboardingDTO } from "../types";
-import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema } from "./schemas";
+import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailRequestSchema } from "./schemas";
 
 @Path("/students")
 export class StudentsRESTController extends BaseController {
@@ -102,6 +102,43 @@ export class StudentsRESTController extends BaseController {
         const dtos = await Promise.all(dtoPromises);
 
         return this.ok(Result.ok(dtos));
+    }
+
+    @POST
+    @Path(":id/mails")
+    @Accept("application/json")
+    public async sendMail(@PathParam("id") id: string, body: any): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const validationResult = sendMailRequestSchema.safeParse(body);
+        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        const data = validationResult.data;
+
+        const mail = await this.studentsController.sendMail(student, data.subject, data.body);
+
+        return Envelope.ok(mail);
+    }
+
+    @GET
+    @Path(":id/mails")
+    public async getStudentMails(@PathParam("id") id: string): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const mails = await this.studentsController.getMails(student);
+        return this.ok(Result.ok(mails));
+    }
+
+    @POST
+    @Path(":id/mails/:templateName")
+    @Accept("application/json")
+    public async sendMailBasedOnNamedTemplate(@PathParam("id") id: string, @PathParam("templateName") templateName: string): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const mail = await this.studentsController.sendMailBasedOnTemplateName(student, templateName);
+        return Envelope.ok(mail);
     }
 
     @POST
