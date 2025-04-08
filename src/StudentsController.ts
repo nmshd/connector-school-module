@@ -3,7 +3,7 @@ import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
-import { IdentityDVO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import { MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
@@ -248,8 +248,8 @@ export class StudentsController {
     public async sendMail(student: Student, rawSubject: string, rawBody: string, additionalData: any = {}): Promise<MessageDTO> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
 
-        const subject = await this.fillTemplateWithStudentData(student, rawSubject, additionalData);
-        const body = await this.fillTemplateWithStudentData(student, rawBody, additionalData);
+        const subject = await this.fillMailTemplateWithStudentData(student, rawSubject, additionalData);
+        const body = await this.fillMailTemplateWithStudentData(student, rawBody, additionalData);
 
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
@@ -261,22 +261,27 @@ export class StudentsController {
         return result.value;
     }
 
-    private async fillTemplateWithStudentData(student: Student, template: string, additionalData: any = {}): Promise<string> {
+    private async fillMailTemplateWithStudentData(student: Student, template: string, additionalData: any = {}): Promise<string> {
         if (!student.correspondingRelationshipTemplateId) {
             throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
         }
 
-        let contact: IdentityDVO | undefined;
-        if (student.correspondingRelationshipId) {
-            const relationship = await this.getRelationship(student.correspondingRelationshipId);
-            const identity = await this.services.dataViewExpander.expandAddress(relationship.peer);
-
-            contact = identity;
+        if (!student.correspondingRelationshipId) {
+            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
         }
 
+        const relationship = await this.getRelationship(student.correspondingRelationshipId);
+        if (relationship.status !== RelationshipStatus.Active) {
+            throw new ApplicationError("error.schoolModule.noActiveRelationship", "The relationship to the student is not active, so sending a mail is not possible.");
+        }
+
+        const contact = await this.services.dataViewExpander.expandAddress(relationship.peer);
+
         const data = {
-            student,
-            contact,
+            student: {
+                givenname: contact.relationship?.nameMap["GivenName"] ?? student.givenname,
+                surname: contact.relationship?.nameMap["Surname"] ?? student.surname
+            },
             requestBody: additionalData
         };
 
