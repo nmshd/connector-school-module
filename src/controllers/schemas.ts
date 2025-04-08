@@ -26,11 +26,6 @@ export const sendMailRequestSchema = z.object({
     body: z.string().min(5).max(4000)
 });
 
-export const sendMailBasedOnTemplateRequestSchema = z.object({
-    subject: z.string().min(3).max(255),
-    template: z.string().min(5).max(4000)
-});
-
 export const sendFileRequestSchema = z.object({
     file: z.string().base64(),
     title: z.string().min(5).max(255),
