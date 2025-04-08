@@ -90,7 +90,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
             await this.runtime.getServices().transportServices.relationships.acceptRelationship({ relationshipId });
 
-            if (!this.configuration.autoGreet) {
+            if (this.configuration.autoGreet) {
                 await this.#studentsController.sendMailBasedOnTemplateName(student, "onboarding");
             }
         });

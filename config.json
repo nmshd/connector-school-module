@@ -13,7 +13,8 @@
         "sync": { "interval": 1 },
         "school": {
             "location": "/usr/app/custom-modules/school-module",
-            "schoolName": "My School"
+            "schoolName": "My School",
+            "autoGreet": true
         }
     }
 }
