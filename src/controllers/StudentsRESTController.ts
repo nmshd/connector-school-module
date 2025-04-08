@@ -126,8 +126,8 @@ export class StudentsRESTController extends BaseController {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        const dvos = await this.studentsController.getMails(student);
-        return this.ok(Result.ok(dvos));
+        const mails = await this.studentsController.getMails(student);
+        return this.ok(Result.ok(mails));
     }
 
     @POST
