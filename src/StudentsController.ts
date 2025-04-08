@@ -235,11 +235,14 @@ export class StudentsController {
         const mailTemplate = await fs.promises.readFile(templatePath, "utf8");
 
         const splitTemplate = mailTemplate.split(/\n\r|\r|\n/);
+        if (splitTemplate.length < 2) {
+            throw new ApplicationError("error.schoolModule.templateInvalid", "The template is invalid. Make sure to add a subject and a body.");
+        }
 
-        const subject = splitTemplate.shift();
+        const subject = splitTemplate.shift()!;
         const body = splitTemplate.join("\n");
 
-        return await this.sendMail(student, subject!, body, additionalData);
+        return await this.sendMail(student, subject, body, additionalData);
     }
 
     public async sendMail(student: Student, rawSubject: string, rawBody: string, additionalData: any = {}): Promise<MessageDTO> {
