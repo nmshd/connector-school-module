@@ -224,9 +224,18 @@ export class StudentsController {
     }
 
     public async sendMailBasedOnTemplateName(student: Student, templateName: string, additionalData: any = {}): Promise<MessageDTO> {
-        const mailTemplate = (await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, `mail_${templateName}.txt`)))).toString("utf-8");
-        // First line of file => subject, the rest is body
+        const templatePath = path.resolve(path.join(this.assetsLocation, `mail_${templateName}.txt`));
+        if (!fs.existsSync(templatePath)) {
+            throw new ApplicationError(
+                "error.schoolModule.templateNotFound",
+                "The template could not be found. Make sure to add the template with the name mail_<templateName>.txt to the assets folder."
+            );
+        }
+
+        const mailTemplate = await fs.promises.readFile(templatePath, "utf8");
+
         const splitTemplate = mailTemplate.split(/\n\r|\r|\n/);
+
         const subject = splitTemplate.shift();
         const body = splitTemplate.join("\n");
 
