@@ -1,7 +1,14 @@
 import { IDatabaseCollection, IDatabaseCollectionProvider } from "@js-soft/docdb-access-abstractions";
 import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
-import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
+import {
+    CreateAttributeRequestItemJSON,
+    DisplayNameJSON,
+    RelationshipAttributeConfidentiality,
+    RelationshipTemplateContentJSON,
+    RequestJSON,
+    ShareAttributeRequestItemJSON
+} from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
 import { MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
 import * as mustache from "mustache";
@@ -34,6 +41,7 @@ export class StudentsController {
         pin?: string;
         additionalConsents: { title: string; mustBeAccepted?: boolean; consent: string; link: string }[];
     }): Promise<Student> {
+        const self = await this.services.transportServices.account.getIdentityInfo();
         const request: RequestJSON = {
             "@type": "Request",
             items: [
@@ -47,7 +55,22 @@ export class StudentsController {
                             attribute: this.displayName.content,
                             sourceAttributeId: this.displayName.id,
                             mustBeAccepted: true
-                        } satisfies ShareAttributeRequestItemJSON
+                        } satisfies ShareAttributeRequestItemJSON,
+                        {
+                            "@type": "CreateAttributeRequestItem",
+                            attribute: {
+                                "@type": "RelationshipAttribute",
+                                confidentiality: RelationshipAttributeConfidentiality.Private,
+                                key: "__App_Contact_sendMailDisabled",
+                                value: {
+                                    "@type": "Consent",
+                                    consent: "Dieser Kontakt kann keine Nachrichten von dir erhalten."
+                                },
+                                owner: self.value.address,
+                                isTechnical: true
+                            },
+                            mustBeAccepted: true
+                        } satisfies CreateAttributeRequestItemJSON
                     ]
                 },
                 {
@@ -201,6 +224,10 @@ export class StudentsController {
             }
         }
 
+        if (student.correspondingRelationshipTemplateId) {
+            await this.services.transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: student.correspondingRelationshipTemplateId.toString() });
+        }
+
         await this.#studentsCollection.delete({ id: student.id.toString() });
     }
 
@@ -308,7 +335,7 @@ export class StudentsController {
                     // { "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, fileReference: file.value.truncatedReference },
                     {
                         "@type": "CreateAttributeRequestItem",
-                        title: "Abiturzeugnis",
+                        title: data.title,
                         mustBeAccepted: true,
                         attribute: {
                             "@type": "IdentityAttribute",
