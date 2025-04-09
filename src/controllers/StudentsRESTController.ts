@@ -169,10 +169,37 @@ export class StudentsRESTController extends BaseController {
         if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
 
         const tags = new Set(validationResult.data.tags ?? []);
-        tags.add("schulzeugnis");
-        tags.add("abiturzeugnis");
+        tags.add("language:de");
+        tags.add("mimetype:application/pdf");
 
-        const data = { title: "Abiturzeugnis", filename: "Abiturzeugnis.pdf", mimetype: "application/pdf", ...validationResult.data, tags: Array.from(tags) };
+        // Allgemeine Hochschulreife
+        // too long
+        // tags.add("urn:xbildung-de:destatis:codeliste:artdesschulabschlusses=http://xbildung.de/def/destatis/1.0/code/artdesschulabschlusses/allgemeine_hochschulreife");
+
+        // ISCED Tags, siehe https://www.datenportal.bmbf.de/portal/de/G293.html
+        // ISCED 3 Sekundarbereich II
+        tags.add("urn:xbildung-de:unesco:codeliste:isced2011=3");
+        // ISCED 34 allgemeinbildend
+        tags.add("urn:xbildung-de:unesco:codeliste:isced2011=34");
+        // ISCED 344 Gymnasien (Oberstufe)
+        tags.add("urn:xbildung-de:unesco:codeliste:isced2011=344");
+
+        // Gymnasium
+        // Art der Schule: https://www.xrepository.de/api/xrepository/urn:xbildung-de:kmk:codeliste:artderschule_1.0:technischerBestandteilGenericode
+        // tags.add("urn:xbildung-de:kmk:codeliste:artderschule=https://www.xbildung.de/def/kmk/kds/4.0/code/artderschule/100");
+        // too long
+        // tags.add("urn:xbildung-de:kmk:codeliste:artderschule=http://xbildung.de/def/kmk/1.0/code/artderschule/gymnasium");
+
+        // Bundesland: https://www.xrepository.de/api/xrepository/urn:de:bund:destatis:bevoelkerungsstatistik:schluessel:bundesland_2010-04-01:technischerBestandteilGenericode
+        // tags.add("urn:de:bund:destatis:bevoelkerungsstatistik:schluessel:bundesland=05");
+
+        const data = {
+            title: "Digitale Schulzeugnisausfertigung",
+            filename: "Schulzeugnisausfertigung.pdf",
+            mimetype: "application/pdf",
+            ...validationResult.data,
+            tags: Array.from(tags)
+        };
         await this.studentsController.sendFile(student, data);
 
         const dto = await this.studentsController.toStudentDTO(student);
