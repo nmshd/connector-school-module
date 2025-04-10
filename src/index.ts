@@ -15,7 +15,8 @@ const schoolModuleConfigurationSchema = z.object({
     database: z.object({ connectionString: z.string().optional(), dbName: z.string().optional() }).optional(),
     schoolName: z.string(),
     assetsLocation: z.string(),
-    autoGreet: z.boolean().optional()
+    autoMailAfterOnboarding: z.boolean().optional(),
+    autoMailBeforeOffboarding: z.boolean().optional()
 });
 
 type SchoolModuleConfiguration = ConnectorRuntimeModuleConfiguration & z.infer<typeof schoolModuleConfigurationSchema>;
@@ -35,7 +36,13 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
         );
 
         const displayName = await this.getOrCreateDisplayNameAttribute();
-        this.#studentsController = await new StudentsController(displayName, this.runtime.getServices(), database, this.configuration.assetsLocation).init();
+        this.#studentsController = await new StudentsController(
+            displayName,
+            this.runtime.getServices(),
+            database,
+            this.configuration.assetsLocation,
+            !!this.configuration.autoMailBeforeOffboarding
+        ).init();
 
         Container.bind(StudentsController)
             .factory(() => this.#studentsController)
@@ -90,7 +97,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
             await this.runtime.getServices().transportServices.relationships.acceptRelationship({ relationshipId });
 
-            if (this.configuration.autoGreet) {
+            if (this.configuration.autoMailAfterOnboarding) {
                 await this.#studentsController.sendMailBasedOnTemplateName(student, "onboarding");
             }
         });

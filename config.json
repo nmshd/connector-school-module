@@ -14,7 +14,8 @@
         "school": {
             "location": "/usr/app/custom-modules/school-module",
             "schoolName": "My School",
-            "autoGreet": true
+            "autoMailAfterOnboarding": true,
+            "autoMailBeforeOffboarding": true
         }
     }
 }

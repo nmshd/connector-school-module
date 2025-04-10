@@ -14,7 +14,7 @@ import { MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime"
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFForm } from "pdf-lib";
 import qrCodeLib from "qrcode";
 import { Student, StudentDTO, StudentStatus } from "./types";
 
@@ -25,7 +25,8 @@ export class StudentsController {
         public readonly displayName: LocalAttributeJSON,
         private readonly services: RuntimeServices,
         private readonly database: IDatabaseCollectionProvider,
-        private readonly assetsLocation: string
+        private readonly assetsLocation: string,
+        private readonly autoMailBeforeOffboarding: boolean
     ) {}
 
     public async init(): Promise<this> {
@@ -147,6 +148,17 @@ export class StudentsController {
         return Result.ok({ link: link, png: pngAsBuffer, pdf: onboardingPdf });
     }
 
+    private getFormFieldsOutOfPDF(form: PDFForm): { type: string; name: string }[] {
+        const fields = form.getFields();
+        const fieldsToReturn: { type: string; name: string }[] = [];
+        for (const field of fields) {
+            const type = field.constructor.name;
+            const name = field.getName();
+            fieldsToReturn.push({ type, name });
+        }
+        return fieldsToReturn;
+    }
+
     private async createOnboardingPDF(data: { organizationDisplayName: string; name: string; givenname: string; surname: string; templateReference: string }, pngAsBuffer: Buffer) {
         const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, "template_onboarding.pdf")));
         const pdfDoc = await PDFDocument.load(formPdfBytes);
@@ -154,11 +166,11 @@ export class StudentsController {
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
         const form = pdfDoc.getForm();
 
-        form.getTextField("CharacterName 2").setText(`${data.givenname} ${data.surname}`);
-        form.getTextField("Allies").setText(data.organizationDisplayName);
-        form.getButton("CHARACTER IMAGE").setImage(qrImage);
-        // form.getTextField('Vorname').setText(data.givenname);
-        // form.getTextField('Nachname').setText(data.surname);
+        form.getTextField("Vorname_Nachname").setText(`${data.givenname} ${data.surname}`);
+        form.getTextField("Schulname_01").setText(data.organizationDisplayName);
+        form.getTextField("Schulname_02").setText(data.organizationDisplayName);
+        form.getTextField("Ort_Datum").setText("");
+        form.getTextField("QR_Code_Schueler").setImage(qrImage);
 
         form.flatten();
         const pdfBytes = await pdfDoc.save();
@@ -208,6 +220,10 @@ export class StudentsController {
     public async deleteStudent(student: Student): Promise<void> {
         if (student.correspondingRelationshipId) {
             const relationship = await this.getRelationship(student.correspondingRelationshipId);
+
+            if (this.autoMailBeforeOffboarding) {
+                await this.sendMailBasedOnTemplateName(student, "offboarding");
+            }
 
             switch (relationship.status) {
                 case RelationshipStatus.Pending:
