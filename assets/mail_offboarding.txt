@@ -1,0 +1,9 @@
+Auf Wiedersehen!
+Hallo {{student.givenname}},
+
+der Feldtest ist beendet. Wir löschen jetzt daher all deine Daten und diese digitale Kontaktmöglichkeit mit dir.
+Du kannst den Kontakt in der App löschen, deine Daten und dein Zeugnis bleiben trotzdem bestehen.
+
+Wir hoffen, dass du eine gute Zeit hattest!
+
+Viele Grüße

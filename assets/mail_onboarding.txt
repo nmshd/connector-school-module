@@ -1,0 +1,8 @@
+Willkommen {{student.givenname}}
+Hallo {{student.givenname}},
+
+danke für die Einwilligung zum Feldtest. Du erhältst Deine digitale Zeugnisausfertigung sobald das Zeugnis erstellt wurde.
+
+Sofern du zwischenzeitlich doch lieber aus dem Feldtest austreten möchtest, lösche einfach diesen Kontakt.
+
+Viele Grüße
