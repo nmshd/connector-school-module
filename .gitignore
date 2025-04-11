@@ -9,4 +9,7 @@ dist
 
 # assets
 assets/*
+!assets/mail_offboarding.txt
+!assets/mail_onboarding.txt
+!assets/template_onboarding.pdf
 !assets/.gitkeep

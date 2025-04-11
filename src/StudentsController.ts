@@ -1,13 +1,20 @@
 import { IDatabaseCollection, IDatabaseCollectionProvider } from "@js-soft/docdb-access-abstractions";
 import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { LocalAttributeJSON } from "@nmshd/consumption";
-import { DisplayNameJSON, RelationshipTemplateContentJSON, RequestJSON, ShareAttributeRequestItemJSON } from "@nmshd/content";
+import {
+    CreateAttributeRequestItemJSON,
+    DisplayNameJSON,
+    RelationshipAttributeConfidentiality,
+    RelationshipTemplateContentJSON,
+    RequestJSON,
+    ShareAttributeRequestItemJSON
+} from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
 import { MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFForm } from "pdf-lib";
 import qrCodeLib from "qrcode";
 import { Student, StudentDTO, StudentStatus } from "./types";
 
@@ -18,7 +25,8 @@ export class StudentsController {
         public readonly displayName: LocalAttributeJSON,
         private readonly services: RuntimeServices,
         private readonly database: IDatabaseCollectionProvider,
-        private readonly assetsLocation: string
+        private readonly assetsLocation: string,
+        private readonly autoMailBeforeOffboarding: boolean
     ) {}
 
     public async init(): Promise<this> {
@@ -34,6 +42,7 @@ export class StudentsController {
         pin?: string;
         additionalConsents: { title: string; mustBeAccepted?: boolean; consent: string; link: string }[];
     }): Promise<Student> {
+        const self = await this.services.transportServices.account.getIdentityInfo();
         const request: RequestJSON = {
             "@type": "Request",
             items: [
@@ -47,7 +56,22 @@ export class StudentsController {
                             attribute: this.displayName.content,
                             sourceAttributeId: this.displayName.id,
                             mustBeAccepted: true
-                        } satisfies ShareAttributeRequestItemJSON
+                        } satisfies ShareAttributeRequestItemJSON,
+                        {
+                            "@type": "CreateAttributeRequestItem",
+                            attribute: {
+                                "@type": "RelationshipAttribute",
+                                confidentiality: RelationshipAttributeConfidentiality.Private,
+                                key: "__App_Contact_sendMailDisabled",
+                                value: {
+                                    "@type": "Consent",
+                                    consent: "Dieser Kontakt kann keine Nachrichten von dir erhalten."
+                                },
+                                owner: self.value.address,
+                                isTechnical: true
+                            },
+                            mustBeAccepted: true
+                        } satisfies CreateAttributeRequestItemJSON
                     ]
                 },
                 {
@@ -124,6 +148,17 @@ export class StudentsController {
         return Result.ok({ link: link, png: pngAsBuffer, pdf: onboardingPdf });
     }
 
+    private getFormFieldsOutOfPDF(form: PDFForm): { type: string; name: string }[] {
+        const fields = form.getFields();
+        const fieldsToReturn: { type: string; name: string }[] = [];
+        for (const field of fields) {
+            const type = field.constructor.name;
+            const name = field.getName();
+            fieldsToReturn.push({ type, name });
+        }
+        return fieldsToReturn;
+    }
+
     private async createOnboardingPDF(data: { organizationDisplayName: string; name: string; givenname: string; surname: string; templateReference: string }, pngAsBuffer: Buffer) {
         const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, "template_onboarding.pdf")));
         const pdfDoc = await PDFDocument.load(formPdfBytes);
@@ -131,11 +166,11 @@ export class StudentsController {
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
         const form = pdfDoc.getForm();
 
-        form.getTextField("CharacterName 2").setText(`${data.givenname} ${data.surname}`);
-        form.getTextField("Allies").setText(data.organizationDisplayName);
-        form.getButton("CHARACTER IMAGE").setImage(qrImage);
-        // form.getTextField('Vorname').setText(data.givenname);
-        // form.getTextField('Nachname').setText(data.surname);
+        form.getTextField("Vorname_Nachname").setText(`${data.givenname} ${data.surname}`);
+        form.getTextField("Schulname_01").setText(data.organizationDisplayName);
+        form.getTextField("Schulname_02").setText(data.organizationDisplayName);
+        form.getTextField("Ort_Datum").setText("");
+        form.getTextField("QR_Code_Schueler").setImage(qrImage);
 
         form.flatten();
         const pdfBytes = await pdfDoc.save();
@@ -186,6 +221,10 @@ export class StudentsController {
         if (student.correspondingRelationshipId) {
             const relationship = await this.getRelationship(student.correspondingRelationshipId);
 
+            if (this.autoMailBeforeOffboarding) {
+                await this.sendMailBasedOnTemplateName(student, "offboarding");
+            }
+
             switch (relationship.status) {
                 case RelationshipStatus.Pending:
                     await this.services.transportServices.relationships.rejectRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
@@ -199,6 +238,10 @@ export class StudentsController {
                 case RelationshipStatus.DeletionProposed:
                     await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
             }
+        }
+
+        if (student.correspondingRelationshipTemplateId) {
+            await this.services.transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: student.correspondingRelationshipTemplateId.toString() });
         }
 
         await this.#studentsCollection.delete({ id: student.id.toString() });
@@ -308,7 +351,7 @@ export class StudentsController {
                     // { "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, fileReference: file.value.truncatedReference },
                     {
                         "@type": "CreateAttributeRequestItem",
-                        title: "Abiturzeugnis",
+                        title: data.title,
                         mustBeAccepted: true,
                         attribute: {
                             "@type": "IdentityAttribute",
