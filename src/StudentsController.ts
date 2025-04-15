@@ -14,7 +14,7 @@ import { MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime"
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
-import { PDFDocument, PDFForm } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
 import qrCodeLib from "qrcode";
 import { Student, StudentDTO, StudentStatus } from "./types";
 
@@ -146,17 +146,6 @@ export class StudentsController {
         );
 
         return Result.ok({ link: link, png: pngAsBuffer, pdf: onboardingPdf });
-    }
-
-    private getFormFieldsOutOfPDF(form: PDFForm): { type: string; name: string }[] {
-        const fields = form.getFields();
-        const fieldsToReturn: { type: string; name: string }[] = [];
-        for (const field of fields) {
-            const type = field.constructor.name;
-            const name = field.getName();
-            fieldsToReturn.push({ type, name });
-        }
-        return fieldsToReturn;
     }
 
     private async createOnboardingPDF(data: { organizationDisplayName: string; name: string; givenname: string; surname: string; templateReference: string }, pngAsBuffer: Buffer) {
