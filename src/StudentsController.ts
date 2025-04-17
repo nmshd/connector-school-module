@@ -334,23 +334,7 @@ export class StudentsController {
         });
 
         const request = await this.services.consumptionServices.outgoingRequests.create({
-            content: {
-                items: [
-                    // TODO: switch to TransferFileOwnershipRequestItem when the app supports it
-                    // { "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, fileReference: file.value.truncatedReference },
-                    {
-                        "@type": "CreateAttributeRequestItem",
-                        title: data.title,
-                        mustBeAccepted: true,
-                        attribute: {
-                            "@type": "IdentityAttribute",
-                            tags: data.tags,
-                            owner: "",
-                            value: { "@type": "IdentityFileReference", value: file.value.truncatedReference }
-                        }
-                    }
-                ]
-            },
+            content: { items: [{ "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, requireManualDecision: true, fileReference: file.value.truncatedReference }] },
             peer: relationship.value.peer
         });
 
