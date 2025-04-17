@@ -334,7 +334,16 @@ export class StudentsController {
         });
 
         const request = await this.services.consumptionServices.outgoingRequests.create({
-            content: { items: [{ "@type": "TransferFileOwnershipRequestItem", mustBeAccepted: true, requireManualDecision: true, fileReference: file.value.truncatedReference }] },
+            content: {
+                items: [
+                    {
+                        "@type": "TransferFileOwnershipRequestItem",
+                        mustBeAccepted: true,
+                        requireManualDecision: true,
+                        fileReference: file.value.truncatedReference
+                    }
+                ]
+            },
             peer: relationship.value.peer
         });
 
