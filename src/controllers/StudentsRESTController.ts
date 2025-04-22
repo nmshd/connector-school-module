@@ -173,8 +173,10 @@ export class StudentsRESTController extends BaseController {
         tags.add("mimetype:application/pdf");
 
         // Allgemeine Hochschulreife
-        // too long
-        // tags.add("urn:xbildung-de:destatis:codeliste:artdesschulabschlusses=http://xbildung.de/def/destatis/1.0/code/artdesschulabschlusses/allgemeine_hochschulreife");
+        tags.add("urn:xbildung-de:destatis:codeliste:artdesschulabschlusses=http://xbildung.de/def/destatis/1.0/code/artdesschulabschlusses/allgemeine_hochschulreife");
+
+        // Zeugnisart / Abschlusszeugnis
+        tags.add("urn:xschule-digital:xschule:codeliste:zeugnisart=http://xschule.digital/def/xschule/0.5/code/zeugnisart/abschlusszeugnis");
 
         // ISCED Tags, siehe https://www.datenportal.bmbf.de/portal/de/G293.html
         // ISCED 3 Sekundarbereich II
@@ -186,12 +188,13 @@ export class StudentsRESTController extends BaseController {
 
         // Gymnasium
         // Art der Schule: https://www.xrepository.de/api/xrepository/urn:xbildung-de:kmk:codeliste:artderschule_1.0:technischerBestandteilGenericode
-        // tags.add("urn:xbildung-de:kmk:codeliste:artderschule=https://www.xbildung.de/def/kmk/kds/4.0/code/artderschule/100");
-        // too long
+        tags.add("urn:xbildung-de:kmk:codeliste:artderschule=https://www.xbildung.de/def/kmk/kds/4.0/code/artderschule/100");
+
+        // seems to be the same as above in another version
         // tags.add("urn:xbildung-de:kmk:codeliste:artderschule=http://xbildung.de/def/kmk/1.0/code/artderschule/gymnasium");
 
         // Bundesland: https://www.xrepository.de/api/xrepository/urn:de:bund:destatis:bevoelkerungsstatistik:schluessel:bundesland_2010-04-01:technischerBestandteilGenericode
-        // tags.add("urn:de:bund:destatis:bevoelkerungsstatistik:schluessel:bundesland=05");
+        tags.add("urn:de:bund:destatis:bevoelkerungsstatistik:schluessel:bundesland=05");
 
         const data = {
             title: "Digitale Schulzeugnisausfertigung",
