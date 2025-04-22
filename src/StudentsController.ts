@@ -42,7 +42,8 @@ export class StudentsController {
         pin?: string;
         additionalConsents: { title: string; mustBeAccepted?: boolean; consent: string; link: string }[];
     }): Promise<Student> {
-        const self = await this.services.transportServices.account.getIdentityInfo();
+        const identityInfo = await this.services.transportServices.account.getIdentityInfo();
+
         const request: RequestJSON = {
             "@type": "Request",
             items: [
@@ -67,7 +68,7 @@ export class StudentsController {
                                     "@type": "Consent",
                                     consent: "Dieser Kontakt kann keine Nachrichten von dir erhalten."
                                 },
-                                owner: self.value.address
+                                owner: identityInfo.value.address
                             },
                             mustBeAccepted: true
                         } satisfies CreateAttributeRequestItemJSON
