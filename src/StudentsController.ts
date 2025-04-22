@@ -67,8 +67,7 @@ export class StudentsController {
                                     "@type": "Consent",
                                     consent: "Dieser Kontakt kann keine Nachrichten von dir erhalten."
                                 },
-                                owner: self.value.address,
-                                isTechnical: true
+                                owner: self.value.address
                             },
                             mustBeAccepted: true
                         } satisfies CreateAttributeRequestItemJSON
