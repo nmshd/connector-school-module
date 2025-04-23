@@ -133,11 +133,11 @@ export class StudentsRESTController extends BaseController {
     @POST
     @Path(":id/mails/:templateName")
     @Accept("application/json")
-    public async sendMailBasedOnNamedTemplate(@PathParam("id") id: string, @PathParam("templateName") templateName: string): Promise<Envelope> {
+    public async sendMailBasedOnNamedTemplate(@PathParam("id") id: string, @PathParam("templateName") templateName: string, body: any): Promise<Envelope> {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        const mail = await this.studentsController.sendMailBasedOnTemplateName(student, templateName);
+        const mail = await this.studentsController.sendMailBasedOnTemplateName(student, templateName, body);
         return Envelope.ok(mail);
     }
 
