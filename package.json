@@ -1,5 +1,6 @@
 {
     "name": "@nmshd/connector-school-module",
+    "repository": "github:nmshd/connector-school-module",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "files": [
