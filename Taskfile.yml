@@ -32,7 +32,7 @@ tasks:
   create-student:
     desc: Call the create-student endpoint
     cmds:
-      - 'echo -n ''{"id": "{{.STUDENT_ID}}", "pin": "1234", "givenname": "Max", "surname": "Mustermann", "additionalConsents": [{"title": "aTitle", "consent": "A Consent Bla", "link": "https://example.com"}]}'' | http -b POST localhost:8099/students ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
+      - 'echo -n ''{"id": "{{.STUDENT_ID}}", "pin": "1234", "givenname": "Max", "surname": "Mustermann", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | http -b POST localhost:8099/students ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
     requires:
       vars: [STUDENT_ID]
 
