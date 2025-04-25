@@ -40,7 +40,7 @@ export class StudentsController {
         givenname: string;
         surname: string;
         pin?: string;
-        additionalConsents: { title: string; mustBeAccepted?: boolean; consent: string; link: string }[];
+        additionalConsents: { mustBeAccepted?: boolean; consent: string; link: string }[];
     }): Promise<Student> {
         const identityInfo = await this.services.transportServices.account.getIdentityInfo();
 
