@@ -8,6 +8,7 @@ services:
     container_name: connector-with-school-module
     ports:
       - "8099:80"
+      - "9238:9229"
     environment:
       - CUSTOM_CONFIG_LOCATION=/config.json
       - transportLibrary__baseUrl
@@ -17,6 +18,7 @@ services:
       - ./config.json:/config.json:ro
       - ./dist:/usr/app/custom-modules/school-module/dist
       - ./assets:/assets
+    entrypoint: ["npx", "nodemon", "-e", "js,json,yml", "--watch", "./custom-modules", "--inspect=0.0.0.0:9229", "--nolazy", "./dist/index.js", "start"]
     depends_on:
       - mongo
 
