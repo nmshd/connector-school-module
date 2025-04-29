@@ -8,3 +8,14 @@ export interface StudentDTO {
     correspondingRelationshipId?: string;
     status: StudentStatus;
 }
+
+export interface StudentLog {
+    entries: StudentLogEntry[];
+}
+
+export interface StudentLogEntry {
+    time: string;
+    log: string;
+    id: string;
+    object?: any;
+}

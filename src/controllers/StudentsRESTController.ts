@@ -6,7 +6,7 @@ import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, P
 import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
-import { Student, StudentOnboardingDTO } from "../types";
+import { Student, StudentLog, StudentOnboardingDTO } from "../types";
 import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailRequestSchema } from "./schemas";
 
 @Path("/students")
@@ -42,6 +42,32 @@ export class StudentsRESTController extends BaseController {
 
         const dto = await this.studentsController.toStudentDTO(student);
         return this.ok(Result.ok(dto));
+    }
+
+    @GET
+    @Path(":id/log")
+    @Accept("application/json", "text/plain")
+    public async getStudentLog(@PathParam("id") id: string, @ContextAccept accept: string): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const logEntries = await this.studentsController.getLogForStudent(student);
+        if (logEntries.isError) {
+            throw logEntries.error;
+        }
+
+        switch (accept) {
+            case "text/plain":
+                const lines = [];
+                for (const entry of logEntries.value) {
+                    lines.push(`For ${entry.id} at ${entry.time} : ${entry.log}`);
+                }
+
+                return Envelope.ok(lines.join("\r\n"));
+
+            default:
+                return this.ok<StudentLog>(Result.ok({ entries: logEntries.value }));
+        }
     }
 
     @DELETE

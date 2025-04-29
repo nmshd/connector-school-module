@@ -16,7 +16,7 @@ import fs from "node:fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
 import qrCodeLib from "qrcode";
-import { Student, StudentDTO, StudentStatus } from "./types";
+import { Student, StudentDTO, StudentLogEntry, StudentStatus } from "./types";
 
 export class StudentsController {
     #studentsCollection: IDatabaseCollection;
@@ -120,6 +120,103 @@ export class StudentsController {
         await this.#studentsCollection.create(student.toJSON());
 
         return student;
+    }
+
+    public async getLogForStudent(student: Student): Promise<Result<StudentLogEntry[]>> {
+        const entries: StudentLogEntry[] = [];
+
+        if (!student.correspondingRelationshipTemplateId) {
+            return Result.ok(entries);
+        }
+
+        const templateRequest = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
+        if (templateRequest.isError) {
+            return Result.fail(templateRequest.error);
+        }
+        const template = templateRequest.value;
+
+        entries.push({
+            time: template.createdAt,
+            id: student.id.toString(),
+            log: `RelationshipTemplate ${template.id} created for student`,
+            object: template
+        });
+
+        if (!student.correspondingRelationshipId) {
+            return Result.ok(entries);
+        }
+
+        const relationshipRequest = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+        if (relationshipRequest.isError) {
+            return Result.fail(relationshipRequest.error);
+        }
+        const relationship = relationshipRequest.value;
+        for (const auditLogEntry of relationship.auditLog) {
+            if (auditLogEntry.oldStatus) {
+                entries.push({
+                    time: auditLogEntry.createdAt,
+                    id: student.id.toString(),
+                    log: `RelationshipStatus of relationship ${relationship.id} changed from ${auditLogEntry.oldStatus} to ${auditLogEntry.newStatus} because of ${auditLogEntry.reason}`,
+                    object: relationship
+                });
+            } else {
+                entries.push({
+                    time: auditLogEntry.createdAt,
+                    id: student.id.toString(),
+                    log: `Relationship ${relationship.id} to student with enmeshed address '${relationship.peerIdentity.address}' created.`,
+                    object: relationship
+                });
+            }
+        }
+
+        const messages = await this.getMails(student);
+        for (const message of messages) {
+            if (message.isOwn) {
+                entries.push({
+                    time: message.createdAt,
+                    id: student.id.toString(),
+                    log: `Mail ${message.id} with subject '${(message.content as any).subject}' has been sent.`,
+                    object: message
+                });
+                if (message.wasReadAt) {
+                    entries.push({
+                        time: message.wasReadAt,
+                        id: student.id.toString(),
+                        log: `Student successfully received sent mail ${message.id} with subject '${(message.content as any).subject}'.`
+                    });
+                }
+            } else {
+                entries.push({
+                    time: message.createdAt,
+                    id: student.id.toString(),
+                    log: `Mail with subject '${(message.content as any).subject}' has been received from peer.`,
+                    object: message
+                });
+            }
+        }
+
+        const requests = await this.services.consumptionServices.outgoingRequests.getRequests({ query: { peer: relationship.peer } });
+        if (requests.isError) {
+            throw requests.error;
+        }
+        for (const request of requests.value) {
+            entries.push({
+                time: request.createdAt,
+                id: student.id.toString(),
+                log: `Request ${request.id} has been sent to peer with source ${request.source?.reference}.`,
+                object: request
+            });
+            if (request.response) {
+                entries.push({
+                    time: request.response.createdAt,
+                    id: student.id.toString(),
+                    log: `Response to request ${request.id} has been received by peer with source ${request.response.source?.reference}. Status is ${request.status}.`,
+                    object: request.response
+                });
+            }
+        }
+
+        return Result.ok(entries);
     }
 
     public async getOnboardingDataForStudent(student: Student): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
