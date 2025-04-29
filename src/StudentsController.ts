@@ -384,7 +384,7 @@ export class StudentsController {
     }
 
     public async getStudentFiles(student: Student): Promise<SchoolFileDTO[]> {
-        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        if (!student.correspondingRelationshipId) return [];
 
         const relationshipResult = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
