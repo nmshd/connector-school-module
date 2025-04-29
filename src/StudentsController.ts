@@ -40,7 +40,7 @@ export class StudentsController {
         givenname: string;
         surname: string;
         pin?: string;
-        additionalConsents: { mustBeAccepted?: boolean; consent: string; link: string }[];
+        additionalConsents: { mustBeAccepted?: boolean; consent: string; link: string; linkDisplayText?: string }[];
     }): Promise<Student> {
         const identityInfo = await this.services.transportServices.account.getIdentityInfo();
 
@@ -103,7 +103,8 @@ export class StudentsController {
                     "@type": "ConsentRequestItem",
                     mustBeAccepted: consent.mustBeAccepted ?? false,
                     consent: consent.consent,
-                    link: consent.link
+                    link: consent.link,
+                    linkDisplayText: consent.linkDisplayText
                 }))
             });
         }
