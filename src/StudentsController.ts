@@ -212,7 +212,6 @@ export class StudentsController {
             const relationship = await this.getRelationship(student.correspondingRelationshipId);
 
             if (this.autoMailBeforeOffboarding && relationship.status === RelationshipStatus.Active) {
-            
                 await this.sendMailBasedOnTemplateName(student, "offboarding");
             }
 
