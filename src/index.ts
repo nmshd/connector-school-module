@@ -16,7 +16,9 @@ const schoolModuleConfigurationSchema = z.object({
     schoolName: z.string(),
     assetsLocation: z.string(),
     autoMailAfterOnboarding: z.boolean().optional(),
-    autoMailBeforeOffboarding: z.boolean().optional()
+    autoMailBeforeOffboarding: z.boolean().optional(),
+    playStoreLink: z.string().optional(),
+    appStoreLink: z.string().optional()
 });
 
 type SchoolModuleConfiguration = ConnectorRuntimeModuleConfiguration & z.infer<typeof schoolModuleConfigurationSchema>;
