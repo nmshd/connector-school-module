@@ -40,6 +40,8 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
         const displayName = await this.getOrCreateDisplayNameAttribute();
         this.#studentsController = await new StudentsController(
             displayName,
+            this.configuration.playStoreLink,
+            this.configuration.appStoreLink,
             this.runtime.getServices(),
             database,
             this.configuration.assetsLocation,
