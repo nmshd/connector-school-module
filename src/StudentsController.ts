@@ -22,7 +22,9 @@ export class StudentsController {
     #studentsCollection: IDatabaseCollection;
 
     public constructor(
-        public readonly displayName: LocalAttributeJSON,
+        private readonly displayName: LocalAttributeJSON,
+        private readonly playStoreLink: string | undefined,
+        private readonly appStoreLink: string | undefined,
         private readonly services: RuntimeServices,
         private readonly database: IDatabaseCollectionProvider,
         private readonly assetsLocation: string,
@@ -141,7 +143,9 @@ export class StudentsController {
                 name: `${student.givenname} ${student.surname}`,
                 givenname: student.givenname,
                 surname: student.surname,
-                templateReference: template.value.truncatedReference
+                templateReference: template.value.truncatedReference,
+                playStoreLink: this.playStoreLink,
+                appStoreLink: this.appStoreLink
             },
             pngAsBuffer
         );
@@ -149,7 +153,18 @@ export class StudentsController {
         return Result.ok({ link: link, png: pngAsBuffer, pdf: onboardingPdf });
     }
 
-    private async createOnboardingPDF(data: { organizationDisplayName: string; name: string; givenname: string; surname: string; templateReference: string }, pngAsBuffer: Buffer) {
+    private async createOnboardingPDF(
+        data: {
+            organizationDisplayName: string;
+            name: string;
+            givenname: string;
+            surname: string;
+            templateReference: string;
+            playStoreLink?: string;
+            appStoreLink?: string;
+        },
+        pngAsBuffer: Buffer
+    ) {
         const templateName = "template_onboarding.pdf";
         const pathToPdf = path.resolve(path.join(this.assetsLocation, templateName));
 
@@ -171,6 +186,18 @@ export class StudentsController {
         form.getTextField("Schulname_02").setText(data.organizationDisplayName);
         form.getTextField("Ort_Datum").setText("");
         form.getTextField("QR_Code_Schueler").setImage(qrImage);
+
+        if (data.playStoreLink) {
+            const linkAsBuffer = await qrCodeLib.toBuffer(data.playStoreLink, { type: "png" });
+            const qrCode = await pdfDoc.embedPng(linkAsBuffer);
+            form.getTextField("Google").setImage(qrCode);
+        }
+
+        if (data.appStoreLink) {
+            const linkAsBuffer = await qrCodeLib.toBuffer(data.appStoreLink, { type: "png" });
+            const qrCode = await pdfDoc.embedPng(linkAsBuffer);
+            form.getTextField("Apple").setImage(qrCode);
+        }
 
         form.flatten();
         const pdfBytes = await pdfDoc.save();
