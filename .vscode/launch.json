@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Attach to Connector 1",
+            "port": 9238,
+            "sourceMaps": true,
+            "restart": true,
+            "localRoot": "${workspaceFolder}/dist",
+            "remoteRoot": "/usr/app/custom-modules/school-module/dist",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "skipFiles": ["<node_internals>/**"]
+        }
+    ]
+}

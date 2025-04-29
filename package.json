@@ -8,6 +8,7 @@
     ],
     "scripts": {
         "build": "tsc",
+        "build:ci": "tsc -p tsconfig.prod.json",
         "lint": "npm run lint:tsc && npm run lint:prettier && npm run lint:eslint",
         "lint:eslint": "eslint --ext .ts ./src",
         "lint:prettier": "prettier --check .",
