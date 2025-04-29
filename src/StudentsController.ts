@@ -165,7 +165,17 @@ export class StudentsController {
         },
         pngAsBuffer: Buffer
     ) {
-        const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, "template_onboarding.pdf")));
+        const templateName = "template_onboarding.pdf";
+        const pathToPdf = path.resolve(path.join(this.assetsLocation, templateName));
+
+        if (!fs.existsSync(pathToPdf)) {
+            throw new ApplicationError(
+                "error.schoolModule.onboardingTemplateNotFound",
+                `The onboarding template could not be found. Make sure to add the template with the name ${templateName} to the assets folder.`
+            );
+        }
+
+        const formPdfBytes = await fs.promises.readFile(pathToPdf);
         const pdfDoc = await PDFDocument.load(formPdfBytes);
 
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
