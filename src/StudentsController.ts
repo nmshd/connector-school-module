@@ -326,7 +326,7 @@ export class StudentsController {
         return text;
     }
 
-    public async sendFile(student: Student, data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined }): Promise<void> {
+    public async sendFile(student: Student, data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined }): Promise<SchoolFileDTO> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
@@ -353,6 +353,9 @@ export class StudentsController {
         });
 
         await this.services.transportServices.messages.sendMessage({ content: request.value.content, recipients: [relationship.value.peer] });
+
+        const fileDTO = await this.requestToFileDVO(request.value);
+        return fileDTO;
     }
 
     public async toStudentDTO(student: Student): Promise<StudentDTO> {
@@ -391,7 +394,7 @@ export class StudentsController {
         const requestsResult = await this.services.consumptionServices.outgoingRequests.getRequests({
             query: {
                 peer: relationshipResult.value.peer,
-                "response.content.items.@type": "TransferFileOwnershipRequestItem"
+                "content.items.@type": "TransferFileOwnershipRequestItem"
             }
         });
 
