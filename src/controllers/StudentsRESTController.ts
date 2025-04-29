@@ -141,6 +141,17 @@ export class StudentsRESTController extends BaseController {
         return Envelope.ok(mail);
     }
 
+    @GET
+    @Path(":id/files")
+    @Accept("application/json")
+    public async getStudentFiles(@PathParam("id") id: string): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const files = await this.studentsController.getStudentFiles(student);
+        return this.ok(Result.ok(files));
+    }
+
     @POST
     @Path(":id/files")
     @Accept("application/json")
