@@ -224,6 +224,24 @@ export class StudentsController {
             }
         }
 
+        const files = await this.getStudentFiles(student);
+        for (const file of files) {
+            entries.push({
+                time: file.fileSentAt,
+                id: student.id.toString(),
+                log: `Request with file ${file.filename} has been sent to peer.`,
+                object: verbose ? file : undefined
+            });
+            if (file.respondedAt) {
+                entries.push({
+                    time: file.respondedAt,
+                    id: student.id.toString(),
+                    log: `Peer has received request for file ${file.filename} and responded with status ${file.status}.`,
+                    object: verbose ? file : undefined
+                });
+            }
+        }
+
         entries.sort((a, b) => {
             const dateA = new Date(a.time);
             const dateB = new Date(b.time);
@@ -412,7 +430,7 @@ export class StudentsController {
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
         if (relationship.isError) throw relationship.error;
 
-        const result = await this.services.transportServices.messages.getMessages({ query: { participant: relationship.value.peer } });
+        const result = await this.services.transportServices.messages.getMessages({ query: { participant: relationship.value.peer, "content.@type": "Mail" } });
         return result.value;
     }
 
