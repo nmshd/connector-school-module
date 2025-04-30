@@ -476,6 +476,11 @@ export class StudentsController {
             return "rejected";
         })(responseItem?.result);
 
-        return { filename: file.value.filename, status: status };
+        return {
+            filename: file.value.filename,
+            status: status,
+            fileSentAt: request.createdAt,
+            anweredAt: request.response?.createdAt
+        };
     }
 }
