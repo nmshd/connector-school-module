@@ -205,7 +205,7 @@ export class StudentsController {
             if (error instanceof Error && error.message.includes("WinAnsi cannot encode")) {
                 throw new ApplicationError(
                     "error.schoolModule.onboardingPDFNotUTF8Compatible",
-                    `Trying to write a UTF-8 string to a PDF that is not UTF-8 compatible. Please check the template '${templateName}' for UTF-8 support.`
+                    `Cannot write a UTF-8 string to a PDF that is not UTF-8 compatible. Please check the template '${templateName}' for UTF-8 support.`
                 );
             }
 
