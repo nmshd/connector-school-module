@@ -115,7 +115,7 @@ export class StudentsController {
             maxNumberOfAllocations: 1,
             content: { "@type": "RelationshipTemplateContent", onNewRelationship: request } satisfies RelationshipTemplateContentJSON,
             expiresAt: CoreDate.utc().add({ years: 1 }).toISOString(),
-            passwordProtection: data.pin ? { password: data.pin, passwordIsPin: true } : undefined
+            passwordProtection: data.pin ? { password: data.pin, passwordIsPin: true, passwordLocationIndicator: 50 } : undefined
         });
 
         const student = Student.from({ id: data.id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
