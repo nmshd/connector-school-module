@@ -47,7 +47,12 @@ export class StudentsRESTController extends BaseController {
     @GET
     @Path(":id/log")
     @Accept("application/json", "text/plain")
-    public async getStudentLog(@PathParam("id") id: string, @ContextAccept accept: string, @QueryParam("verbose") verbose: string): Promise<Envelope> {
+    public async getStudentLog(
+        @PathParam("id") id: string,
+        @ContextAccept accept: string,
+        @ContextResponse response: express.Response,
+        @QueryParam("verbose") verbose: string
+    ): Promise<Envelope | void> {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
@@ -63,7 +68,8 @@ export class StudentsRESTController extends BaseController {
                     lines.push(`For ${entry.id} at ${entry.time} : ${entry.log}`);
                 }
 
-                return Envelope.ok(lines.join("\r\n"));
+                response.status(200).send(lines.join("\r\n"));
+                return;
 
             default:
                 return this.ok<StudentLog>(Result.ok({ entries: logEntries.value }));
