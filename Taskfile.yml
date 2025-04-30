@@ -89,6 +89,13 @@ tasks:
     cmds:
       - "http -b DELETE localhost:8099/students/{{.STUDENT_ID}} 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
 
+  get-files:
+    desc: Call the get-files endpoint
+    cmds:
+      - "http -b GET localhost:8099/students/{{.STUDENT_ID}}/files 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
+    requires:
+      vars: [STUDENT_ID]
+
   send-file:
     desc: Call the send-file endpoint
     cmds:

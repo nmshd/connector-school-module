@@ -4,19 +4,23 @@ import { LocalAttributeJSON } from "@nmshd/consumption";
 import {
     CreateAttributeRequestItemJSON,
     DisplayNameJSON,
+    RejectResponseItemJSON,
     RelationshipAttributeConfidentiality,
     RelationshipTemplateContentJSON,
     RequestJSON,
-    ShareAttributeRequestItemJSON
+    ResponseItemResult,
+    ShareAttributeRequestItemJSON,
+    TransferFileOwnershipAcceptResponseItemJSON,
+    TransferFileOwnershipRequestItemJSON
 } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
-import { MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import { LocalRequestDTO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
 import qrCodeLib from "qrcode";
-import { Student, StudentDTO, StudentLogEntry, StudentStatus } from "./types";
+import { SchoolFileDTO, Student, StudentDTO, StudentLogEntry, StudentStatus } from "./types";
 
 export class StudentsController {
     #studentsCollection: IDatabaseCollection;
@@ -478,7 +482,7 @@ export class StudentsController {
         return text;
     }
 
-    public async sendFile(student: Student, data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined }): Promise<void> {
+    public async sendFile(student: Student, data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined }): Promise<SchoolFileDTO> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
@@ -505,6 +509,9 @@ export class StudentsController {
         });
 
         await this.services.transportServices.messages.sendMessage({ content: request.value.content, recipients: [relationship.value.peer] });
+
+        const fileDTO = await this.requestToFileDVO(request.value);
+        return fileDTO;
     }
 
     public async toStudentDTO(student: Student): Promise<StudentDTO> {
@@ -533,5 +540,54 @@ export class StudentsController {
         }
 
         return { ...student.toJSON(), status: status };
+    }
+
+    public async getStudentFiles(student: Student): Promise<SchoolFileDTO[]> {
+        if (!student.correspondingRelationshipId) return [];
+
+        const relationshipResult = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+
+        const requestsResult = await this.services.consumptionServices.outgoingRequests.getRequests({
+            query: {
+                peer: relationshipResult.value.peer,
+                "content.items.@type": "TransferFileOwnershipRequestItem"
+            }
+        });
+
+        const requests = requestsResult.value;
+
+        const requestsWithOnlyOneTransferFileOwnershipRequestItem = requests.filter((request) => {
+            return request.content.items.length === 1 && request.content.items[0]["@type"] === "TransferFileOwnershipRequestItem";
+        });
+
+        const files = await Promise.all(
+            requestsWithOnlyOneTransferFileOwnershipRequestItem.map(async (request) => {
+                const file = await this.requestToFileDVO(request);
+                return file;
+            })
+        );
+
+        return files;
+    }
+
+    private async requestToFileDVO(request: LocalRequestDTO): Promise<SchoolFileDTO> {
+        const requestItem = request.content.items[0] as TransferFileOwnershipRequestItemJSON;
+
+        const file = await this.services.transportServices.files.getOrLoadFile({ reference: requestItem.fileReference });
+
+        const responseItem = request.response?.content.items[0] as TransferFileOwnershipAcceptResponseItemJSON | RejectResponseItemJSON | undefined;
+
+        const status = ((result?: ResponseItemResult) => {
+            if (!result) return "pending";
+            if (result === ResponseItemResult.Accepted) return "accepted";
+            return "rejected";
+        })(responseItem?.result);
+
+        return {
+            filename: file.value.filename,
+            status: status,
+            fileSentAt: request.createdAt,
+            respondedAt: request.response?.createdAt
+        };
     }
 }
