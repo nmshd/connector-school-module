@@ -8,6 +8,7 @@
     ],
     "scripts": {
         "build": "tsc",
+        "build:ci": "tsc -p tsconfig.prod.json",
         "lint": "npm run lint:tsc && npm run lint:prettier && npm run lint:eslint",
         "lint:eslint": "eslint --ext .ts ./src",
         "lint:prettier": "prettier --check .",
@@ -25,7 +26,7 @@
         "@js-soft/eslint-config-ts": "^1.6.14",
         "@js-soft/license-check": "^1.0.9",
         "@js-soft/ts-utils": "^2.3.3",
-        "@nmshd/connector-types": "^6.23.0",
+        "@nmshd/connector-types": "^6.24.0",
         "@nmshd/typescript-rest": "^3.1.2",
         "@types/express": "^5.0.1",
         "@types/luxon": "^3.6.2",

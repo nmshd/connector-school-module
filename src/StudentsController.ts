@@ -22,7 +22,9 @@ export class StudentsController {
     #studentsCollection: IDatabaseCollection;
 
     public constructor(
-        public readonly displayName: LocalAttributeJSON,
+        private readonly displayName: LocalAttributeJSON,
+        private readonly playStoreLink: string | undefined,
+        private readonly appStoreLink: string | undefined,
         private readonly services: RuntimeServices,
         private readonly database: IDatabaseCollectionProvider,
         private readonly assetsLocation: string,
@@ -40,7 +42,7 @@ export class StudentsController {
         givenname: string;
         surname: string;
         pin?: string;
-        additionalConsents: { mustBeAccepted?: boolean; consent: string; link: string }[];
+        additionalConsents: { mustBeAccepted?: boolean; consent: string; link: string; linkDisplayText?: string }[];
     }): Promise<Student> {
         const identityInfo = await this.services.transportServices.account.getIdentityInfo();
 
@@ -103,7 +105,8 @@ export class StudentsController {
                     "@type": "ConsentRequestItem",
                     mustBeAccepted: consent.mustBeAccepted ?? false,
                     consent: consent.consent,
-                    link: consent.link
+                    link: consent.link,
+                    linkDisplayText: consent.linkDisplayText
                 }))
             });
         }
@@ -112,7 +115,7 @@ export class StudentsController {
             maxNumberOfAllocations: 1,
             content: { "@type": "RelationshipTemplateContent", onNewRelationship: request } satisfies RelationshipTemplateContentJSON,
             expiresAt: CoreDate.utc().add({ years: 1 }).toISOString(),
-            passwordProtection: data.pin ? { password: data.pin, passwordIsPin: true } : undefined
+            passwordProtection: data.pin ? { password: data.pin, passwordIsPin: true, passwordLocationIndicator: "Email" } : undefined
         });
 
         const student = Student.from({ id: data.id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
@@ -247,7 +250,9 @@ export class StudentsController {
                 name: `${student.givenname} ${student.surname}`,
                 givenname: student.givenname,
                 surname: student.surname,
-                templateReference: template.value.truncatedReference
+                templateReference: template.value.truncatedReference,
+                playStoreLink: this.playStoreLink,
+                appStoreLink: this.appStoreLink
             },
             pngAsBuffer
         );
@@ -255,8 +260,29 @@ export class StudentsController {
         return Result.ok({ link: link, png: pngAsBuffer, pdf: onboardingPdf });
     }
 
-    private async createOnboardingPDF(data: { organizationDisplayName: string; name: string; givenname: string; surname: string; templateReference: string }, pngAsBuffer: Buffer) {
-        const formPdfBytes = await fs.promises.readFile(path.resolve(path.join(this.assetsLocation, "template_onboarding.pdf")));
+    private async createOnboardingPDF(
+        data: {
+            organizationDisplayName: string;
+            name: string;
+            givenname: string;
+            surname: string;
+            templateReference: string;
+            playStoreLink?: string;
+            appStoreLink?: string;
+        },
+        pngAsBuffer: Buffer
+    ) {
+        const templateName = "template_onboarding.pdf";
+        const pathToPdf = path.resolve(path.join(this.assetsLocation, templateName));
+
+        if (!fs.existsSync(pathToPdf)) {
+            throw new ApplicationError(
+                "error.schoolModule.onboardingTemplateNotFound",
+                `The onboarding template could not be found. Make sure to add the template with the name ${templateName} to the assets folder.`
+            );
+        }
+
+        const formPdfBytes = await fs.promises.readFile(pathToPdf);
         const pdfDoc = await PDFDocument.load(formPdfBytes);
 
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
@@ -268,7 +294,31 @@ export class StudentsController {
         form.getTextField("Ort_Datum").setText("");
         form.getTextField("QR_Code_Schueler").setImage(qrImage);
 
-        form.flatten();
+        if (data.playStoreLink) {
+            const linkAsBuffer = await qrCodeLib.toBuffer(data.playStoreLink, { type: "png" });
+            const qrCode = await pdfDoc.embedPng(linkAsBuffer);
+            form.getTextField("Google").setImage(qrCode);
+        }
+
+        if (data.appStoreLink) {
+            const linkAsBuffer = await qrCodeLib.toBuffer(data.appStoreLink, { type: "png" });
+            const qrCode = await pdfDoc.embedPng(linkAsBuffer);
+            form.getTextField("Apple").setImage(qrCode);
+        }
+
+        try {
+            form.flatten();
+        } catch (error) {
+            if (error instanceof Error && error.message.includes("WinAnsi cannot encode")) {
+                throw new ApplicationError(
+                    "error.schoolModule.onboardingPDFNotUTF8Compatible",
+                    `Cannot write a UTF-8 string to a PDF that is not UTF-8 compatible. Please check the template '${templateName}' for UTF-8 support.`
+                );
+            }
+
+            throw error;
+        }
+
         const pdfBytes = await pdfDoc.save();
         return Buffer.from(pdfBytes);
     }
@@ -317,7 +367,7 @@ export class StudentsController {
         if (student.correspondingRelationshipId) {
             const relationship = await this.getRelationship(student.correspondingRelationshipId);
 
-            if (this.autoMailBeforeOffboarding) {
+            if (this.autoMailBeforeOffboarding && relationship.status === RelationshipStatus.Active) {
                 await this.sendMailBasedOnTemplateName(student, "offboarding");
             }
 
