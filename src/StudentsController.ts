@@ -480,7 +480,7 @@ export class StudentsController {
             filename: file.value.filename,
             status: status,
             fileSentAt: request.createdAt,
-            anweredAt: request.response?.createdAt
+            respondedAt: request.response?.createdAt
         };
     }
 }
