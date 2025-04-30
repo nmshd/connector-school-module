@@ -199,7 +199,12 @@ export class StudentsController {
             form.getTextField("Apple").setImage(qrCode);
         }
 
-        form.flatten();
+        try {
+            form.flatten();
+        } catch (error) {
+            throw error;
+        }
+
         const pdfBytes = await pdfDoc.save();
         return Buffer.from(pdfBytes);
     }
