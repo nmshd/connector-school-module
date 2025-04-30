@@ -141,6 +141,17 @@ export class StudentsRESTController extends BaseController {
         return Envelope.ok(mail);
     }
 
+    @GET
+    @Path(":id/files")
+    @Accept("application/json")
+    public async getStudentFiles(@PathParam("id") id: string): Promise<Envelope> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const files = await this.studentsController.getStudentFiles(student);
+        return this.ok(Result.ok(files));
+    }
+
     @POST
     @Path(":id/files")
     @Accept("application/json")
@@ -152,10 +163,8 @@ export class StudentsRESTController extends BaseController {
         if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
         const data = validationResult.data;
 
-        await this.studentsController.sendFile(student, data);
-
-        const dto = await this.studentsController.toStudentDTO(student);
-        return this.ok(Result.ok(dto));
+        const fileDTO = await this.studentsController.sendFile(student, data);
+        return this.ok(Result.ok(fileDTO));
     }
 
     @POST
@@ -203,9 +212,8 @@ export class StudentsRESTController extends BaseController {
             ...validationResult.data,
             tags: Array.from(tags)
         };
-        await this.studentsController.sendFile(student, data);
 
-        const dto = await this.studentsController.toStudentDTO(student);
-        return this.ok(Result.ok(dto));
+        const fileDTO = await this.studentsController.sendFile(student, data);
+        return this.ok(Result.ok(fileDTO));
     }
 }
