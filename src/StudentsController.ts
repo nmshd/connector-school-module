@@ -199,7 +199,19 @@ export class StudentsController {
             form.getTextField("Apple").setImage(qrCode);
         }
 
-        form.flatten();
+        try {
+            form.flatten();
+        } catch (error) {
+            if (error instanceof Error && error.message.includes("WinAnsi cannot encode")) {
+                throw new ApplicationError(
+                    "error.schoolModule.onboardingPDFNotUTF8Compatible",
+                    `Cannot write a UTF-8 string to a PDF that is not UTF-8 compatible. Please check the template '${templateName}' for UTF-8 support.`
+                );
+            }
+
+            throw error;
+        }
+
         const pdfBytes = await pdfDoc.save();
         return Buffer.from(pdfBytes);
     }
