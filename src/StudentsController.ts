@@ -122,7 +122,7 @@ export class StudentsController {
         return student;
     }
 
-    public async getLogForStudent(student: Student): Promise<Result<StudentLogEntry[]>> {
+    public async getLogForStudent(student: Student, verbose = false): Promise<Result<StudentLogEntry[]>> {
         const entries: StudentLogEntry[] = [];
 
         if (!student.correspondingRelationshipTemplateId) {
@@ -139,7 +139,7 @@ export class StudentsController {
             time: template.createdAt,
             id: student.id.toString(),
             log: `RelationshipTemplate ${template.id} created for student`,
-            object: template
+            object: verbose ? template : undefined
         });
 
         if (!student.correspondingRelationshipId) {
@@ -157,14 +157,14 @@ export class StudentsController {
                     time: auditLogEntry.createdAt,
                     id: student.id.toString(),
                     log: `RelationshipStatus of relationship ${relationship.id} changed from ${auditLogEntry.oldStatus} to ${auditLogEntry.newStatus} because of ${auditLogEntry.reason}`,
-                    object: relationship
+                    object: verbose ? relationship : undefined
                 });
             } else {
                 entries.push({
                     time: auditLogEntry.createdAt,
                     id: student.id.toString(),
                     log: `Relationship ${relationship.id} to student with enmeshed address '${relationship.peerIdentity.address}' created.`,
-                    object: relationship
+                    object: verbose ? relationship : undefined
                 });
             }
         }
@@ -176,13 +176,14 @@ export class StudentsController {
                     time: message.createdAt,
                     id: student.id.toString(),
                     log: `Mail ${message.id} with subject '${(message.content as any).subject}' has been sent.`,
-                    object: message
+                    object: verbose ? message : undefined
                 });
                 if (message.wasReadAt) {
                     entries.push({
                         time: message.wasReadAt,
                         id: student.id.toString(),
-                        log: `Student successfully received sent mail ${message.id} with subject '${(message.content as any).subject}'.`
+                        log: `Student successfully received sent mail ${message.id} with subject '${(message.content as any).subject}'.`,
+                        object: verbose ? message : undefined
                     });
                 }
             } else {
@@ -190,7 +191,7 @@ export class StudentsController {
                     time: message.createdAt,
                     id: student.id.toString(),
                     log: `Mail with subject '${(message.content as any).subject}' has been received from peer.`,
-                    object: message
+                    object: verbose ? message : undefined
                 });
             }
         }
@@ -204,17 +205,26 @@ export class StudentsController {
                 time: request.createdAt,
                 id: student.id.toString(),
                 log: `Request ${request.id} has been sent to peer with source ${request.source?.reference}.`,
-                object: request
+                object: verbose ? request : undefined
             });
             if (request.response) {
                 entries.push({
                     time: request.response.createdAt,
                     id: student.id.toString(),
                     log: `Response to request ${request.id} has been received by peer with source ${request.response.source?.reference}. Status is ${request.status}.`,
-                    object: request.response
+                    object: verbose ? request.response : undefined
                 });
             }
         }
+
+        entries.sort((a, b) => {
+            const dateA = new Date(a.time);
+            const dateB = new Date(b.time);
+
+            if (dateA < dateB) return -1;
+            if (dateA > dateB) return 1;
+            return 0;
+        });
 
         return Result.ok(entries);
     }

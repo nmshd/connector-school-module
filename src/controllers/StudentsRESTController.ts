@@ -2,7 +2,7 @@ import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { BaseController, Envelope, Mimetype } from "@nmshd/connector-types";
 import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
-import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
+import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, POST, QueryParam } from "@nmshd/typescript-rest";
 import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
@@ -47,11 +47,11 @@ export class StudentsRESTController extends BaseController {
     @GET
     @Path(":id/log")
     @Accept("application/json", "text/plain")
-    public async getStudentLog(@PathParam("id") id: string, @ContextAccept accept: string): Promise<Envelope> {
+    public async getStudentLog(@PathParam("id") id: string, @ContextAccept accept: string, @QueryParam("verbose") verbose: string): Promise<Envelope> {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        const logEntries = await this.studentsController.getLogForStudent(student);
+        const logEntries = await this.studentsController.getLogForStudent(student, !!verbose);
         if (logEntries.isError) {
             throw logEntries.error;
         }
