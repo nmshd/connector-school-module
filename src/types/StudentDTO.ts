@@ -1,3 +1,5 @@
+import { SchoolFileDTO } from "./SchoolFileDTO";
+
 export type StudentStatus = "onboarding" | "rejected" | "active" | "deleted";
 
 export interface StudentDTO {
@@ -7,4 +9,5 @@ export interface StudentDTO {
     correspondingRelationshipTemplateId?: string;
     correspondingRelationshipId?: string;
     status: StudentStatus;
+    files: SchoolFileDTO[];
 }
