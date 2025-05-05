@@ -20,7 +20,7 @@ import fs from "node:fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
 import qrCodeLib from "qrcode";
-import { SchoolFileDTO, Student, StudentDTO, StudentLogEntry, StudentStatus } from "./types";
+import { SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
 
 export class StudentsController {
     #studentsCollection: IDatabaseCollection;
@@ -129,17 +129,12 @@ export class StudentsController {
         return student;
     }
 
-    public async getLogForStudent(student: Student, verbose = false): Promise<Result<StudentLogEntry[]>> {
-        const entries: StudentLogEntry[] = [];
+    public async getStudentAuditLog(student: Student, verbose = false): Promise<StudentAuditLog> {
+        const entries: StudentAuditLogEntry[] = [];
 
-        if (!student.correspondingRelationshipTemplateId) {
-            return Result.ok(entries);
-        }
+        if (!student.correspondingRelationshipTemplateId) return entries;
 
         const templateRequest = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
-        if (templateRequest.isError) {
-            return Result.fail(templateRequest.error);
-        }
         const template = templateRequest.value;
 
         entries.push({
@@ -149,15 +144,11 @@ export class StudentsController {
             object: verbose ? template : undefined
         });
 
-        if (!student.correspondingRelationshipId) {
-            return Result.ok(entries);
-        }
+        if (!student.correspondingRelationshipId) return entries;
 
-        const relationshipRequest = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
-        if (relationshipRequest.isError) {
-            return Result.fail(relationshipRequest.error);
-        }
-        const relationship = relationshipRequest.value;
+        const getRelationshipResult = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+        const relationship = getRelationshipResult.value;
+
         for (const auditLogEntry of relationship.auditLog) {
             if (auditLogEntry.oldStatus) {
                 entries.push({
@@ -176,29 +167,29 @@ export class StudentsController {
             }
         }
 
-        const messages = await this.getMails(student);
-        for (const message of messages) {
-            if (message.isOwn) {
+        const mails = await this.getMails(student);
+        for (const mail of mails) {
+            if (mail.isOwn) {
                 entries.push({
-                    time: message.createdAt,
+                    time: mail.createdAt,
                     id: student.id.toString(),
-                    log: `Mail ${message.id} with subject '${(message.content as any).subject}' has been sent.`,
-                    object: verbose ? message : undefined
+                    log: `Mail ${mail.id} with subject '${(mail.content as any).subject}' has been sent.`,
+                    object: verbose ? mail : undefined
                 });
-                if (message.wasReadAt) {
+                if (mail.wasReadAt) {
                     entries.push({
-                        time: message.wasReadAt,
+                        time: mail.wasReadAt,
                         id: student.id.toString(),
-                        log: `Student successfully received sent mail ${message.id} with subject '${(message.content as any).subject}'.`,
-                        object: verbose ? message : undefined
+                        log: `Student successfully received sent mail ${mail.id} with subject '${(mail.content as any).subject}'.`,
+                        object: verbose ? mail : undefined
                     });
                 }
             } else {
                 entries.push({
-                    time: message.createdAt,
+                    time: mail.createdAt,
                     id: student.id.toString(),
-                    log: `Mail with subject '${(message.content as any).subject}' has been received from peer.`,
-                    object: verbose ? message : undefined
+                    log: `Mail with subject '${(mail.content as any).subject}' has been received from peer.`,
+                    object: verbose ? mail : undefined
                 });
             }
         }
@@ -251,7 +242,7 @@ export class StudentsController {
             return 0;
         });
 
-        return Result.ok(entries);
+        return entries;
     }
 
     public async getOnboardingDataForStudent(student: Student): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {

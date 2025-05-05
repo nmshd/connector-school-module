@@ -6,7 +6,7 @@ import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, P
 import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
-import { Student, StudentLog, StudentOnboardingDTO } from "../types";
+import { Student, StudentAuditLog, StudentOnboardingDTO } from "../types";
 import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailRequestSchema } from "./schemas";
 
 @Path("/students")
@@ -56,23 +56,15 @@ export class StudentsRESTController extends BaseController {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        const logEntries = await this.studentsController.getLogForStudent(student, !!verbose);
-        if (logEntries.isError) {
-            throw logEntries.error;
-        }
+        const auditLog = await this.studentsController.getStudentAuditLog(student, !!verbose);
 
         switch (accept) {
             case "text/plain":
-                const lines = [];
-                for (const entry of logEntries.value) {
-                    lines.push(`For ${entry.id} at ${entry.time} : ${entry.log}`);
-                }
-
-                response.status(200).send(lines.join("\r\n"));
+                response.status(200).send(auditLog.map((entry) => `For ${entry.id} at ${entry.time} : ${entry.log}`).join("\n"));
                 return;
 
             default:
-                return this.ok<StudentLog>(Result.ok({ entries: logEntries.value }));
+                return this.ok<StudentAuditLog>(Result.ok(auditLog));
         }
     }
 

@@ -9,11 +9,9 @@ export interface StudentDTO {
     status: StudentStatus;
 }
 
-export interface StudentLog {
-    entries: StudentLogEntry[];
-}
+export interface StudentAuditLog extends Array<StudentAuditLogEntry> {}
 
-export interface StudentLogEntry {
+export interface StudentAuditLogEntry {
     time: string;
     log: string;
     id: string;
