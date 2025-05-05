@@ -56,7 +56,7 @@ export class StudentsRESTController extends BaseController {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        const auditLog = await this.studentsController.getStudentAuditLog(student, !!verbose);
+        const auditLog = await this.studentsController.getStudentAuditLog(student, verbose === "true");
 
         switch (accept) {
             case "text/plain":
