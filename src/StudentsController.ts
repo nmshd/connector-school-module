@@ -15,12 +15,13 @@ import {
 } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
 import { LocalRequestDTO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import { DateTime } from "luxon";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
 import qrCodeLib from "qrcode";
-import { SchoolFileDTO, Student, StudentDTO, StudentStatus } from "./types";
+import { SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
 
 export class StudentsController {
     #studentsCollection: IDatabaseCollection;
@@ -127,6 +128,123 @@ export class StudentsController {
         await this.#studentsCollection.create(student.toJSON());
 
         return student;
+    }
+
+    public async getStudentAuditLog(student: Student, verbose = false): Promise<StudentAuditLog> {
+        const entries: StudentAuditLogEntry[] = [];
+
+        if (!student.correspondingRelationshipTemplateId) return entries;
+
+        const templateRequest = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
+        const template = templateRequest.value;
+
+        entries.push({
+            time: template.createdAt,
+            id: student.id.toString(),
+            log: `RelationshipTemplate ${template.id} created for student`,
+            object: verbose ? template : undefined
+        });
+
+        if (!student.correspondingRelationshipId) return entries;
+
+        const getRelationshipResult = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
+        const relationship = getRelationshipResult.value;
+
+        for (const auditLogEntry of relationship.auditLog) {
+            if (auditLogEntry.oldStatus) {
+                entries.push({
+                    time: auditLogEntry.createdAt,
+                    id: student.id.toString(),
+                    log: `RelationshipStatus of relationship ${relationship.id} changed from ${auditLogEntry.oldStatus} to ${auditLogEntry.newStatus} because of ${auditLogEntry.reason}`,
+                    object: verbose ? relationship : undefined
+                });
+            } else {
+                entries.push({
+                    time: auditLogEntry.createdAt,
+                    id: student.id.toString(),
+                    log: `Relationship ${relationship.id} to student with enmeshed address '${relationship.peerIdentity.address}' created.`,
+                    object: verbose ? relationship : undefined
+                });
+            }
+        }
+
+        const mails = await this.getMails(student);
+        for (const mail of mails) {
+            if (mail.isOwn) {
+                entries.push({
+                    time: mail.createdAt,
+                    id: student.id.toString(),
+                    log: `Mail ${mail.id} with subject '${(mail.content as any).subject}' has been sent.`,
+                    object: verbose ? mail : undefined
+                });
+                if (mail.wasReadAt) {
+                    entries.push({
+                        time: mail.wasReadAt,
+                        id: student.id.toString(),
+                        log: `Student successfully received sent mail ${mail.id} with subject '${(mail.content as any).subject}'.`,
+                        object: verbose ? mail : undefined
+                    });
+                }
+            } else {
+                entries.push({
+                    time: mail.createdAt,
+                    id: student.id.toString(),
+                    log: `Mail with subject '${(mail.content as any).subject}' has been received from peer.`,
+                    object: verbose ? mail : undefined
+                });
+            }
+        }
+
+        const getRequestsResult = await this.services.consumptionServices.outgoingRequests.getRequests({ query: { peer: relationship.peer } });
+        const requests = getRequestsResult.value;
+
+        for (const request of requests) {
+            entries.push({
+                time: request.createdAt,
+                id: student.id.toString(),
+                log: `Request ${request.id} has been sent to peer with source ${request.source?.reference}.`,
+                object: verbose ? request : undefined
+            });
+
+            if (request.response) {
+                entries.push({
+                    time: request.response.createdAt,
+                    id: student.id.toString(),
+                    log: `Response to request ${request.id} has been received by peer with source ${request.response.source?.reference}. Status is ${request.status}.`,
+                    object: verbose ? request.response : undefined
+                });
+            }
+        }
+
+        const files = await this.getStudentFiles(student);
+        for (const file of files) {
+            entries.push({
+                time: file.fileSentAt,
+                id: student.id.toString(),
+                log: `Request with file ${file.filename} has been sent to peer.`,
+                object: verbose ? file : undefined
+            });
+
+            if (file.respondedAt) {
+                entries.push({
+                    time: file.respondedAt,
+                    id: student.id.toString(),
+                    log: `Peer has received request for file ${file.filename} and responded with status ${file.status}.`,
+                    object: verbose ? file : undefined
+                });
+            }
+        }
+
+        entries.sort((a, b) => {
+            const dateA = DateTime.fromISO(a.time);
+            const dateB = DateTime.fromISO(b.time);
+
+            if (dateA < dateB) return -1;
+            if (dateA > dateB) return 1;
+            return 0;
+        });
+
+        return entries;
     }
 
     public async getOnboardingDataForStudent(student: Student): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
@@ -305,7 +423,7 @@ export class StudentsController {
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
         if (relationship.isError) throw relationship.error;
 
-        const result = await this.services.transportServices.messages.getMessages({ query: { participant: relationship.value.peer } });
+        const result = await this.services.transportServices.messages.getMessages({ query: { participant: relationship.value.peer, "content.@type": "Mail" } });
         return result.value;
     }
 

@@ -2,11 +2,11 @@ import { ApplicationError, Result } from "@js-soft/ts-utils";
 import { BaseController, Envelope, Mimetype } from "@nmshd/connector-types";
 import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
-import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, POST } from "@nmshd/typescript-rest";
+import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, POST, QueryParam } from "@nmshd/typescript-rest";
 import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
-import { Student, StudentOnboardingDTO } from "../types";
+import { Student, StudentAuditLog, StudentOnboardingDTO } from "../types";
 import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailRequestSchema } from "./schemas";
 
 @Path("/students")
@@ -42,6 +42,30 @@ export class StudentsRESTController extends BaseController {
 
         const dto = await this.studentsController.toStudentDTO(student);
         return this.ok(Result.ok(dto));
+    }
+
+    @GET
+    @Path(":id/log")
+    @Accept("application/json", "text/plain")
+    public async getStudentLog(
+        @PathParam("id") id: string,
+        @ContextAccept accept: string,
+        @ContextResponse response: express.Response,
+        @QueryParam("verbose") verbose: string
+    ): Promise<Envelope | void> {
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const auditLog = await this.studentsController.getStudentAuditLog(student, !!verbose);
+
+        switch (accept) {
+            case "text/plain":
+                response.status(200).send(auditLog.map((entry) => `For ${entry.id} at ${entry.time} : ${entry.log}`).join("\n"));
+                return;
+
+            default:
+                return this.ok<StudentAuditLog>(Result.ok(auditLog));
+        }
     }
 
     @DELETE
