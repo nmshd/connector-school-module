@@ -15,6 +15,7 @@ import {
 } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
 import { LocalRequestDTO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import { DateTime } from "luxon";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
@@ -194,17 +195,17 @@ export class StudentsController {
             }
         }
 
-        const requests = await this.services.consumptionServices.outgoingRequests.getRequests({ query: { peer: relationship.peer } });
-        if (requests.isError) {
-            throw requests.error;
-        }
-        for (const request of requests.value) {
+        const getRequestsResult = await this.services.consumptionServices.outgoingRequests.getRequests({ query: { peer: relationship.peer } });
+        const requests = getRequestsResult.value;
+
+        for (const request of requests) {
             entries.push({
                 time: request.createdAt,
                 id: student.id.toString(),
                 log: `Request ${request.id} has been sent to peer with source ${request.source?.reference}.`,
                 object: verbose ? request : undefined
             });
+
             if (request.response) {
                 entries.push({
                     time: request.response.createdAt,
@@ -223,6 +224,7 @@ export class StudentsController {
                 log: `Request with file ${file.filename} has been sent to peer.`,
                 object: verbose ? file : undefined
             });
+
             if (file.respondedAt) {
                 entries.push({
                     time: file.respondedAt,
@@ -234,8 +236,8 @@ export class StudentsController {
         }
 
         entries.sort((a, b) => {
-            const dateA = new Date(a.time);
-            const dateB = new Date(b.time);
+            const dateA = DateTime.fromISO(a.time);
+            const dateB = DateTime.fromISO(b.time);
 
             if (dateA < dateB) return -1;
             if (dateA > dateB) return 1;
