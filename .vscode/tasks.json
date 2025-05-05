@@ -1,0 +1,18 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Watch",
+            "command": "task watch",
+            "type": "shell",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "never",
+                "focus": false
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
+        }
+    ]
+}
