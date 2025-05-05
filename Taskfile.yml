@@ -119,6 +119,13 @@ tasks:
   audit-log:
     desc: Get the audit log for a student
     cmds:
-      - "http -b GET localhost:8099/students/{{.STUDENT_ID}}/log 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' 'Accept: application/json'"
+      - "http -b GET localhost:8099/students/{{.STUDENT_ID}}/log 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' 'Accept: test/plain'"
+    requires:
+      vars: [STUDENT_ID]
+
+  audit-log-json:
+    desc: Get the audit log for a student
+    cmds:
+      - "http -b GET localhost:8099/students/{{.STUDENT_ID}}/log?verbose=true 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' 'Accept: application/json' | jq"
     requires:
       vars: [STUDENT_ID]
