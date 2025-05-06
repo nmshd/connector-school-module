@@ -51,12 +51,12 @@ export class StudentsRESTController extends BaseController {
         @PathParam("id") id: string,
         @ContextAccept accept: string,
         @ContextResponse response: express.Response,
-        @QueryParam("verbose") verbose: string
+        @QueryParam("verbose") verbose?: boolean
     ): Promise<Envelope | void> {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        const auditLog = await this.studentsController.getStudentAuditLog(student, !!verbose);
+        const auditLog = await this.studentsController.getStudentAuditLog(student, verbose);
 
         switch (accept) {
             case "text/plain":
