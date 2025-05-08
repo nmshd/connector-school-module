@@ -276,7 +276,6 @@ export class StudentsController {
     private async createOnboardingPDF(
         data: {
             organizationDisplayName: string;
-            // name: string;
             givenname: string;
             surname: string;
             playStoreLink?: string;
