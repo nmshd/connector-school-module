@@ -17,6 +17,7 @@ const schoolModuleConfigurationSchema = z.object({
     assetsLocation: z.string(),
     autoMailAfterOnboarding: z.boolean().optional(),
     autoMailBeforeOffboarding: z.boolean().optional(),
+    useNewQRCodeFormat: z.boolean().optional(),
     playStoreLink: z.string().optional(),
     appStoreLink: z.string().optional()
 });
@@ -45,7 +46,8 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             this.runtime.getServices(),
             database,
             this.configuration.assetsLocation,
-            !!this.configuration.autoMailBeforeOffboarding
+            !!this.configuration.autoMailBeforeOffboarding,
+            !!this.configuration.useNewQRCodeFormat
         ).init();
 
         Container.bind(StudentsController)

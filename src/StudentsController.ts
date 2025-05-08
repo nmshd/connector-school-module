@@ -33,7 +33,8 @@ export class StudentsController {
         private readonly services: RuntimeServices,
         private readonly database: IDatabaseCollectionProvider,
         private readonly assetsLocation: string,
-        private readonly autoMailBeforeOffboarding: boolean
+        private readonly autoMailBeforeOffboarding: boolean,
+        private readonly newQRCodeFormat: boolean
     ) {}
 
     public async init(): Promise<this> {
