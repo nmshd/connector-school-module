@@ -33,7 +33,8 @@ export class StudentsController {
         private readonly services: RuntimeServices,
         private readonly database: IDatabaseCollectionProvider,
         private readonly assetsLocation: string,
-        private readonly autoMailBeforeOffboarding: boolean
+        private readonly autoMailBeforeOffboarding: boolean,
+        private readonly useNewQRCodeFormat: boolean
     ) {}
 
     public async init(): Promise<this> {
@@ -255,17 +256,14 @@ export class StudentsController {
         const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
         if (template.isError) return Result.fail(template.error);
 
-        const link = `nmshd://tr#${template.value.truncatedReference}`;
-
+        const link = this.useNewQRCodeFormat ? template.value.reference.url : `nmshd://tr#${template.value.reference.truncated}`;
         const pngAsBuffer = await qrCodeLib.toBuffer(link, { type: "png" });
 
         const onboardingPdf = await this.createOnboardingPDF(
             {
                 organizationDisplayName: (this.displayName.content.value as DisplayNameJSON).value,
-                name: `${student.givenname} ${student.surname}`,
                 givenname: student.givenname,
                 surname: student.surname,
-                templateReference: template.value.truncatedReference,
                 playStoreLink: this.playStoreLink,
                 appStoreLink: this.appStoreLink
             },
@@ -278,10 +276,8 @@ export class StudentsController {
     private async createOnboardingPDF(
         data: {
             organizationDisplayName: string;
-            name: string;
             givenname: string;
             surname: string;
-            templateReference: string;
             playStoreLink?: string;
             appStoreLink?: string;
         },
@@ -512,7 +508,7 @@ export class StudentsController {
                         "@type": "TransferFileOwnershipRequestItem",
                         mustBeAccepted: true,
                         requireManualDecision: true,
-                        fileReference: file.value.truncatedReference
+                        fileReference: file.value.reference.truncated
                     }
                 ]
             },
