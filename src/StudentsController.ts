@@ -513,7 +513,7 @@ export class StudentsController {
                         "@type": "TransferFileOwnershipRequestItem",
                         mustBeAccepted: true,
                         requireManualDecision: true,
-                        fileReference: file.value.truncatedReference
+                        fileReference: file.value.reference.truncated
                     }
                 ]
             },
