@@ -546,7 +546,9 @@ export class StudentsController {
             status = "deleted";
         }
 
-        return { ...student.toJSON(), status: status };
+        const files = await this.getStudentFiles(student);
+
+        return { ...student.toJSON(), status: status, files } as StudentDTO;
     }
 
     public async getStudentFiles(student: Student): Promise<SchoolFileDTO[]> {
