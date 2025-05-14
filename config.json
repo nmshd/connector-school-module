@@ -15,10 +15,7 @@
             "location": "/usr/app/custom-modules/school-module",
             "schoolName": "My School",
             "autoMailAfterOnboarding": true,
-            "autoMailBeforeOffboarding": true,
-            "useNewQRCodeFormat": true,
-            "playStoreLink": "https://play.google.com/store/apps/details?id=eu.enmeshed.app",
-            "appStoreLink": "https://apps.apple.com/de/app/enmeshed/id1576693742"
+            "autoMailBeforeOffboarding": true
         }
     }
 }
