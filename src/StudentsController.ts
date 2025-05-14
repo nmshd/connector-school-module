@@ -28,13 +28,10 @@ export class StudentsController {
 
     public constructor(
         private readonly displayName: LocalAttributeJSON,
-        private readonly playStoreLink: string | undefined,
-        private readonly appStoreLink: string | undefined,
         private readonly services: RuntimeServices,
         private readonly database: IDatabaseCollectionProvider,
         private readonly assetsLocation: string,
-        private readonly autoMailBeforeOffboarding: boolean,
-        private readonly useNewQRCodeFormat: boolean
+        private readonly autoMailBeforeOffboarding: boolean
     ) {}
 
     public async init(): Promise<this> {
@@ -256,16 +253,14 @@ export class StudentsController {
         const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
         if (template.isError) return Result.fail(template.error);
 
-        const link = this.useNewQRCodeFormat ? template.value.reference.url : `nmshd://tr#${template.value.reference.truncated}`;
+        const link = template.value.reference.url;
         const pngAsBuffer = await qrCodeLib.toBuffer(link, { type: "png" });
 
         const onboardingPdf = await this.createOnboardingPDF(
             {
                 organizationDisplayName: (this.displayName.content.value as DisplayNameJSON).value,
                 givenname: student.givenname,
-                surname: student.surname,
-                playStoreLink: this.playStoreLink,
-                appStoreLink: this.appStoreLink
+                surname: student.surname
             },
             pngAsBuffer
         );
@@ -278,8 +273,6 @@ export class StudentsController {
             organizationDisplayName: string;
             givenname: string;
             surname: string;
-            playStoreLink?: string;
-            appStoreLink?: string;
         },
         pngAsBuffer: Buffer
     ) {
@@ -304,18 +297,6 @@ export class StudentsController {
         form.getTextField("Schulname_02").setText(data.organizationDisplayName);
         form.getTextField("Ort_Datum").setText("");
         form.getTextField("QR_Code_Schueler").setImage(qrImage);
-
-        if (data.playStoreLink) {
-            const linkAsBuffer = await qrCodeLib.toBuffer(data.playStoreLink, { type: "png" });
-            const qrCode = await pdfDoc.embedPng(linkAsBuffer);
-            form.getTextField("Google").setImage(qrCode);
-        }
-
-        if (data.appStoreLink) {
-            const linkAsBuffer = await qrCodeLib.toBuffer(data.appStoreLink, { type: "png" });
-            const qrCode = await pdfDoc.embedPng(linkAsBuffer);
-            form.getTextField("Apple").setImage(qrCode);
-        }
 
         try {
             form.flatten();
