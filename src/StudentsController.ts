@@ -298,6 +298,13 @@ export class StudentsController {
         form.getTextField("Ort_Datum").setText("");
         form.getTextField("QR_Code_Schueler").setImage(qrImage);
 
+        const schoolLogoPath = path.join(this.assetsLocation, "school_logo.png");
+        if (fs.existsSync(schoolLogoPath)) {
+            const schoolLogoBytes = await fs.promises.readFile(schoolLogoPath);
+            const schoolLogoImage = await pdfDoc.embedPng(schoolLogoBytes);
+            form.getTextField("Schul_Logo").setImage(schoolLogoImage);
+        }
+
         try {
             form.flatten();
         } catch (error) {
