@@ -16,10 +16,7 @@ const schoolModuleConfigurationSchema = z.object({
     schoolName: z.string(),
     assetsLocation: z.string(),
     autoMailAfterOnboarding: z.boolean().optional(),
-    autoMailBeforeOffboarding: z.boolean().optional(),
-    useNewQRCodeFormat: z.boolean().optional(),
-    playStoreLink: z.string().optional(),
-    appStoreLink: z.string().optional()
+    autoMailBeforeOffboarding: z.boolean().optional()
 });
 
 type SchoolModuleConfiguration = ConnectorRuntimeModuleConfiguration & z.infer<typeof schoolModuleConfigurationSchema>;
@@ -41,13 +38,10 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
         const displayName = await this.getOrCreateDisplayNameAttribute();
         this.#studentsController = await new StudentsController(
             displayName,
-            this.configuration.playStoreLink,
-            this.configuration.appStoreLink,
             this.runtime.getServices(),
             database,
             this.configuration.assetsLocation,
-            !!this.configuration.autoMailBeforeOffboarding,
-            !!this.configuration.useNewQRCodeFormat
+            !!this.configuration.autoMailBeforeOffboarding
         ).init();
 
         Container.bind(StudentsController)

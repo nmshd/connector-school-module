@@ -19,6 +19,11 @@ tasks:
     cmds:
       - docker compose --env-file .env --env-file .env.connector up -d --build
 
+  down:
+    desc: Remove Connector
+    cmds:
+      - docker compose --env-file .env --env-file .env.connector down -v
+
   restart:
     desc: Restart the Connector
     cmds:
