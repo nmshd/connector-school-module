@@ -13,7 +13,7 @@
         "sync": { "interval": 1 },
         "school": {
             "location": "/usr/app/custom-modules/school-module",
-            "schoolName": "ISS - International Schul Schule",
+            "schoolName": "ISM - Internationales Sprachgymnasium Musterhausen",
             "autoMailAfterOnboarding": true,
             "autoMailBeforeOffboarding": true
         }
