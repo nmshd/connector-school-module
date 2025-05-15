@@ -13,7 +13,7 @@
         "sync": { "interval": 1 },
         "school": {
             "location": "/usr/app/custom-modules/school-module",
-            "schoolName": "ISS - International School Schule",
+            "schoolName": "ISS - International Schul Schule",
             "autoMailAfterOnboarding": true,
             "autoMailBeforeOffboarding": true
         }
