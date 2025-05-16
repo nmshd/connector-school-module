@@ -21,6 +21,10 @@ export const createStudentRequestSchema = z.object({
         .default([])
 });
 
+export const createStudentOnboardingPDFSchema = z.object({
+    schoolLogo: z.string().base64()
+});
+
 export const sendMailRequestSchema = z.object({
     subject: z.string().min(3).max(255),
     body: z.string().min(5).max(4000)
