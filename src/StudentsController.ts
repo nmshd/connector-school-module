@@ -333,6 +333,20 @@ export class StudentsController {
         return Buffer.from(pdfBytes);
     }
 
+    private embedImage(pdfDoc: PDFDocument, image: PDFImage) {
+        const page = pdfDoc.getPage(0);
+        const maxWidth = ((page.getWidth() - 42 - 42) / 5) * 2;
+        const maxHeight = 80;
+        const scale = image.scaleToFit(maxWidth, maxHeight);
+
+        page.drawImage(image, {
+            x: 42,
+            y: page.getHeight() - scale.height - 42,
+            height: scale.height,
+            width: scale.width
+        });
+    }
+
     public async getStudents(): Promise<Student[]> {
         const docs = await this.#studentsCollection.find({});
 
