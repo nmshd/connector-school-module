@@ -19,7 +19,7 @@ import { DateTime } from "luxon";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFImage } from "pdf-lib";
 import qrCodeLib from "qrcode";
 import { SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
 
