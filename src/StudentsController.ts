@@ -22,6 +22,7 @@ import path from "path";
 import { PDFDocument, PDFImage } from "pdf-lib";
 import qrCodeLib from "qrcode";
 import { SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
+import { getFileTypeForBuffer } from "./utils/getFileTypeForBuffer";
 
 export class StudentsController {
     #studentsCollection: IDatabaseCollection;
@@ -245,7 +246,7 @@ export class StudentsController {
         return entries;
     }
 
-    public async getOnboardingDataForStudent(student: Student): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
+    public async getOnboardingDataForStudent(student: Student, schoolLogo?: string): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
         if (!student.correspondingRelationshipTemplateId || !student.givenname || !student.surname) {
             throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
         }
@@ -260,7 +261,8 @@ export class StudentsController {
             {
                 organizationDisplayName: (this.displayName.content.value as DisplayNameJSON).value,
                 givenname: student.givenname,
-                surname: student.surname
+                surname: student.surname,
+                schoolLogo: schoolLogo
             },
             pngAsBuffer
         );
@@ -273,6 +275,7 @@ export class StudentsController {
             organizationDisplayName: string;
             givenname: string;
             surname: string;
+            schoolLogo?: string;
         },
         pngAsBuffer: Buffer
     ) {
@@ -298,17 +301,7 @@ export class StudentsController {
         form.getTextField("Ort_Datum").setText("");
         form.getTextField("QR_Code_Schueler").setImage(qrImage);
 
-        const schoolLogoPNGPath = path.join(this.assetsLocation, "school_logo.png");
-        const schoolLogoJPGPath = path.join(this.assetsLocation, "school_logo.jpg");
-        if (fs.existsSync(schoolLogoPNGPath)) {
-            const schoolLogoBytes = await fs.promises.readFile(schoolLogoPNGPath);
-            const schoolLogoImage = await pdfDoc.embedPng(schoolLogoBytes);
-            this.embedImage(pdfDoc, schoolLogoImage);
-        } else if (fs.existsSync(schoolLogoJPGPath)) {
-            const schoolLogoBytes = await fs.promises.readFile(schoolLogoJPGPath);
-            const schoolLogoImage = await pdfDoc.embedJpg(schoolLogoBytes);
-            this.embedImage(pdfDoc, schoolLogoImage);
-        }
+        await this.embedImage(pdfDoc, data.schoolLogo);
 
         try {
             form.flatten();
@@ -327,7 +320,10 @@ export class StudentsController {
         return Buffer.from(pdfBytes);
     }
 
-    private embedImage(pdfDoc: PDFDocument, image: PDFImage) {
+    private async embedImage(pdfDoc: PDFDocument, schoolLogoBase64?: string) {
+        const image = await this.getImage(pdfDoc, schoolLogoBase64);
+        if (!image) return;
+
         const page = pdfDoc.getPage(0);
         const maxWidth = ((page.getWidth() - 42 - 42) / 5) * 2;
         const maxHeight = 80;
@@ -339,6 +335,41 @@ export class StudentsController {
             height: scale.height,
             width: scale.width
         });
+    }
+
+    private async getImage(pdfDoc: PDFDocument, schoolLogoBase64?: string) {
+        if (schoolLogoBase64 === undefined) return await this.getAssetImage(pdfDoc);
+
+        const bytes = Buffer.from(schoolLogoBase64, "base64");
+        const filetype = getFileTypeForBuffer(bytes);
+        if (!filetype) throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
+
+        switch (filetype) {
+            case "png":
+                const pngImage = await pdfDoc.embedPng(bytes);
+                return pngImage;
+            case "jpg":
+                const jpgImage = await pdfDoc.embedJpg(bytes);
+                return jpgImage;
+        }
+    }
+
+    private async getAssetImage(pdfDoc: PDFDocument): Promise<PDFImage | undefined> {
+        const schoolLogoPNGPath = path.join(this.assetsLocation, "school_logo.png");
+        if (fs.existsSync(schoolLogoPNGPath)) {
+            const schoolLogoBytes = await fs.promises.readFile(schoolLogoPNGPath);
+            const schoolLogoImage = await pdfDoc.embedPng(schoolLogoBytes);
+            return schoolLogoImage;
+        }
+
+        const schoolLogoJPGPath = path.join(this.assetsLocation, "school_logo.jpg");
+        if (fs.existsSync(schoolLogoJPGPath)) {
+            const schoolLogoBytes = await fs.promises.readFile(schoolLogoJPGPath);
+            const schoolLogoImage = await pdfDoc.embedJpg(schoolLogoBytes);
+            return schoolLogoImage;
+        }
+
+        return undefined;
     }
 
     public async getStudents(): Promise<Student[]> {

@@ -7,7 +7,7 @@ import express from "express";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
 import { Student, StudentAuditLog, StudentOnboardingDTO } from "../types";
-import { createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailRequestSchema } from "./schemas";
+import { createStudentOnboardingPDFSchema, createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailRequestSchema } from "./schemas";
 
 @Path("/students")
 export class StudentsRESTController extends BaseController {
@@ -76,6 +76,28 @@ export class StudentsRESTController extends BaseController {
 
         await this.studentsController.deleteStudent(student);
         return this.noContent(Result.ok<unknown, ApplicationError>(undefined));
+    }
+
+    @POST
+    @Path(":id/onboarding")
+    @Accept("application/pdf")
+    public async createStudentOnboardingPDF(@PathParam("id") id: string, @ContextResponse response: express.Response, body: any): Promise<Envelope | void> {
+        const validationResult = createStudentOnboardingPDFSchema.safeParse(body);
+        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        const data = validationResult.data;
+
+        const student = await this.studentsController.getStudent(id);
+        if (!student) throw RuntimeErrors.general.recordNotFound(Student);
+
+        const result = await this.studentsController.getOnboardingDataForStudent(student, data.schoolLogo);
+        return this.file(
+            result,
+            (r) => r.value.pdf,
+            () => `${id}_onboarding.pdf`,
+            () => Mimetype.pdf(),
+            response,
+            200
+        );
     }
 
     @GET
