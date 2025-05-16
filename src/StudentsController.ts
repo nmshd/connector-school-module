@@ -245,7 +245,7 @@ export class StudentsController {
         return entries;
     }
 
-    public async getOnboardingDataForStudent(student: Student): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
+    public async getOnboardingDataForStudent(student: Student, schoolLogo?: string): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
         if (!student.correspondingRelationshipTemplateId || !student.givenname || !student.surname) {
             throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
         }
@@ -260,7 +260,8 @@ export class StudentsController {
             {
                 organizationDisplayName: (this.displayName.content.value as DisplayNameJSON).value,
                 givenname: student.givenname,
-                surname: student.surname
+                surname: student.surname,
+                schoolLogo: schoolLogo
             },
             pngAsBuffer
         );
@@ -273,6 +274,7 @@ export class StudentsController {
             organizationDisplayName: string;
             givenname: string;
             surname: string;
+            schoolLogo?: string;
         },
         pngAsBuffer: Buffer
     ) {
@@ -300,7 +302,20 @@ export class StudentsController {
 
         const schoolLogoPNGPath = path.join(this.assetsLocation, "school_logo.png");
         const schoolLogoJPGPath = path.join(this.assetsLocation, "school_logo.jpg");
-        if (fs.existsSync(schoolLogoPNGPath)) {
+        if (data.schoolLogo) {
+            const bytes = Buffer.from(data.schoolLogo, "base64");
+            const matcher = bytes.toString("hex", 0, 4);
+
+            if (matcher === "89504e47") {
+                const schoolLogoImage = await pdfDoc.embedPng(bytes);
+                this.embedImage(pdfDoc, schoolLogoImage);
+            } else if (matcher.startsWith("ffd8")) {
+                const schoolLogoImage = await pdfDoc.embedJpg(bytes);
+                this.embedImage(pdfDoc, schoolLogoImage);
+            } else {
+                throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
+            }
+        } else if (fs.existsSync(schoolLogoPNGPath)) {
             const schoolLogoBytes = await fs.promises.readFile(schoolLogoPNGPath);
             const schoolLogoImage = await pdfDoc.embedPng(schoolLogoBytes);
             this.embedImage(pdfDoc, schoolLogoImage);
