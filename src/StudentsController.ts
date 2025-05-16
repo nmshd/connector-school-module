@@ -22,7 +22,7 @@ import path from "path";
 import { PDFDocument, PDFImage } from "pdf-lib";
 import qrCodeLib from "qrcode";
 import { SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
-import { getFileTypeForBuffer } from "./utils/getFiletypeForBuffer";
+import { getFileTypeForBuffer } from "./utils/getFileTypeForBuffer";
 
 export class StudentsController {
     #studentsCollection: IDatabaseCollection;
