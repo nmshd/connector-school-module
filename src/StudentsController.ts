@@ -19,7 +19,7 @@ import { DateTime } from "luxon";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFImage } from "pdf-lib";
 import qrCodeLib from "qrcode";
 import { SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
 
@@ -298,22 +298,16 @@ export class StudentsController {
         form.getTextField("Ort_Datum").setText("");
         form.getTextField("QR_Code_Schueler").setImage(qrImage);
 
-        const schoolLogoPath = path.join(this.assetsLocation, "school_logo.png");
-        if (fs.existsSync(schoolLogoPath)) {
-            const schoolLogoBytes = await fs.promises.readFile(schoolLogoPath);
+        const schoolLogoPNGPath = path.join(this.assetsLocation, "school_logo.png");
+        const schoolLogoJPGPath = path.join(this.assetsLocation, "school_logo.jpg");
+        if (fs.existsSync(schoolLogoPNGPath)) {
+            const schoolLogoBytes = await fs.promises.readFile(schoolLogoPNGPath);
             const schoolLogoImage = await pdfDoc.embedPng(schoolLogoBytes);
-
-            const page = pdfDoc.getPage(0);
-            const maxWidth = ((page.getWidth() - 42 - 42) / 5) * 2;
-            const maxHeight = 80;
-            const scale = schoolLogoImage.scaleToFit(maxWidth, maxHeight);
-
-            page.drawImage(schoolLogoImage, {
-                x: 42,
-                y: page.getHeight() - scale.height - 42,
-                height: scale.height,
-                width: scale.width
-            });
+            this.embedImage(pdfDoc, schoolLogoImage);
+        } else if (fs.existsSync(schoolLogoJPGPath)) {
+            const schoolLogoBytes = await fs.promises.readFile(schoolLogoJPGPath);
+            const schoolLogoImage = await pdfDoc.embedJpg(schoolLogoBytes);
+            this.embedImage(pdfDoc, schoolLogoImage);
         }
 
         try {
@@ -331,6 +325,20 @@ export class StudentsController {
 
         const pdfBytes = await pdfDoc.save();
         return Buffer.from(pdfBytes);
+    }
+
+    private embedImage(pdfDoc: PDFDocument, image: PDFImage) {
+        const page = pdfDoc.getPage(0);
+        const maxWidth = ((page.getWidth() - 42 - 42) / 5) * 2;
+        const maxHeight = 80;
+        const scale = image.scaleToFit(maxWidth, maxHeight);
+
+        page.drawImage(image, {
+            x: 42,
+            y: page.getHeight() - scale.height - 42,
+            height: scale.height,
+            width: scale.width
+        });
     }
 
     public async getStudents(): Promise<Student[]> {
