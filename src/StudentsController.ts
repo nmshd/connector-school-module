@@ -302,7 +302,18 @@ export class StudentsController {
         if (fs.existsSync(schoolLogoPath)) {
             const schoolLogoBytes = await fs.promises.readFile(schoolLogoPath);
             const schoolLogoImage = await pdfDoc.embedPng(schoolLogoBytes);
-            form.getTextField("Schul_Logo").setImage(schoolLogoImage);
+
+            const page = pdfDoc.getPage(0);
+            const maxWidth = ((page.getWidth() - 42 - 42) / 5) * 2;
+            const maxHeight = 80;
+            const scale = schoolLogoImage.scaleToFit(maxWidth, maxHeight);
+
+            page.drawImage(schoolLogoImage, {
+                x: 42,
+                y: page.getHeight() - scale.height - 42,
+                height: scale.height,
+                width: scale.width
+            });
         }
 
         try {
