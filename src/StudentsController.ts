@@ -22,6 +22,7 @@ import path from "path";
 import { PDFDocument, PDFImage } from "pdf-lib";
 import qrCodeLib from "qrcode";
 import { SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
+import { getFileTypeForBuffer } from "./utils/getFiletypeForBuffer";
 
 export class StudentsController {
     #studentsCollection: IDatabaseCollection;
@@ -340,21 +341,17 @@ export class StudentsController {
         if (schoolLogoBase64 === undefined) return await this.getAssetImage(pdfDoc);
 
         const bytes = Buffer.from(schoolLogoBase64, "base64");
-        const fistBytesAsHex = bytes.toString("hex", 0, 4);
+        const filetype = getFileTypeForBuffer(bytes);
+        if (!filetype) throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
 
-        const pdfMagicBytes = "89504e47";
-        if (fistBytesAsHex === pdfMagicBytes) {
-            const schoolLogoImage = await pdfDoc.embedPng(bytes);
-            return schoolLogoImage;
+        switch (filetype) {
+            case "png":
+                const pngImage = await pdfDoc.embedPng(bytes);
+                return pngImage;
+            case "jpg":
+                const jpgImage = await pdfDoc.embedJpg(bytes);
+                return jpgImage;
         }
-
-        const jpgMagicBytes = "ffd8";
-        if (fistBytesAsHex.startsWith(jpgMagicBytes)) {
-            const schoolLogoImage = await pdfDoc.embedJpg(bytes);
-            return schoolLogoImage;
-        }
-
-        throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
     }
 
     private async getAssetImage(pdfDoc: PDFDocument): Promise<PDFImage | undefined> {
