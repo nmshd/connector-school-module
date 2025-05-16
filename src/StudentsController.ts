@@ -300,30 +300,7 @@ export class StudentsController {
         form.getTextField("Ort_Datum").setText("");
         form.getTextField("QR_Code_Schueler").setImage(qrImage);
 
-        const schoolLogoPNGPath = path.join(this.assetsLocation, "school_logo.png");
-        const schoolLogoJPGPath = path.join(this.assetsLocation, "school_logo.jpg");
-        if (data.schoolLogo) {
-            const bytes = Buffer.from(data.schoolLogo, "base64");
-            const matcher = bytes.toString("hex", 0, 4);
-
-            if (matcher === "89504e47") {
-                const schoolLogoImage = await pdfDoc.embedPng(bytes);
-                this.embedImage(pdfDoc, schoolLogoImage);
-            } else if (matcher.startsWith("ffd8")) {
-                const schoolLogoImage = await pdfDoc.embedJpg(bytes);
-                this.embedImage(pdfDoc, schoolLogoImage);
-            } else {
-                throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
-            }
-        } else if (fs.existsSync(schoolLogoPNGPath)) {
-            const schoolLogoBytes = await fs.promises.readFile(schoolLogoPNGPath);
-            const schoolLogoImage = await pdfDoc.embedPng(schoolLogoBytes);
-            this.embedImage(pdfDoc, schoolLogoImage);
-        } else if (fs.existsSync(schoolLogoJPGPath)) {
-            const schoolLogoBytes = await fs.promises.readFile(schoolLogoJPGPath);
-            const schoolLogoImage = await pdfDoc.embedJpg(schoolLogoBytes);
-            this.embedImage(pdfDoc, schoolLogoImage);
-        }
+        await this.embedImage(pdfDoc, data.schoolLogo);
 
         try {
             form.flatten();
@@ -342,7 +319,10 @@ export class StudentsController {
         return Buffer.from(pdfBytes);
     }
 
-    private embedImage(pdfDoc: PDFDocument, image: PDFImage) {
+    private async embedImage(pdfDoc: PDFDocument, schoolLogoBase64?: string) {
+        const image = await this.getImage(pdfDoc, schoolLogoBase64);
+        if (!image) return;
+
         const page = pdfDoc.getPage(0);
         const maxWidth = ((page.getWidth() - 42 - 42) / 5) * 2;
         const maxHeight = 80;
@@ -354,6 +334,45 @@ export class StudentsController {
             height: scale.height,
             width: scale.width
         });
+    }
+
+    private async getImage(pdfDoc: PDFDocument, schoolLogoBase64?: string) {
+        if (schoolLogoBase64 === undefined) return await this.getAssetImage(pdfDoc);
+
+        const bytes = Buffer.from(schoolLogoBase64, "base64");
+        const fistBytesAsHex = bytes.toString("hex", 0, 4);
+
+        const pdfMagicBytes = "89504e47";
+        if (fistBytesAsHex === pdfMagicBytes) {
+            const schoolLogoImage = await pdfDoc.embedPng(bytes);
+            return schoolLogoImage;
+        }
+
+        const jpgMagicBytes = "ffd8";
+        if (fistBytesAsHex.startsWith(jpgMagicBytes)) {
+            const schoolLogoImage = await pdfDoc.embedJpg(bytes);
+            return schoolLogoImage;
+        }
+
+        throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
+    }
+
+    private async getAssetImage(pdfDoc: PDFDocument): Promise<PDFImage | undefined> {
+        const schoolLogoPNGPath = path.join(this.assetsLocation, "school_logo.png");
+        if (fs.existsSync(schoolLogoPNGPath)) {
+            const schoolLogoBytes = await fs.promises.readFile(schoolLogoPNGPath);
+            const schoolLogoImage = await pdfDoc.embedPng(schoolLogoBytes);
+            return schoolLogoImage;
+        }
+
+        const schoolLogoJPGPath = path.join(this.assetsLocation, "school_logo.jpg");
+        if (fs.existsSync(schoolLogoJPGPath)) {
+            const schoolLogoBytes = await fs.promises.readFile(schoolLogoJPGPath);
+            const schoolLogoImage = await pdfDoc.embedJpg(schoolLogoBytes);
+            return schoolLogoImage;
+        }
+
+        return undefined;
     }
 
     public async getStudents(): Promise<Student[]> {
