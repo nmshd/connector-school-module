@@ -325,13 +325,18 @@ export class StudentsController {
         if (!image) return;
 
         const page = pdfDoc.getPage(0);
-        const maxWidth = ((page.getWidth() - 42 - 42) / 5) * 2;
+
+        const pointsPerMillimeter = 0.353;
+        const borderInPoints = 15 / pointsPerMillimeter;
+
+        const availableHorizontalSpace = page.getWidth() - borderInPoints * 2;
+        const maxWidth = (availableHorizontalSpace / 5) * 2;
         const maxHeight = 80;
         const scale = image.scaleToFit(maxWidth, maxHeight);
 
         page.drawImage(image, {
-            x: 42,
-            y: page.getHeight() - scale.height - 42,
+            x: borderInPoints,
+            y: page.getHeight() - scale.height - borderInPoints,
             height: scale.height,
             width: scale.width
         });
