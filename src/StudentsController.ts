@@ -329,7 +329,8 @@ export class StudentsController {
         const pointsPerMillimeter = 0.353;
         const borderInPoints = 15 / pointsPerMillimeter;
 
-        const maxWidth = ((page.getWidth() - borderInPoints * 2) / 5) * 2;
+        const availableHorizontalSpace = page.getWidth() - borderInPoints * 2;
+        const maxWidth = (availableHorizontalSpace / 5) * 2;
         const maxHeight = 80;
         const scale = image.scaleToFit(maxWidth, maxHeight);
 
