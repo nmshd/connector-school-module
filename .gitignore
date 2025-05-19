@@ -12,4 +12,5 @@ assets/*
 !assets/mail_offboarding.txt
 !assets/mail_onboarding.txt
 !assets/template_onboarding.pdf
-!assets/.gitkeep
+!assets/school_logo.png
+!assets/Logo_GM.*

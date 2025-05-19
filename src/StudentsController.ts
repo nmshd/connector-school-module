@@ -19,22 +19,20 @@ import { DateTime } from "luxon";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFImage } from "pdf-lib";
 import qrCodeLib from "qrcode";
 import { SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
+import { getFileTypeForBuffer } from "./utils/getFileTypeForBuffer";
 
 export class StudentsController {
     #studentsCollection: IDatabaseCollection;
 
     public constructor(
         private readonly displayName: LocalAttributeJSON,
-        private readonly playStoreLink: string | undefined,
-        private readonly appStoreLink: string | undefined,
         private readonly services: RuntimeServices,
         private readonly database: IDatabaseCollectionProvider,
         private readonly assetsLocation: string,
-        private readonly autoMailBeforeOffboarding: boolean,
-        private readonly useNewQRCodeFormat: boolean
+        private readonly autoMailBeforeOffboarding: boolean
     ) {}
 
     public async init(): Promise<this> {
@@ -248,7 +246,7 @@ export class StudentsController {
         return entries;
     }
 
-    public async getOnboardingDataForStudent(student: Student): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
+    public async getOnboardingDataForStudent(student: Student, schoolLogo?: string): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
         if (!student.correspondingRelationshipTemplateId || !student.givenname || !student.surname) {
             throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
         }
@@ -256,7 +254,7 @@ export class StudentsController {
         const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
         if (template.isError) return Result.fail(template.error);
 
-        const link = this.useNewQRCodeFormat ? template.value.reference.url : `nmshd://tr#${template.value.reference.truncated}`;
+        const link = template.value.reference.url;
         const pngAsBuffer = await qrCodeLib.toBuffer(link, { type: "png" });
 
         const onboardingPdf = await this.createOnboardingPDF(
@@ -264,8 +262,7 @@ export class StudentsController {
                 organizationDisplayName: (this.displayName.content.value as DisplayNameJSON).value,
                 givenname: student.givenname,
                 surname: student.surname,
-                playStoreLink: this.playStoreLink,
-                appStoreLink: this.appStoreLink
+                schoolLogo: schoolLogo
             },
             pngAsBuffer
         );
@@ -278,8 +275,7 @@ export class StudentsController {
             organizationDisplayName: string;
             givenname: string;
             surname: string;
-            playStoreLink?: string;
-            appStoreLink?: string;
+            schoolLogo?: string;
         },
         pngAsBuffer: Buffer
     ) {
@@ -305,17 +301,7 @@ export class StudentsController {
         form.getTextField("Ort_Datum").setText("");
         form.getTextField("QR_Code_Schueler").setImage(qrImage);
 
-        if (data.playStoreLink) {
-            const linkAsBuffer = await qrCodeLib.toBuffer(data.playStoreLink, { type: "png" });
-            const qrCode = await pdfDoc.embedPng(linkAsBuffer);
-            form.getTextField("Google").setImage(qrCode);
-        }
-
-        if (data.appStoreLink) {
-            const linkAsBuffer = await qrCodeLib.toBuffer(data.appStoreLink, { type: "png" });
-            const qrCode = await pdfDoc.embedPng(linkAsBuffer);
-            form.getTextField("Apple").setImage(qrCode);
-        }
+        await this.embedImage(pdfDoc, data.schoolLogo);
 
         try {
             form.flatten();
@@ -332,6 +318,58 @@ export class StudentsController {
 
         const pdfBytes = await pdfDoc.save();
         return Buffer.from(pdfBytes);
+    }
+
+    private async embedImage(pdfDoc: PDFDocument, schoolLogoBase64?: string) {
+        const image = await this.getImage(pdfDoc, schoolLogoBase64);
+        if (!image) return;
+
+        const page = pdfDoc.getPage(0);
+        const maxWidth = ((page.getWidth() - 42 - 42) / 5) * 2;
+        const maxHeight = 80;
+        const scale = image.scaleToFit(maxWidth, maxHeight);
+
+        page.drawImage(image, {
+            x: 42,
+            y: page.getHeight() - scale.height - 42,
+            height: scale.height,
+            width: scale.width
+        });
+    }
+
+    private async getImage(pdfDoc: PDFDocument, schoolLogoBase64?: string) {
+        if (schoolLogoBase64 === undefined) return await this.getAssetImage(pdfDoc);
+
+        const bytes = Buffer.from(schoolLogoBase64, "base64");
+        const filetype = getFileTypeForBuffer(bytes);
+        if (!filetype) throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
+
+        switch (filetype) {
+            case "png":
+                const pngImage = await pdfDoc.embedPng(bytes);
+                return pngImage;
+            case "jpg":
+                const jpgImage = await pdfDoc.embedJpg(bytes);
+                return jpgImage;
+        }
+    }
+
+    private async getAssetImage(pdfDoc: PDFDocument): Promise<PDFImage | undefined> {
+        const schoolLogoPNGPath = path.join(this.assetsLocation, "school_logo.png");
+        if (fs.existsSync(schoolLogoPNGPath)) {
+            const schoolLogoBytes = await fs.promises.readFile(schoolLogoPNGPath);
+            const schoolLogoImage = await pdfDoc.embedPng(schoolLogoBytes);
+            return schoolLogoImage;
+        }
+
+        const schoolLogoJPGPath = path.join(this.assetsLocation, "school_logo.jpg");
+        if (fs.existsSync(schoolLogoJPGPath)) {
+            const schoolLogoBytes = await fs.promises.readFile(schoolLogoJPGPath);
+            const schoolLogoImage = await pdfDoc.embedJpg(schoolLogoBytes);
+            return schoolLogoImage;
+        }
+
+        return undefined;
     }
 
     public async getStudents(): Promise<Student[]> {
@@ -507,7 +545,6 @@ export class StudentsController {
                     {
                         "@type": "TransferFileOwnershipRequestItem",
                         mustBeAccepted: true,
-                        requireManualDecision: true,
                         fileReference: file.value.reference.truncated
                     }
                 ]

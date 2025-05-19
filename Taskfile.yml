@@ -19,6 +19,11 @@ tasks:
     cmds:
       - docker compose --env-file .env --env-file .env.connector up -d --build
 
+  down:
+    desc: Remove Connector
+    cmds:
+      - docker compose --env-file .env --env-file .env.connector down -v
+
   restart:
     desc: Restart the Connector
     cmds:
@@ -42,6 +47,26 @@ tasks:
       - "http --download localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'"
     requires:
       vars: [STUDENT_ID]
+
+  create-onboarding-pdf-with-custom-png-logo:
+    desc: Gets the onboarding document as PDF
+    cmds:
+      - 'echo -n ''{"schoolLogo": "{{.LOGO_BASE64}}"}'' | http -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' > {{ .STUDENT_ID }}_onboarding.pdf'
+    requires:
+      vars: [STUDENT_ID]
+    vars:
+      LOGO_BASE64:
+        sh: 'cat assets/Logo_GM.png | {{if eq OS "darwin"}}base64{{else}}base64 -w 0{{end}}'
+
+  create-onboarding-pdf-with-custom-jpg-logo:
+    desc: Gets the onboarding document as PDF
+    cmds:
+      - 'echo -n ''{"schoolLogo": "{{.LOGO_BASE64}}"}'' | http -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' > {{ .STUDENT_ID }}_onboarding.pdf'
+    requires:
+      vars: [STUDENT_ID]
+    vars:
+      LOGO_BASE64:
+        sh: 'cat assets/Logo_GM.jpg | {{if eq OS "darwin"}}base64{{else}}base64 -w 0{{end}}'
 
   get-onboarding-png:
     desc: Gets the onboarding document as PNG
