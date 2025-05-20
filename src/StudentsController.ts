@@ -246,7 +246,19 @@ export class StudentsController {
         return entries;
     }
 
-    public async getOnboardingDataForStudent(student: Student, schoolLogo?: string): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
+    public async getOnboardingDataForStudent(
+        student: Student,
+        pdfSettings: {
+            logo?: {
+                bytes?: string;
+                x?: number;
+                y?: number;
+                maxWidth?: number;
+                maxHeight?: number;
+            };
+            fields?: Record<string, string>;
+        }
+    ): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
         if (!student.correspondingRelationshipTemplateId || !student.givenname || !student.surname) {
             throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
         }
@@ -257,25 +269,22 @@ export class StudentsController {
         const link = template.value.reference.url;
         const pngAsBuffer = await qrCodeLib.toBuffer(link, { type: "png" });
 
-        const onboardingPdf = await this.createOnboardingPDF(
-            {
-                organizationDisplayName: (this.displayName.content.value as DisplayNameJSON).value,
-                givenname: student.givenname,
-                surname: student.surname,
-                schoolLogo: schoolLogo
-            },
-            pngAsBuffer
-        );
+        const onboardingPdf = await this.createOnboardingPDF(student, pdfSettings, pngAsBuffer);
 
         return Result.ok({ link: link, png: pngAsBuffer, pdf: onboardingPdf });
     }
 
     private async createOnboardingPDF(
-        data: {
-            organizationDisplayName: string;
-            givenname: string;
-            surname: string;
-            schoolLogo?: string;
+        student: Student,
+        settings: {
+            logo?: {
+                bytes?: string;
+                x?: number;
+                y?: number;
+                maxWidth?: number;
+                maxHeight?: number;
+            };
+            fields?: Record<string, string>;
         },
         pngAsBuffer: Buffer
     ) {
@@ -301,7 +310,7 @@ export class StudentsController {
         form.getTextField("Ort_Datum").setText("");
         form.getTextField("QR_Code_Schueler").setImage(qrImage);
 
-        await this.embedImage(pdfDoc, data.schoolLogo);
+        await this.embedImage(pdfDoc, settings.logo);
 
         try {
             form.flatten();
@@ -320,8 +329,8 @@ export class StudentsController {
         return Buffer.from(pdfBytes);
     }
 
-    private async embedImage(pdfDoc: PDFDocument, schoolLogoBase64?: string) {
-        const image = await this.getImage(pdfDoc, schoolLogoBase64);
+    private async embedImage(pdfDoc: PDFDocument, logo: { bytes?: string; x?: number; y?: number; maxWidth?: number; maxHeight?: number } = {}) {
+        const image = await this.getImage(pdfDoc, logo.bytes);
         if (!image) return;
 
         const page = pdfDoc.getPage(0);
@@ -329,17 +338,25 @@ export class StudentsController {
         // 25.5mm / 72DPI
         const pointsPerMillimeter = 0.353;
 
-        const pagePaddingInMillimeter = 15;
-        const pagePaddingInPoints = pagePaddingInMillimeter / pointsPerMillimeter;
+        const yInMillis = logo.y ?? 15;
+        const yInPoints = yInMillis / pointsPerMillimeter;
 
-        const availableHorizontalSpace = page.getWidth() - pagePaddingInPoints * 2;
-        const maxWidth = (availableHorizontalSpace / 5) * 2;
-        const maxHeight = 80;
+        const xInMillis = logo.x ?? 15;
+        const xInPoints = xInMillis / pointsPerMillimeter;
+
+        const userDefinedMaxWidth = logo.maxWidth !== undefined ? logo.maxWidth / pointsPerMillimeter : undefined;
+        const userDefinedMaxHeight = logo.maxHeight !== undefined ? logo.maxHeight / pointsPerMillimeter : undefined;
+
+        const availableHorizontalSpace = page.getWidth() - yInPoints * 2;
+        const calulatedMaxWidth = (availableHorizontalSpace / 5) * 2;
+
+        const maxWidth = userDefinedMaxWidth ?? calulatedMaxWidth;
+        const maxHeight = userDefinedMaxHeight ?? 80;
         const scale = image.scaleToFit(maxWidth, maxHeight);
 
         page.drawImage(image, {
-            x: pagePaddingInPoints,
-            y: page.getHeight() - scale.height - pagePaddingInPoints,
+            x: xInPoints,
+            y: page.getHeight() - scale.height - yInPoints,
             height: scale.height,
             width: scale.width
         });
