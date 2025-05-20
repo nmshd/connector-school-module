@@ -304,11 +304,25 @@ export class StudentsController {
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
         const form = pdfDoc.getForm();
 
-        form.getTextField("Vorname_Nachname").setText(`${data.givenname} ${data.surname}`);
-        form.getTextField("Schulname_01").setText(data.organizationDisplayName);
-        form.getTextField("Schulname_02").setText(data.organizationDisplayName);
-        form.getTextField("Ort_Datum").setText("");
-        form.getTextField("QR_Code_Schueler").setImage(qrImage);
+        const fields = {
+            schoolname: "{{organization.displayName}}",
+            salutation: `Guten Tag {{student.givenname}} {{student.surname}},`,
+            greeting: "{{organization.displayName}}",
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            place_date: "",
+            ...settings.fields
+        };
+
+        const formFields = form.getFields();
+
+        for (const [key, value] of Object.entries(fields)) {
+            if (!formFields.some((field) => field.getName() === key)) continue;
+
+            const templatedValue = await this.fillTemplateStringWithStudentAndOrganizationData(student, value);
+            form.getTextField(key).setText(templatedValue);
+        }
+
+        form.getTextField("qr_code").setImage(qrImage);
 
         await this.embedImage(pdfDoc, settings.logo);
 
@@ -511,8 +525,12 @@ export class StudentsController {
     public async sendMail(student: Student, rawSubject: string, rawBody: string, additionalData: any = {}): Promise<MessageDTO> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
 
-        const subject = await this.fillMailTemplateWithStudentData(student, rawSubject, additionalData);
-        const body = await this.fillMailTemplateWithStudentData(student, rawBody, additionalData);
+        if (!student.correspondingRelationshipTemplateId) {
+            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
+        }
+
+        const subject = await this.fillTemplateStringWithStudentAndOrganizationData(student, rawSubject, additionalData);
+        const body = await this.fillTemplateStringWithStudentAndOrganizationData(student, rawBody, additionalData);
 
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
@@ -524,26 +542,17 @@ export class StudentsController {
         return result.value;
     }
 
-    private async fillMailTemplateWithStudentData(student: Student, template: string, additionalData: any = {}): Promise<string> {
-        if (!student.correspondingRelationshipTemplateId) {
-            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
-        }
-
-        if (!student.correspondingRelationshipId) {
-            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
-        }
-
-        const relationship = await this.getRelationship(student.correspondingRelationshipId);
-        if (relationship.status !== RelationshipStatus.Active) {
-            throw new ApplicationError("error.schoolModule.noActiveRelationship", "The relationship to the student is not active, so sending a mail is not possible.");
-        }
-
-        const contact = await this.services.dataViewExpander.expandAddress(relationship.peer);
+    private async fillTemplateStringWithStudentAndOrganizationData(student: Student, template: string, additionalData: any = {}): Promise<string> {
+        const relationship = student.correspondingRelationshipId ? await this.getRelationship(student.correspondingRelationshipId) : undefined;
+        const contact = relationship && relationship.status !== RelationshipStatus.Active ? await this.services.dataViewExpander.expandAddress(relationship.peer) : undefined;
 
         const data = {
             student: {
-                givenname: contact.relationship?.nameMap["GivenName"] ?? student.givenname,
-                surname: contact.relationship?.nameMap["Surname"] ?? student.surname
+                givenname: contact?.relationship?.nameMap["GivenName"] ?? student.givenname,
+                surname: contact?.relationship?.nameMap["Surname"] ?? student.surname
+            },
+            organization: {
+                displayName: (this.displayName.content.value as DisplayNameJSON).value
             },
             requestBody: additionalData
         };
