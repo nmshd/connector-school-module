@@ -1,3 +1,4 @@
+export * from "./PDFSettings";
 export * from "./SchoolFileDTO";
 export * from "./Student";
 export * from "./StudentAuditLog";

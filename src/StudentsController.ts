@@ -21,7 +21,7 @@ import fs from "node:fs";
 import path from "path";
 import { PDFDocument, PDFImage } from "pdf-lib";
 import qrCodeLib from "qrcode";
-import { SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
+import { PDFLogoSettings, PDFSettings, SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
 import { getFileTypeForBuffer } from "./utils/getFileTypeForBuffer";
 
 export class StudentsController {
@@ -246,7 +246,7 @@ export class StudentsController {
         return entries;
     }
 
-    public async getOnboardingDataForStudent(student: Student, schoolLogo?: string): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
+    public async getOnboardingDataForStudent(student: Student, pdfSettings: PDFSettings): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
         if (!student.correspondingRelationshipTemplateId || !student.givenname || !student.surname) {
             throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
         }
@@ -257,28 +257,12 @@ export class StudentsController {
         const link = template.value.reference.url;
         const pngAsBuffer = await qrCodeLib.toBuffer(link, { type: "png" });
 
-        const onboardingPdf = await this.createOnboardingPDF(
-            {
-                organizationDisplayName: (this.displayName.content.value as DisplayNameJSON).value,
-                givenname: student.givenname,
-                surname: student.surname,
-                schoolLogo: schoolLogo
-            },
-            pngAsBuffer
-        );
+        const onboardingPdf = await this.createOnboardingPDF(student, pdfSettings, pngAsBuffer);
 
         return Result.ok({ link: link, png: pngAsBuffer, pdf: onboardingPdf });
     }
 
-    private async createOnboardingPDF(
-        data: {
-            organizationDisplayName: string;
-            givenname: string;
-            surname: string;
-            schoolLogo?: string;
-        },
-        pngAsBuffer: Buffer
-    ) {
+    private async createOnboardingPDF(student: Student, settings: PDFSettings, pngAsBuffer: Buffer) {
         const templateName = "template_onboarding.pdf";
         const pathToPdf = path.resolve(path.join(this.assetsLocation, templateName));
 
@@ -295,13 +279,27 @@ export class StudentsController {
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
         const form = pdfDoc.getForm();
 
-        form.getTextField("Vorname_Nachname").setText(`${data.givenname} ${data.surname}`);
-        form.getTextField("Schulname_01").setText(data.organizationDisplayName);
-        form.getTextField("Schulname_02").setText(data.organizationDisplayName);
-        form.getTextField("Ort_Datum").setText("");
-        form.getTextField("QR_Code_Schueler").setImage(qrImage);
+        const fields = {
+            schoolname: "{{organization.displayName}}",
+            salutation: `Guten Tag {{student.givenname}} {{student.surname}},`,
+            greeting: "{{organization.displayName}}",
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            place_date: "",
+            ...settings.fields
+        };
 
-        await this.embedImage(pdfDoc, data.schoolLogo);
+        const formFields = form.getFields();
+
+        for (const [key, value] of Object.entries(fields)) {
+            if (!formFields.some((field) => field.getName() === key)) continue;
+
+            const templatedValue = await this.fillTemplateStringWithStudentAndOrganizationData(student, value);
+            form.getTextField(key).setText(templatedValue);
+        }
+
+        form.getTextField("qr_code").setImage(qrImage);
+
+        await this.embedImage(pdfDoc, settings.logo);
 
         try {
             form.flatten();
@@ -320,8 +318,8 @@ export class StudentsController {
         return Buffer.from(pdfBytes);
     }
 
-    private async embedImage(pdfDoc: PDFDocument, schoolLogoBase64?: string) {
-        const image = await this.getImage(pdfDoc, schoolLogoBase64);
+    private async embedImage(pdfDoc: PDFDocument, logo: PDFLogoSettings = {}) {
+        const image = await this.getImage(pdfDoc, logo.bytes);
         if (!image) return;
 
         const page = pdfDoc.getPage(0);
@@ -329,17 +327,25 @@ export class StudentsController {
         // 25.5mm / 72DPI
         const pointsPerMillimeter = 0.353;
 
-        const pagePaddingInMillimeter = 15;
-        const pagePaddingInPoints = pagePaddingInMillimeter / pointsPerMillimeter;
+        const yInMillis = logo.y ?? 15;
+        const yInPoints = yInMillis / pointsPerMillimeter;
 
-        const availableHorizontalSpace = page.getWidth() - pagePaddingInPoints * 2;
-        const maxWidth = (availableHorizontalSpace / 5) * 2;
-        const maxHeight = 80;
+        const xInMillis = logo.x ?? 15;
+        const xInPoints = xInMillis / pointsPerMillimeter;
+
+        const userDefinedMaxWidth = logo.maxWidth !== undefined ? logo.maxWidth / pointsPerMillimeter : undefined;
+        const userDefinedMaxHeight = logo.maxHeight !== undefined ? logo.maxHeight / pointsPerMillimeter : undefined;
+
+        const availableHorizontalSpace = page.getWidth() - yInPoints * 2;
+        const calulatedMaxWidth = (availableHorizontalSpace / 5) * 2;
+
+        const maxWidth = userDefinedMaxWidth ?? calulatedMaxWidth;
+        const maxHeight = userDefinedMaxHeight ?? 80;
         const scale = image.scaleToFit(maxWidth, maxHeight);
 
         page.drawImage(image, {
-            x: pagePaddingInPoints,
-            y: page.getHeight() - scale.height - pagePaddingInPoints,
+            x: xInPoints,
+            y: page.getHeight() - scale.height - yInPoints,
             height: scale.height,
             width: scale.width
         });
@@ -493,9 +499,10 @@ export class StudentsController {
 
     public async sendMail(student: Student, rawSubject: string, rawBody: string, additionalData: any = {}): Promise<MessageDTO> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        if (!student.correspondingRelationshipTemplateId) throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
 
-        const subject = await this.fillMailTemplateWithStudentData(student, rawSubject, additionalData);
-        const body = await this.fillMailTemplateWithStudentData(student, rawBody, additionalData);
+        const subject = await this.fillTemplateStringWithStudentAndOrganizationData(student, rawSubject, additionalData);
+        const body = await this.fillTemplateStringWithStudentAndOrganizationData(student, rawBody, additionalData);
 
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
@@ -507,26 +514,17 @@ export class StudentsController {
         return result.value;
     }
 
-    private async fillMailTemplateWithStudentData(student: Student, template: string, additionalData: any = {}): Promise<string> {
-        if (!student.correspondingRelationshipTemplateId) {
-            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
-        }
-
-        if (!student.correspondingRelationshipId) {
-            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
-        }
-
-        const relationship = await this.getRelationship(student.correspondingRelationshipId);
-        if (relationship.status !== RelationshipStatus.Active) {
-            throw new ApplicationError("error.schoolModule.noActiveRelationship", "The relationship to the student is not active, so sending a mail is not possible.");
-        }
-
-        const contact = await this.services.dataViewExpander.expandAddress(relationship.peer);
+    private async fillTemplateStringWithStudentAndOrganizationData(student: Student, template: string, additionalData: any = {}): Promise<string> {
+        const relationship = student.correspondingRelationshipId ? await this.getRelationship(student.correspondingRelationshipId) : undefined;
+        const contact = relationship && relationship.status !== RelationshipStatus.Active ? await this.services.dataViewExpander.expandAddress(relationship.peer) : undefined;
 
         const data = {
             student: {
-                givenname: contact.relationship?.nameMap["GivenName"] ?? student.givenname,
-                surname: contact.relationship?.nameMap["Surname"] ?? student.surname
+                givenname: contact?.relationship?.nameMap["GivenName"] ?? student.givenname,
+                surname: contact?.relationship?.nameMap["Surname"] ?? student.surname
+            },
+            organization: {
+                displayName: (this.displayName.content.value as DisplayNameJSON).value
             },
             requestBody: additionalData
         };
