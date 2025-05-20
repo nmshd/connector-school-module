@@ -21,7 +21,7 @@ import fs from "node:fs";
 import path from "path";
 import { PDFDocument, PDFImage } from "pdf-lib";
 import qrCodeLib from "qrcode";
-import { SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
+import { PDFLogoSettings, PDFSettings, SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
 import { getFileTypeForBuffer } from "./utils/getFileTypeForBuffer";
 
 export class StudentsController {
@@ -246,19 +246,7 @@ export class StudentsController {
         return entries;
     }
 
-    public async getOnboardingDataForStudent(
-        student: Student,
-        pdfSettings: {
-            logo?: {
-                bytes?: string;
-                x?: number;
-                y?: number;
-                maxWidth?: number;
-                maxHeight?: number;
-            };
-            fields?: Record<string, string>;
-        }
-    ): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
+    public async getOnboardingDataForStudent(student: Student, pdfSettings: PDFSettings): Promise<Result<{ pdf: Buffer; png: Buffer; link: string }>> {
         if (!student.correspondingRelationshipTemplateId || !student.givenname || !student.surname) {
             throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
         }
@@ -274,20 +262,7 @@ export class StudentsController {
         return Result.ok({ link: link, png: pngAsBuffer, pdf: onboardingPdf });
     }
 
-    private async createOnboardingPDF(
-        student: Student,
-        settings: {
-            logo?: {
-                bytes?: string;
-                x?: number;
-                y?: number;
-                maxWidth?: number;
-                maxHeight?: number;
-            };
-            fields?: Record<string, string>;
-        },
-        pngAsBuffer: Buffer
-    ) {
+    private async createOnboardingPDF(student: Student, settings: PDFSettings, pngAsBuffer: Buffer) {
         const templateName = "template_onboarding.pdf";
         const pathToPdf = path.resolve(path.join(this.assetsLocation, templateName));
 
@@ -343,7 +318,7 @@ export class StudentsController {
         return Buffer.from(pdfBytes);
     }
 
-    private async embedImage(pdfDoc: PDFDocument, logo: { bytes?: string; x?: number; y?: number; maxWidth?: number; maxHeight?: number } = {}) {
+    private async embedImage(pdfDoc: PDFDocument, logo: PDFLogoSettings = {}) {
         const image = await this.getImage(pdfDoc, logo.bytes);
         if (!image) return;
 
