@@ -499,10 +499,7 @@ export class StudentsController {
 
     public async sendMail(student: Student, rawSubject: string, rawBody: string, additionalData: any = {}): Promise<MessageDTO> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
-
-        if (!student.correspondingRelationshipTemplateId) {
-            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
-        }
+        if (!student.correspondingRelationshipTemplateId) throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
 
         const subject = await this.fillTemplateStringWithStudentAndOrganizationData(student, rawSubject, additionalData);
         const body = await this.fillTemplateStringWithStudentAndOrganizationData(student, rawBody, additionalData);
