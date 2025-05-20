@@ -22,7 +22,16 @@ export const createStudentRequestSchema = z.object({
 });
 
 export const createStudentOnboardingPDFSchema = z.object({
-    schoolLogo: z.string().base64()
+    logo: z
+        .object({
+            bytes: z.string().base64().optional(),
+            x: z.number().min(0).optional(),
+            y: z.number().min(0).optional(),
+            maxWidth: z.number().min(0).optional(),
+            maxHeight: z.number().min(0).optional()
+        })
+        .optional(),
+    fields: z.record(z.string()).optional()
 });
 
 export const sendMailRequestSchema = z.object({

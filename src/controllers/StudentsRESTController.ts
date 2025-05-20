@@ -89,7 +89,7 @@ export class StudentsRESTController extends BaseController {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        const result = await this.studentsController.getOnboardingDataForStudent(student, data.schoolLogo);
+        const result = await this.studentsController.getOnboardingDataForStudent(student, data);
         return this.file(
             result,
             (r) => r.value.pdf,
@@ -107,7 +107,7 @@ export class StudentsRESTController extends BaseController {
         const student = await this.studentsController.getStudent(id);
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
-        const result = await this.studentsController.getOnboardingDataForStudent(student);
+        const result = await this.studentsController.getOnboardingDataForStudent(student, {});
 
         switch (accept) {
             case "application/pdf":

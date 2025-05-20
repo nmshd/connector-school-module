@@ -51,7 +51,17 @@ tasks:
   create-onboarding-pdf-with-custom-png-logo:
     desc: Gets the onboarding document as PDF
     cmds:
-      - 'echo -n ''{"schoolLogo": "{{.LOGO_BASE64}}"}'' | http -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' > {{ .STUDENT_ID }}_onboarding.pdf'
+      - 'echo -n ''{"logo": {"bytes": "{{.LOGO_BASE64}}"}}'' | http -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' > {{ .STUDENT_ID }}_onboarding.pdf'
+    requires:
+      vars: [STUDENT_ID]
+    vars:
+      LOGO_BASE64:
+        sh: 'cat assets/Logo_GM.png | {{if eq OS "darwin"}}base64{{else}}base64 -w 0{{end}}'
+
+  create-onboarding-pdf-with-custom-values:
+    desc: Gets the onboarding document as PDF
+    cmds:
+      - 'echo -n ''{ "logo": { "bytes": "{{.LOGO_BASE64}}", "x": 15, "y": 15, "maxWidth": 50, "maxHeight": 50 }, "fields": { "salutation": "Moin {{"{{"}}student.givenname{{"}}"}}," } }'' | http -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' > {{ .STUDENT_ID }}_onboarding.pdf'
     requires:
       vars: [STUDENT_ID]
     vars:
@@ -61,7 +71,7 @@ tasks:
   create-onboarding-pdf-with-custom-jpg-logo:
     desc: Gets the onboarding document as PDF
     cmds:
-      - 'echo -n ''{"schoolLogo": "{{.LOGO_BASE64}}"}'' | http -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' > {{ .STUDENT_ID }}_onboarding.pdf'
+      - 'echo -n ''{"logo": {"bytes": "{{.LOGO_BASE64}}"}}'' | http -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' > {{ .STUDENT_ID }}_onboarding.pdf'
     requires:
       vars: [STUDENT_ID]
     vars:
