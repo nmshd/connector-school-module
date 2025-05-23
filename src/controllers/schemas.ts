@@ -13,7 +13,7 @@ export const createStudentRequestSchema = z.object({
             z.object({
                 mustBeAccepted: z.boolean().optional(),
                 consent: z.string().min(1).max(2000),
-                link: z.string().url(),
+                link: z.string().url().optional(),
                 linkDisplayText: z.string().min(1).max(64).optional()
             })
         )
