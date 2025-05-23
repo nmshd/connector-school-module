@@ -46,7 +46,7 @@ export class StudentsController {
         givenname: string;
         surname: string;
         pin?: string;
-        additionalConsents: { mustBeAccepted?: boolean; consent: string; link: string; linkDisplayText?: string }[];
+        additionalConsents: { mustBeAccepted?: boolean; consent: string; link?: string; linkDisplayText?: string }[];
     }): Promise<Student> {
         const identityInfo = await this.services.transportServices.account.getIdentityInfo();
 
@@ -110,7 +110,7 @@ export class StudentsController {
                     mustBeAccepted: consent.mustBeAccepted ?? false,
                     consent: consent.consent,
                     link: consent.link,
-                    linkDisplayText: consent.linkDisplayText
+                    linkDisplayText: consent.link !== undefined ? consent.linkDisplayText : undefined
                 }))
             });
         }
