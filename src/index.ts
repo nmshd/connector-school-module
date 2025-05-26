@@ -10,6 +10,8 @@ import { Container, Scope } from "@nmshd/typescript-ioc";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "./StudentsController";
+import { StudentOffboardedEvent } from "./types/StudentOffboardedEvent";
+import { StudentOnboardedEvent } from "./types/StudentOnboardedEvent";
 
 const schoolModuleConfigurationSchema = z.object({
     database: z.object({ connectionString: z.string().optional(), dbName: z.string().optional() }).optional(),
@@ -88,6 +90,8 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
     public start(): void {
         this.subscribeToEvent(OutgoingRequestFromRelationshipCreationCreatedAndCompletedEvent, async (event) => {
+            const services = this.runtime.getServices();
+
             const student = await this.#studentsController.getStudentByTemplateId(event.data.source!.reference);
 
             const relationshipId = event.data.response!.source!.reference;
@@ -100,9 +104,12 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             if (this.configuration.autoMailAfterOnboarding) {
                 await this.#studentsController.sendMailBasedOnTemplateName(student, "onboarding");
             }
+
+            this.runtime.eventBus.publish(new StudentOnboardedEvent((await services.transportServices.account.getIdentityInfo()).value.address, student.toJSON()));
         });
 
         this.subscribeToEvent(RelationshipChangedEvent, async (event) => {
+            const services = this.runtime.getServices();
             if (event.data.status !== RelationshipStatus.DeletionProposed) return;
 
             const relationshipId = event.data.id;
@@ -117,6 +124,8 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             await sleep(500);
 
             await this.runtime.getServices().transportServices.relationships.decomposeRelationship({ relationshipId });
+
+            this.runtime.eventBus.publish(new StudentOffboardedEvent((await services.transportServices.account.getIdentityInfo()).value.address, student.toJSON()));
         });
     }
 
