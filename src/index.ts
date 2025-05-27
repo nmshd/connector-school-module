@@ -12,6 +12,7 @@ import { fromError } from "zod-validation-error";
 import { StudentsController } from "./StudentsController";
 import { StudentOffboardedEvent } from "./types/StudentOffboardedEvent";
 import { StudentOnboardedEvent } from "./types/StudentOnboardedEvent";
+import { StudentUpdatedEvent } from "./types/StudentUpdatedEvent";
 
 const schoolModuleConfigurationSchema = z.object({
     database: z.object({ connectionString: z.string().optional(), dbName: z.string().optional() }).optional(),
@@ -158,6 +159,8 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             }
 
             await this.#studentsController.updateStudent(student);
+
+            this.runtime.eventBus.publish(new StudentUpdatedEvent((await services.transportServices.account.getIdentityInfo()).value.address, student.toJSON()));
         });
     }
 
