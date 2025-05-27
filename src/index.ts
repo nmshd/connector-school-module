@@ -5,7 +5,7 @@ import { ConnectorRuntimeModule, ConnectorRuntimeModuleConfiguration } from "@nm
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON, GivenNameJSON, SurnameJSON } from "@nmshd/content";
 import { CoreId } from "@nmshd/core-types";
-import { OutgoingRequestFromRelationshipCreationCreatedAndCompletedEvent, RelationshipChangedEvent, RelationshipStatus } from "@nmshd/runtime";
+import { OutgoingRequestFromRelationshipCreationCreatedAndCompletedEvent, PeerSharedAttributeSucceededEvent, RelationshipChangedEvent, RelationshipStatus } from "@nmshd/runtime";
 import { Container, Scope } from "@nmshd/typescript-ioc";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
@@ -139,6 +139,25 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             await this.runtime.getServices().transportServices.relationships.decomposeRelationship({ relationshipId });
 
             this.runtime.eventBus.publish(new StudentOffboardedEvent((await services.transportServices.account.getIdentityInfo()).value.address, student.toJSON()));
+        });
+
+        this.subscribeToEvent(PeerSharedAttributeSucceededEvent, async (event) => {
+            const services = this.runtime.getServices();
+
+            const relationshipId = (await services.transportServices.relationships.getRelationshipByAddress({ address: event.data.successor.shareInfo!.peer })).value.id;
+
+            const student = await this.#studentsController.getStudentByRelationshipId(relationshipId);
+            if (!student) return;
+
+            const attributeValueType = event.data.successor.content.value["@type"];
+            if (attributeValueType === "GivenName") {
+                student.givenname = event.data.successor.content.value.value;
+            }
+            if (attributeValueType === "Surname") {
+                student.surname = event.data.successor.content.value.value;
+            }
+
+            await this.#studentsController.updateStudent(student);
         });
     }
 
