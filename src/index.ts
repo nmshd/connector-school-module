@@ -3,7 +3,7 @@ import { MongoDbConnection } from "@js-soft/docdb-access-mongo";
 import { sleep } from "@js-soft/ts-utils";
 import { ConnectorRuntimeModule, ConnectorRuntimeModuleConfiguration } from "@nmshd/connector-types";
 import { LocalAttributeJSON } from "@nmshd/consumption";
-import { DisplayNameJSON } from "@nmshd/content";
+import { DisplayNameJSON, GivenNameJSON, SurnameJSON } from "@nmshd/content";
 import { CoreId } from "@nmshd/core-types";
 import { OutgoingRequestFromRelationshipCreationCreatedAndCompletedEvent, RelationshipChangedEvent, RelationshipStatus } from "@nmshd/runtime";
 import { Container, Scope } from "@nmshd/typescript-ioc";
@@ -96,6 +96,19 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
             const relationshipId = event.data.response!.source!.reference;
             student.correspondingRelationshipId = CoreId.from(relationshipId);
+
+            const studentAddress = event.data.peer;
+
+            const givenName = (
+                (await services.consumptionServices.attributes.getPeerSharedAttributes({ peer: studentAddress, query: { "content.value.@type": "GivenName" } })).value[0].content
+                    .value as GivenNameJSON
+            ).value;
+            const surname = (
+                (await services.consumptionServices.attributes.getPeerSharedAttributes({ peer: studentAddress, query: { "content.value.@type": "Surname" } })).value[0].content
+                    .value as SurnameJSON
+            ).value;
+            student.givenname = givenName;
+            student.surname = surname;
 
             await this.#studentsController.updateStudent(student);
 
