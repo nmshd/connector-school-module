@@ -541,7 +541,6 @@ export class StudentsController {
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
         const title = await this.fillTemplateStringWithStudentAndOrganizationData(student, data.title);
-
         const file = await this.services.transportServices.files.uploadOwnFile({
             content: Buffer.from(data.file, "base64"),
             tags: data.tags,
