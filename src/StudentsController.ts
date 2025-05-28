@@ -550,7 +550,7 @@ export class StudentsController {
             title
         });
 
-        const subject = data.messageSubject ? await this.fillTemplateStringWithStudentAndOrganizationData(student, data.messageSubject) : undefined;
+        const subject = data.messageSubject ? await this.fillTemplateStringWithStudentAndOrganizationData(student, data.messageSubject) : title;
         const body = data.messageBody ? await this.fillTemplateStringWithStudentAndOrganizationData(student, data.messageBody) : undefined;
 
         const request = await this.services.consumptionServices.outgoingRequests.create({
