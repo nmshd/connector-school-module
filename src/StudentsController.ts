@@ -556,7 +556,6 @@ export class StudentsController {
             content: {
                 title: subject,
                 description: body,
-                expiresAt: CoreDate.utc().add({ minutes: 2 }).toISOString(),
                 items: [
                     {
                         "@type": "TransferFileOwnershipRequestItem",
