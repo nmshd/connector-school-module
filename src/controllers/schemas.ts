@@ -45,8 +45,8 @@ export const sendFileRequestSchema = z.object({
     filename: z.string().min(5).max(255),
     mimetype: z.string(),
     tags: z.array(z.string()).optional(),
-    subject: z.string().min(1).max(64).optional(),
-    body: z.string().min(1).max(2000).optional()
+    messageSubject: z.string().min(1).max(64).optional(),
+    messageBody: z.string().min(1).max(2000).optional()
 });
 
 export const sendAbiturzeugnisRequestSchema = z.object({
@@ -55,6 +55,6 @@ export const sendAbiturzeugnisRequestSchema = z.object({
     filename: z.string().min(5).max(255).optional(),
     mimetype: z.string().optional(),
     tags: z.array(z.string()).optional(),
-    subject: z.string().min(1).max(64).optional(),
-    body: z.string().min(1).max(2000).optional()
+    messageSubject: z.string().min(1).max(64).optional(),
+    messageBody: z.string().min(1).max(2000).optional()
 });

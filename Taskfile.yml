@@ -154,7 +154,7 @@ tasks:
   send-degree-with-subject-and-body:
     desc: Call the send-file endpoint
     cmds:
-      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "subject": "{{.SUBJECT}}", "body": "{{.BODY}}"}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}}/files/abiturzeugnis ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
+      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "messageSubject": "{{.SUBJECT}}", "messageBody": "{{.BODY}}"}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}}/files/abiturzeugnis ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
     vars:
       FILE_BASE64:
         sh: 'cat assets/Zeugnis.pdf | {{if eq OS "darwin"}}base64{{else}}base64 -w 0{{end}}'
