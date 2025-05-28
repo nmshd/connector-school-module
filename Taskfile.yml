@@ -151,6 +151,18 @@ tasks:
     requires:
       vars: [STUDENT_ID]
 
+  send-degree-with-subject-and-body:
+    desc: Call the send-file endpoint
+    cmds:
+      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "messageSubject": "{{.SUBJECT}}", "messageBody": "{{.BODY}}"}'' | http -b POST localhost:8099/students/{{.STUDENT_ID}}/files/abiturzeugnis ''X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'' | jq'
+    vars:
+      FILE_BASE64:
+        sh: 'cat assets/Zeugnis.pdf | {{if eq OS "darwin"}}base64{{else}}base64 -w 0{{end}}'
+      SUBJECT: "Ihr Abiturzeugnis"
+      BODY: Hallo {{"{{"}}student.givenname{{"}}"}} {{"{{"}}student.surname{{"}}"}},\n\nherzlichen Glückwunsch zum Abitur! Wir freuen uns, Ihnen mitteilen zu können, dass wie ihnen ihr Abiturzeugnis zusenden können.\n\nIhr offizielles Zeugnis liegt in Ihren Dokumenten und Dateien zur weiteren Verwendung bereit.\n\nMit freundlichen Grüßen\nIhr {{"{{"}}organization.displayName{{"}}"}}
+    requires:
+      vars: [STUDENT_ID]
+
   audit-log:
     desc: Get the audit log for a student
     cmds:
