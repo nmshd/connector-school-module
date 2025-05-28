@@ -533,7 +533,10 @@ export class StudentsController {
         return text;
     }
 
-    public async sendFile(student: Student, data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined }): Promise<SchoolFileDTO> {
+    public async sendFile(
+        student: Student,
+        data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined; subject?: string; body?: string }
+    ): Promise<SchoolFileDTO> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
@@ -547,8 +550,13 @@ export class StudentsController {
             title
         });
 
+        const subject = data.subject ? await this.fillTemplateStringWithStudentAndOrganizationData(student, data.subject) : undefined;
+        const body = data.body ? await this.fillTemplateStringWithStudentAndOrganizationData(student, data.body) : undefined;
+
         const request = await this.services.consumptionServices.outgoingRequests.create({
             content: {
+                title: subject,
+                description: body,
                 items: [
                     {
                         "@type": "TransferFileOwnershipRequestItem",
