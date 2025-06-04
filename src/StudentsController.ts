@@ -541,7 +541,7 @@ export class StudentsController {
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
         const title = await this.fillTemplateStringWithStudentAndOrganizationData(student, data.title);
-        const file = await this.services.transportServices.files.uploadOwnFile({
+        const uploadFileResponse = await this.services.transportServices.files.uploadOwnFile({
             content: Buffer.from(data.file, "base64"),
             tags: data.tags,
             filename: data.filename,
@@ -552,6 +552,8 @@ export class StudentsController {
         const subject = data.messageSubject ? await this.fillTemplateStringWithStudentAndOrganizationData(student, data.messageSubject) : title;
         const body = data.messageBody ? await this.fillTemplateStringWithStudentAndOrganizationData(student, data.messageBody) : undefined;
 
+        const file = uploadFileResponse.value;
+
         const request = await this.services.consumptionServices.outgoingRequests.create({
             content: {
                 title: subject,
@@ -560,7 +562,8 @@ export class StudentsController {
                     {
                         "@type": "TransferFileOwnershipRequestItem",
                         mustBeAccepted: true,
-                        fileReference: file.value.reference.truncated
+                        fileReference: file.reference.truncated,
+                        ownershipToken: file.ownershipToken
                     }
                 ]
             },
