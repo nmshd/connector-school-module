@@ -7,9 +7,9 @@
 - [httpie cli](https://httpie.io/cli)
 - Node.js / npm
 - [jq](https://jqlang.org/download/)
-  `sudo apt-get install jq`
+  `sudo apt-get install jq` or `brew install jq`
 - [qrencode](https://github.com/fukuchi/libqrencode)
-  `sudo apt-get install qrencode`
+  `sudo apt-get install qrencode` or `brew install qrencode`
 - (only on mac) [coreutils](https://formulae.brew.sh/formula/coreutils)
   `brew install coreutils`
 
