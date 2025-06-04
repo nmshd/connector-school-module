@@ -10,6 +10,8 @@
   `sudo apt-get install jq`
 - [qrencode](https://github.com/fukuchi/libqrencode)
   `sudo apt-get install qrencode`
+- (only on mac) [coreutils](https://formulae.brew.sh/formula/coreutils)
+  `brew install coreutils`
 
 ## Taskfile tasks
 
