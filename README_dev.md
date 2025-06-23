@@ -4,7 +4,7 @@
 
 - Docker
 - [Taskfile](https://taskfile.dev/installation/)
-- [httpie cli](https://httpie.io/cli)
+- [xh cli](https://github.com/ducaale/xh?tab=readme-ov-file#installation)
 - Node.js / npm
 - [jq](https://jqlang.org/download/)  
   `sudo apt-get install jq` or `brew install jq`
