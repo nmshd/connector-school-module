@@ -46,7 +46,12 @@ export class StudentsController {
         givenname: string;
         surname: string;
         pin?: string;
-        additionalConsents: { mustBeAccepted?: boolean; consent: string; link?: string; linkDisplayText?: string }[];
+        additionalConsents: {
+            mustBeAccepted?: boolean;
+            consent: string;
+            link?: string;
+            linkDisplayText?: string;
+        }[];
     }): Promise<Student> {
         const identityInfo = await this.services.transportServices.account.getIdentityInfo();
 
@@ -86,14 +91,34 @@ export class StudentsController {
                     items: [
                         {
                             "@type": "ProposeAttributeRequestItem",
-                            attribute: { "@type": "IdentityAttribute", owner: "", value: { "@type": "GivenName", value: data.givenname } },
-                            query: { "@type": "IdentityAttributeQuery", valueType: "GivenName" },
+                            attribute: {
+                                "@type": "IdentityAttribute",
+                                owner: "",
+                                value: {
+                                    "@type": "GivenName",
+                                    value: data.givenname
+                                }
+                            },
+                            query: {
+                                "@type": "IdentityAttributeQuery",
+                                valueType: "GivenName"
+                            },
                             mustBeAccepted: true
                         },
                         {
                             "@type": "ProposeAttributeRequestItem",
-                            attribute: { "@type": "IdentityAttribute", owner: "", value: { "@type": "Surname", value: data.surname } },
-                            query: { "@type": "IdentityAttributeQuery", valueType: "Surname" },
+                            attribute: {
+                                "@type": "IdentityAttribute",
+                                owner: "",
+                                value: {
+                                    "@type": "Surname",
+                                    value: data.surname
+                                }
+                            },
+                            query: {
+                                "@type": "IdentityAttributeQuery",
+                                valueType: "Surname"
+                            },
                             mustBeAccepted: true
                         }
                     ]
@@ -117,12 +142,26 @@ export class StudentsController {
 
         const template = await this.services.transportServices.relationshipTemplates.createOwnRelationshipTemplate({
             maxNumberOfAllocations: 1,
-            content: { "@type": "RelationshipTemplateContent", onNewRelationship: request } satisfies RelationshipTemplateContentJSON,
+            content: {
+                "@type": "RelationshipTemplateContent",
+                onNewRelationship: request
+            } satisfies RelationshipTemplateContentJSON,
             expiresAt: CoreDate.utc().add({ years: 1 }).toISOString(),
-            passwordProtection: data.pin ? { password: data.pin, passwordIsPin: true, passwordLocationIndicator: "Email" } : undefined
+            passwordProtection: data.pin
+                ? {
+                      password: data.pin,
+                      passwordIsPin: true,
+                      passwordLocationIndicator: "Email"
+                  }
+                : undefined
         });
 
-        const student = Student.from({ id: data.id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
+        const student = Student.from({
+            id: data.id,
+            givenname: data.givenname,
+            surname: data.surname,
+            correspondingRelationshipTemplateId: template.value.id
+        });
 
         await this.#studentsCollection.create(student.toJSON());
 
@@ -352,11 +391,15 @@ export class StudentsController {
     }
 
     private async getImage(pdfDoc: PDFDocument, schoolLogoBase64?: string) {
-        if (schoolLogoBase64 === undefined) return await this.getAssetImage(pdfDoc);
+        if (schoolLogoBase64 === undefined) {
+            return await this.getAssetImage(pdfDoc);
+        }
 
         const bytes = Buffer.from(schoolLogoBase64, "base64");
         const filetype = getFileTypeForBuffer(bytes);
-        if (!filetype) throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
+        if (!filetype) {
+            throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
+        }
 
         switch (filetype) {
             case "png":
@@ -399,12 +442,16 @@ export class StudentsController {
     }
 
     public async getStudentByTemplateId(templateId: string): Promise<Student> {
-        const doc = await this.#studentsCollection.findOne({ correspondingRelationshipTemplateId: templateId });
+        const doc = await this.#studentsCollection.findOne({
+            correspondingRelationshipTemplateId: templateId
+        });
         return Student.from(doc);
     }
 
     public async getStudentByRelationshipId(relationshipId: string): Promise<Student | undefined> {
-        const doc = await this.#studentsCollection.findOne({ correspondingRelationshipId: relationshipId });
+        const doc = await this.#studentsCollection.findOne({
+            correspondingRelationshipId: relationshipId
+        });
 
         return doc ? Student.from(doc) : undefined;
     }
@@ -436,21 +483,33 @@ export class StudentsController {
 
             switch (relationship.status) {
                 case RelationshipStatus.Pending:
-                    await this.services.transportServices.relationships.rejectRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
-                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                    await this.services.transportServices.relationships.rejectRelationship({
+                        relationshipId: student.correspondingRelationshipId.toString()
+                    });
+                    await this.services.transportServices.relationships.decomposeRelationship({
+                        relationshipId: student.correspondingRelationshipId.toString()
+                    });
                 case RelationshipStatus.Active:
-                    await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
-                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                    await this.services.transportServices.relationships.terminateRelationship({
+                        relationshipId: student.correspondingRelationshipId.toString()
+                    });
+                    await this.services.transportServices.relationships.decomposeRelationship({
+                        relationshipId: student.correspondingRelationshipId.toString()
+                    });
                 case RelationshipStatus.Rejected:
                 case RelationshipStatus.Revoked:
                 case RelationshipStatus.Terminated:
                 case RelationshipStatus.DeletionProposed:
-                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                    await this.services.transportServices.relationships.decomposeRelationship({
+                        relationshipId: student.correspondingRelationshipId.toString()
+                    });
             }
         }
 
         if (student.correspondingRelationshipTemplateId) {
-            await this.services.transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: student.correspondingRelationshipTemplateId.toString() });
+            await this.services.transportServices.relationshipTemplates.deleteRelationshipTemplate({
+                templateId: student.correspondingRelationshipTemplateId.toString()
+            });
         }
 
         await this.#studentsCollection.delete({ id: student.id.toString() });
@@ -467,11 +526,18 @@ export class StudentsController {
     }
 
     public async getMails(student: Student): Promise<MessageDTO[]> {
-        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        if (!student.correspondingRelationshipId) {
+            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        }
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
         if (relationship.isError) throw relationship.error;
 
-        const result = await this.services.transportServices.messages.getMessages({ query: { participant: relationship.value.peer, "content.@type": "Mail" } });
+        const result = await this.services.transportServices.messages.getMessages({
+            query: {
+                participant: relationship.value.peer,
+                "content.@type": "Mail"
+            }
+        });
         return result.value;
     }
 
@@ -498,8 +564,12 @@ export class StudentsController {
     }
 
     public async sendMail(student: Student, rawSubject: string, rawBody: string, additionalData: any = {}): Promise<MessageDTO> {
-        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
-        if (!student.correspondingRelationshipTemplateId) throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
+        if (!student.correspondingRelationshipId) {
+            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        }
+        if (!student.correspondingRelationshipTemplateId) {
+            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
+        }
 
         const subject = await this.fillTemplateStringWithStudentAndOrganizationData(student, rawSubject, additionalData);
         const body = await this.fillTemplateStringWithStudentAndOrganizationData(student, rawBody, additionalData);
@@ -508,7 +578,12 @@ export class StudentsController {
 
         const result = await this.services.transportServices.messages.sendMessage({
             recipients: [relationship.value.peer],
-            content: { "@type": "Mail", to: [relationship.value.peer], subject, body }
+            content: {
+                "@type": "Mail",
+                to: [relationship.value.peer],
+                subject,
+                body
+            }
         });
 
         return result.value;
@@ -535,9 +610,19 @@ export class StudentsController {
 
     public async sendFile(
         student: Student,
-        data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined; messageSubject?: string; messageBody?: string }
+        data: {
+            file: string;
+            title: string;
+            filename: string;
+            mimetype: string;
+            tags?: string[] | undefined;
+            messageSubject?: string;
+            messageBody?: string;
+        }
     ): Promise<SchoolFileDTO> {
-        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        if (!student.correspondingRelationshipId) {
+            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        }
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
         const title = await this.fillTemplateStringWithStudentAndOrganizationData(student, data.title);
@@ -570,7 +655,10 @@ export class StudentsController {
             peer: relationship.value.peer
         });
 
-        await this.services.transportServices.messages.sendMessage({ content: request.value.content, recipients: [relationship.value.peer] });
+        await this.services.transportServices.messages.sendMessage({
+            content: request.value.content,
+            recipients: [relationship.value.peer]
+        });
 
         const fileDTO = await this.requestToFileDVO(request.value);
         return fileDTO;
@@ -635,7 +723,9 @@ export class StudentsController {
     private async requestToFileDVO(request: LocalRequestDTO): Promise<SchoolFileDTO> {
         const requestItem = request.content.items[0] as TransferFileOwnershipRequestItemJSON;
 
-        const file = await this.services.transportServices.files.getOrLoadFile({ reference: requestItem.fileReference });
+        const file = await this.services.transportServices.files.getOrLoadFile({
+            reference: requestItem.fileReference
+        });
 
         const responseItem = request.response?.content.items[0] as TransferFileOwnershipAcceptResponseItemJSON | RejectResponseItemJSON | undefined;
 

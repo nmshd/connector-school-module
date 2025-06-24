@@ -19,7 +19,9 @@ export class StudentsRESTController extends BaseController {
     @Accept("application/json")
     public async createStudent(body: any): Promise<Envelope> {
         const validationResult = createStudentRequestSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
         const data = validationResult.data;
 
         if (await this.studentsController.existsStudent(data.id)) {
@@ -83,7 +85,9 @@ export class StudentsRESTController extends BaseController {
     @Accept("application/pdf")
     public async createStudentOnboardingPDF(@PathParam("id") id: string, @ContextResponse response: express.Response, body: any): Promise<Envelope | void> {
         const validationResult = createStudentOnboardingPDFSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
         const data = validationResult.data;
 
         const student = await this.studentsController.getStudent(id);
@@ -158,7 +162,9 @@ export class StudentsRESTController extends BaseController {
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
         const validationResult = sendMailRequestSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
         const data = validationResult.data;
 
         const mail = await this.studentsController.sendMail(student, data.subject, data.body);
@@ -206,7 +212,9 @@ export class StudentsRESTController extends BaseController {
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
         const validationResult = sendFileRequestSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
         const data = validationResult.data;
 
         const fileDTO = await this.studentsController.sendFile(student, data);
@@ -221,7 +229,9 @@ export class StudentsRESTController extends BaseController {
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
         const validationResult = sendAbiturzeugnisRequestSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
 
         const tags = new Set(validationResult.data.tags ?? []);
         tags.add("language:de");

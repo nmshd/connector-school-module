@@ -12,7 +12,12 @@ import { fromError } from "zod-validation-error";
 import { StudentsController } from "./StudentsController";
 
 const schoolModuleConfigurationSchema = z.object({
-    database: z.object({ connectionString: z.string().optional(), dbName: z.string().optional() }).optional(),
+    database: z
+        .object({
+            connectionString: z.string().optional(),
+            dbName: z.string().optional()
+        })
+        .optional(),
     schoolName: z.string(),
     assetsLocation: z.string(),
     autoMailAfterOnboarding: z.boolean().optional(),
@@ -27,7 +32,9 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
     public async init(): Promise<void> {
         const result = schoolModuleConfigurationSchema.safeParse(this.configuration);
-        if (!result.success) throw new Error(`Invalid configuration: ${fromError(result.error)}`);
+        if (!result.success) {
+            throw new Error(`Invalid configuration: ${fromError(result.error)}`);
+        }
 
         const dbConnection = await this.getOrCreateDbConnection();
 
@@ -52,7 +59,9 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
     }
 
     private async getOrCreateDbConnection(): Promise<IDatabaseConnection> {
-        if (!this.configuration.database?.connectionString) return this.runtime.databaseConnection;
+        if (!this.configuration.database?.connectionString) {
+            return this.runtime.databaseConnection;
+        }
 
         const mongoDbConnection = new MongoDbConnection(this.configuration.database.connectionString);
         this.#dbConnection = mongoDbConnection;
@@ -77,7 +86,12 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
         }
 
         const createResponse = await services.consumptionServices.attributes.createRepositoryAttribute({
-            content: { value: { "@type": "DisplayName", value: this.configuration.schoolName } }
+            content: {
+                value: {
+                    "@type": "DisplayName",
+                    value: this.configuration.schoolName
+                }
+            }
         });
 
         if (createResponse.isError) throw createResponse.error;
@@ -95,7 +109,9 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
             await this.#studentsController.updateStudent(student);
 
-            await this.runtime.getServices().transportServices.relationships.acceptRelationship({ relationshipId });
+            await this.runtime.getServices().transportServices.relationships.acceptRelationship({
+                relationshipId
+            });
 
             if (this.configuration.autoMailAfterOnboarding) {
                 await this.#studentsController.sendMailBasedOnTemplateName(student, "onboarding");
@@ -103,7 +119,9 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
         });
 
         this.subscribeToEvent(RelationshipChangedEvent, async (event) => {
-            if (event.data.status !== RelationshipStatus.DeletionProposed) return;
+            if (event.data.status !== RelationshipStatus.DeletionProposed) {
+                return;
+            }
 
             const relationshipId = event.data.id;
 
@@ -116,7 +134,9 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             // wait for 500ms to ensure that no race conditions occur with other external events from the same sync run that triggered this event
             await sleep(500);
 
-            await this.runtime.getServices().transportServices.relationships.decomposeRelationship({ relationshipId });
+            await this.runtime.getServices().transportServices.relationships.decomposeRelationship({
+                relationshipId
+            });
         });
     }
 
