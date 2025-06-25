@@ -33,20 +33,12 @@ export default class Component extends UIComponent {
         this.setModel(models.studentModel(), "studentModel");
         this.setModel(models.createDeviceModel(), "device");
         this.setModel(new JSONModel(), "appView");
-        this.getRouter().attachBeforeRouteMatched(
-            (event: Router$BeforeRouteMatchedEvent) =>
-                void this.onBeforeRouteMatched(event),
-            this
-        );
+        this.getRouter().attachBeforeRouteMatched((event: Router$BeforeRouteMatchedEvent) => void this.onBeforeRouteMatched(event), this);
         this.getRouter().initialize();
     }
 
     public destroy(): void {
-        this.getRouter().detachBeforeRouteMatched(
-            (event: Router$BeforeRouteMatchedEvent) =>
-                void this.onBeforeRouteMatched(event),
-            this
-        );
+        this.getRouter().detachBeforeRouteMatched((event: Router$BeforeRouteMatchedEvent) => void this.onBeforeRouteMatched(event), this);
         super.destroy();
     }
 
@@ -54,10 +46,7 @@ export default class Component extends UIComponent {
         if (this.contentDensityClass === undefined) {
             // check whether FLP has already set the content density class; do nothing in this case
             // eslint-disable-next-line
-            if (
-                document.body.classList.contains("sapUiSizeCozy") ||
-                document.body.classList.contains("sapUiSizeCompact")
-            ) {
+            if (document.body.classList.contains("sapUiSizeCozy") || document.body.classList.contains("sapUiSizeCompact")) {
                 this.contentDensityClass = "";
             } else if (!Device.support.touch) {
                 // apply "compact" mode if touch is not supported
@@ -72,8 +61,7 @@ export default class Component extends UIComponent {
 
     private async onBeforeRouteMatched(oEvent: Router$BeforeRouteMatchedEvent) {
         const model = this.getModel("appView") as JSONModel,
-            layout = (oEvent.getParameters() as routeParameters).arguments
-                .layout;
+            layout = (oEvent.getParameters() as routeParameters).arguments.layout;
 
         // If there is no layout parameter, query for the default level 0 layout (normally OneColumn)
         if (!layout) {
@@ -97,17 +85,11 @@ export default class Component extends UIComponent {
 
     private getFcl(): Promise<FlexibleColumnLayout> {
         return this.rootControlLoaded().then((rootControl) => {
-            const FCL = (rootControl as View).byId(
-                "fcl"
-            ) as FlexibleColumnLayout;
+            const FCL = (rootControl as View).byId("fcl") as FlexibleColumnLayout;
             if (!FCL) {
-                (rootControl as View).attachAfterInit(
-                    (event: View$AfterInitEvent) => {
-                        return event
-                            .getSource()
-                            .byId("fcl") as FlexibleColumnLayout;
-                    }
-                );
+                (rootControl as View).attachAfterInit((event: View$AfterInitEvent) => {
+                    return event.getSource().byId("fcl") as FlexibleColumnLayout;
+                });
                 return;
             }
             return FCL;
@@ -115,6 +97,11 @@ export default class Component extends UIComponent {
     }
 
     public getApiKey(): string {
-        return "This_is_a_test_APIKEY_with_30_chars+";
+        const key = this.getModel("apiKey").getProperty("/key") as string;
+        if (key) {
+            return key;
+        }
+        this.getRouter().navTo("login");
+        return "";
     }
 }

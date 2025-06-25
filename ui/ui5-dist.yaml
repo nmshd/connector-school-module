@@ -24,4 +24,4 @@ server:
       afterMiddleware: compression
       mountPath: /students
       configuration:
-        baseUri: http://localhost:8099
+        baseUri: http://localhost:8099/students

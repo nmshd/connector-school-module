@@ -7,6 +7,7 @@ import { DisplayNameJSON } from "@nmshd/content";
 import { CoreId } from "@nmshd/core-types";
 import { OutgoingRequestFromRelationshipCreationCreatedAndCompletedEvent, RelationshipChangedEvent, RelationshipStatus } from "@nmshd/runtime";
 import { Container, Scope } from "@nmshd/typescript-ioc";
+import express from "express";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "./StudentsController";
@@ -20,6 +21,7 @@ const schoolModuleConfigurationSchema = z.object({
         .optional(),
     schoolName: z.string(),
     assetsLocation: z.string(),
+    uiLocation: z.string(),
     autoMailAfterOnboarding: z.boolean().optional(),
     autoMailBeforeOffboarding: z.boolean().optional()
 });
@@ -56,6 +58,8 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             .scope(Scope.Singleton);
 
         this.runtime.infrastructure.httpServer.addControllers(["controllers/*.js", "controllers/*.ts", "!controllers/*.d.ts"], __dirname);
+
+        this.runtime.infrastructure.httpServer.addMiddleware("/ui", false, express.static(this.configuration.uiLocation));
     }
 
     private async getOrCreateDbConnection(): Promise<IDatabaseConnection> {

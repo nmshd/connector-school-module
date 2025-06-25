@@ -4,10 +4,18 @@ import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
 import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, POST, QueryParam } from "@nmshd/typescript-rest";
 import express from "express";
+import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "../StudentsController";
 import { Student, StudentAuditLog, StudentOnboardingDTO } from "../types";
-import { createStudentOnboardingPDFSchema, createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailRequestSchema } from "./schemas";
+import {
+    batchOnboardingSchema,
+    createStudentOnboardingPDFSchema,
+    createStudentRequestSchema,
+    sendAbiturzeugnisRequestSchema,
+    sendFileRequestSchema,
+    sendMailRequestSchema
+} from "./schemas";
 
 @Path("/students")
 export class StudentsRESTController extends BaseController {
@@ -78,6 +86,86 @@ export class StudentsRESTController extends BaseController {
 
         await this.studentsController.deleteStudent(student);
         return this.noContent(Result.ok<unknown, ApplicationError>(undefined));
+    }
+
+    @POST
+    @Path("create/batch")
+    @Accept("application/json")
+    public async createBatchOnboardingPDFs(@ContextResponse _response: express.Response, body: any): Promise<Envelope | void> {
+        const validationResult = batchOnboardingSchema.safeParse(body);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
+        const data = validationResult.data;
+
+        let studentCSV = data.students;
+
+        const studentCSVLines = studentCSV.split("\n");
+        if (studentCSVLines.length < 2) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", "The CSV file must contain at least one student.");
+        }
+
+        const studentCSVSchema = z.object({
+            firstName: z.string(),
+            lastName: z.string(),
+            id: z.number(),
+            emailPrivate: z.string(),
+            emailSchool: z.string(),
+            pin: z.string()
+        });
+
+        const studentsParsed = studentCSVLines
+            .slice(1)
+            .filter((line) => line.trim() !== "") // Filter out empty lines
+            .map((line) => {
+                const values = line.split(";");
+                return studentCSVSchema.safeParse({
+                    firstName: JSON.parse(values[0]),
+                    lastName: JSON.parse(values[1]),
+                    id: JSON.parse(values[2]),
+                    emailPrivate: JSON.parse(values[3]),
+                    emailSchool: JSON.parse(values[4]),
+                    pin: Math.floor(1000 + Math.random() * 9000).toString()
+                });
+            });
+        const errors = studentsParsed.filter((result) => !result.success).map((result) => fromError(result.error));
+        if (errors.length > 0) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The CSV file is invalid: ${errors.join(", ")}`);
+        }
+
+        const studentsToCreate = studentsParsed.map((result) => result.data).filter((student) => student !== undefined);
+
+        function updatePinInCSV(csv: string, studentId: string, pin: string): string {
+            const lines = csv.split("\n");
+            return lines
+                .map((line) => {
+                    const values = line.split(";");
+                    if (values[2] === studentId) {
+                        values[5] = JSON.stringify(pin);
+                    }
+                    return values.join(";");
+                })
+                .join("\n");
+        }
+
+        for (const studentToCreate of studentsToCreate) {
+            const existingStudent = await this.studentsController.getStudent(studentToCreate.id.toString());
+            let pin = studentToCreate.pin;
+            if (!existingStudent) {
+                await this.studentsController.createStudent({
+                    id: studentToCreate.id.toString(),
+                    givenname: studentToCreate.firstName,
+                    surname: studentToCreate.lastName,
+                    additionalConsents: data.options.createDefaults.additionalConsents,
+                    pin
+                });
+            } else {
+                pin = (await this.studentsController.getStudentPin(existingStudent)) ?? "";
+            }
+            studentCSV = updatePinInCSV(studentCSV, studentToCreate.id.toString(), pin);
+        }
+
+        return this.ok(Result.ok("OK"));
     }
 
     @POST

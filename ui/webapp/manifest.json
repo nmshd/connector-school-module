@@ -58,6 +58,12 @@
                     "fallbackLocale": "en",
                     "async": true
                 }
+            },
+            "apiKey": {
+                "type": "sap.ui.model.json.JSONModel"
+            },
+            "config": {
+                "type": "sap.ui.model.json.JSONModel"
             }
         },
         "resources": {
@@ -81,6 +87,11 @@
             "routes": [
                 {
                     "pattern": ":layout:",
+                    "name": "login",
+                    "target": ["login"]
+                },
+                {
+                    "pattern": "master/:layout:",
                     "name": "master",
                     "target": ["master"]
                 },
@@ -91,6 +102,11 @@
                 }
             ],
             "targets": {
+                "login": {
+                    "viewName": "Login",
+                    "viewLevel": 1,
+                    "viewId": "login"
+                },
                 "master": {
                     "viewName": "Master",
                     "viewLevel": 1,

@@ -19,6 +19,7 @@
     },
     "devDependencies": {
         "@openui5/types": "1.136.1",
+        "@types/file-saver": "^2.0.7",
         "@typescript-eslint/eslint-plugin": "^8.34.1",
         "@typescript-eslint/parser": "^8.34.1",
         "@ui5/cli": "^4.0.19",
@@ -33,6 +34,8 @@
         "ui5-tooling-transpile": "^3.8.0"
     },
     "dependencies": {
-        "axios": "^1.10.0"
+        "axios": "^1.10.0",
+        "file-saver": "^2.0.5",
+        "jszip": "^2.2.0"
     }
 }

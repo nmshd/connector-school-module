@@ -25,8 +25,8 @@ server:
   customMiddleware:
     - name: ui5-tooling-transpile-middleware
       afterMiddleware: compression
-    - name: ui5-middleware-livereload
-      afterMiddleware: compression
+    # - name: ui5-middleware-livereload
+    # afterMiddleware: compression
     - name: ui5-tooling-less-middleware
       afterMiddleware: compression
     - name: ui5-tooling-modules-middleware
@@ -37,4 +37,4 @@ server:
       afterMiddleware: compression
       mountPath: /students
       configuration:
-        baseUri: http://localhost:8099
+        baseUri: http://localhost:8099/students

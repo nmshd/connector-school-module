@@ -742,4 +742,15 @@ export class StudentsController {
             respondedAt: request.response?.createdAt
         };
     }
+
+    public async getStudentPin(student: Student): Promise<string | undefined> {
+        if (!student.correspondingRelationshipTemplateId) {
+            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
+        }
+
+        const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
+        if (template.isError) throw template.error;
+
+        return template.value.passwordProtection?.password;
+    }
 }
