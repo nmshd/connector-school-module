@@ -19,6 +19,11 @@ export default class Master extends BaseController {
             .attachPatternMatched(() => void this.onObjectMatched(), this);
     }
 
+    public logout(): void {
+        window.sessionStorage.clear();
+        this.getRouter().navTo("login");
+    }
+
     private async onObjectMatched() {
         await this.loadStudents();
     }
@@ -76,7 +81,7 @@ export default class Master extends BaseController {
 
     public onDeleteStudent(event: Button$PressEventParameters): void {
         MessageBox.confirm("Are you sure you want to delete this student?", {
-            onClose: (action) => {
+            onClose: (action: string) => {
                 if (action === "OK") {
                     const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
                     this.deleteStudent(studentId);
@@ -85,7 +90,7 @@ export default class Master extends BaseController {
         });
     }
 
-    public async onDownloadPdf(event: Button$PressEventParameters): void {
+    public async onDownloadPdf(event: Button$PressEventParameters): Promise<void> {
         const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
         const response = await axios.post<Blob>(
             `/students/${studentId}/onboarding`,
@@ -146,5 +151,16 @@ export default class Master extends BaseController {
         );
 
         saveAs(response.data, "combined-onboarding.pdf");
+    }
+
+    public formatStatus(value: string): string {
+        switch (value) {
+            case "onboarding":
+                return "Warten auf Einwilligung";
+            case "deleted":
+                return "Schüler hat sich gelöscht";
+            case "active":
+                return "Aktiv";
+        }
     }
 }

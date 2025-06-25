@@ -39,18 +39,25 @@
                     <OverflowToolbar>
                         <ToolbarSpacer />
                         <Button
-                            text="Add Students"
+                            icon="sap-icon://upload"
+                            text="Schüler importieren"
                             press=".onOpenAddStudentsDialog"
                         />
-                         <Button
-                            text="Download all onboarding PDFs"
+                        <Button
+                            text="Onboarding Dokument aller Schüler"
+                            icon="sap-icon://pdf-attachment"
                             press=".downloadStudents"
+                        />
+                        <Button
+                            text="Abmelden"
+                            icon="sap-icon://log"
+                            press=".logout"
                         />
                     </OverflowToolbar>
                 </headerToolbar>
                 <columns>
                     <Column width="12em">
-                        <Text text="Title" />
+                        <Text text="Schüler" />
                     </Column>
                     <Column hAlign="End">
                         <Text text="Status" />
@@ -68,14 +75,16 @@
                                 title="{studentModel>givenname} {studentModel>surname}"
                                 text="{studentModel>id}"
                             />
-                            <Text text="{studentModel>status}" />
+                            <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
                             <Button
                                 icon="sap-icon://delete"
+                                text="Schüler löschen"
                                 press=".onDeleteStudent"
                             />
                             <Button
-                            icon="sap-icon://download"
-                            press=".onDownloadPdf"/>
+                                icon="sap-icon://pdf-attachment"
+                                text="Onboarding Dokument"
+                                press=".onDownloadPdf" />
                         </cells>
                     </ColumnListItem>
                 </items>
