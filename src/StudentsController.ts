@@ -753,4 +753,21 @@ export class StudentsController {
 
         return template.value.passwordProtection?.password;
     }
+
+    public async createOnboardingPDFForAllStudents(data: PDFSettings): Promise<Result<Buffer<ArrayBuffer>>> {
+        const students = await this.getStudents();
+        const pdfs = await Promise.all(students.map((student) => this.getOnboardingDataForStudent(student, data).then((data) => data.value.pdf)));
+
+        const combinedPdf = await PDFDocument.create();
+
+        await Promise.all(
+            pdfs.map(async (pdfBuffer) => {
+                const pdfToCopy = await PDFDocument.load(pdfBuffer);
+                const copiedPages = await combinedPdf.copyPages(pdfToCopy, pdfToCopy.getPageIndices());
+                copiedPages.forEach((page) => combinedPdf.addPage(page));
+            })
+        );
+
+        return Result.ok(Buffer.from(await combinedPdf.save()));
+    }
 }

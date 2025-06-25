@@ -193,6 +193,28 @@ export class StudentsRESTController extends BaseController {
         );
     }
 
+    @POST
+    @Path("/onboarding")
+    @Accept("application/pdf")
+    public async createBatchOnboardingPDFsForStudents(@ContextResponse response: express.Response, body: any): Promise<Envelope | void> {
+        const validationResult = createStudentOnboardingPDFSchema.safeParse(body);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
+        const data = validationResult.data;
+
+        const pdf = await this.studentsController.createOnboardingPDFForAllStudents(data);
+
+        this.file(
+            pdf,
+            (r) => r.value,
+            () => `onboarding.pdf`,
+            () => Mimetype.pdf(),
+            response,
+            200
+        );
+    }
+
     @GET
     @Path(":id/onboarding")
     @Accept("application/json", "application/pdf", "image/png")

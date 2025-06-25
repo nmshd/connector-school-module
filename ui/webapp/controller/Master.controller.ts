@@ -56,7 +56,7 @@ export default class Master extends BaseController {
                         }
                     }
                 );
-                saveAs(response.data.result, "test.csv");
+                saveAs(new Blob([response.data.result]), "test.csv");
             } catch (error) {
                 if (axios.isAxiosError(error)) {
                     this.dialog.setBusy(false);
@@ -131,5 +131,18 @@ export default class Master extends BaseController {
         studentModel.setProperty("/students", studentsResponse.data.result);
     }
 
-    public downloadStudents(): void {}
+    public async downloadStudents() {
+        const response = await axios.post<Blob>(
+            "/students/onboarding",
+            {},
+            {
+                responseType: "blob",
+                headers: {
+                    "X-API-KEY": this.getOwnerComponent().getApiKey()
+                }
+            }
+        );
+
+        saveAs(response.data, "combined-onboarding.pdf");
+    }
 }
