@@ -29,7 +29,5 @@ services:
     image: mongo
     # volumes:
     # - mongo_data:/data/db
-    logging:
-      driver: none
 # volumes:
 # mongo_data:
