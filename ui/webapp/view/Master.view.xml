@@ -42,7 +42,7 @@
                             text="Add Students"
                             press=".onOpenAddStudentsDialog"
                         />
-                        <Button
+                         <Button
                             text="Download all onboarding PDFs"
                             press=".downloadStudents"
                         />
@@ -57,6 +57,9 @@
                     </Column>
                     <Column>
                     </Column>
+                    <Column>
+
+                    </Column>
                 </columns>
                 <items>
                     <ColumnListItem type="Inactive">
@@ -70,6 +73,9 @@
                                 icon="sap-icon://delete"
                                 press=".onDeleteStudent"
                             />
+                            <Button
+                            icon="sap-icon://download"
+                            press=".onDownloadPdf"/>
                         </cells>
                     </ColumnListItem>
                 </items>

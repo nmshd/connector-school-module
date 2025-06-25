@@ -85,6 +85,27 @@ export default class Master extends BaseController {
         });
     }
 
+    public async onDownloadPdf(event: Button$PressEventParameters): void {
+        const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
+        const response = await axios.post<Blob>(
+            `/students/${studentId}/onboarding`,
+            {
+                fields: this.getModel("config").getObject("/pdfDefaults/fields"),
+                // valid logo is needed
+                // logo: this.getModel("config").getObject("/pdfDefaults/logo"),
+            },
+            {
+                headers: {
+                    "X-API-KEY": this.getOwnerComponent().getApiKey(),
+                    Accept: "application/pdf"
+                },
+                responseType: "blob"
+            }
+        );
+
+        saveAs(response.data, `student_${studentId}_onboarding.pdf`);
+    }
+
     private deleteStudent(studentId: number): void {
         axios
             .delete(`/students/${studentId}`, {
