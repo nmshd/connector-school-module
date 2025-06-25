@@ -156,9 +156,11 @@ export default class Master extends BaseController {
     public formatStatus(value: string): string {
         switch (value) {
             case "onboarding":
-                return "Warten auf Einwilligung";
+                return "Warten auf Schüler";
             case "deleted":
                 return "Schüler hat sich gelöscht";
+            case "rejected":
+                return "Schüler hat Einwilligung abgelehnt";
             case "active":
                 return "Aktiv";
         }
