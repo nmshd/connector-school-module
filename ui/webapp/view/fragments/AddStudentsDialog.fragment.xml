@@ -5,9 +5,12 @@
 >
     <Dialog
         id="addStudentsDialog"
-        title="Add Students"
+        title="Schüler importieren"
+        class="sapUiContentPadding"
     >
         <content>
+            <Text text="Hiermit können aus SchILD exportierte Schüler importiert werden."
+                class="sapUiSmallMarginBottom" />
             <u:FileUploader
                 id="csvFileUploader"
                 name="myCSVFileUpload"
@@ -18,13 +21,13 @@
         </content>
         <beginButton>
             <Button
-                text="Close"
+                text="Schließen"
                 press=".onCloseAddStudentsDialog"
             />
         </beginButton>
         <endButton>
             <Button
-                text="Sichern"
+                text="Schüler importieren"
                 press=".onUploadFiles"
             />
         </endButton>
