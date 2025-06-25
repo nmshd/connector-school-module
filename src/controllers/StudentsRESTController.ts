@@ -100,7 +100,8 @@ export class StudentsRESTController extends BaseController {
 
         let studentCSV = data.students;
 
-        const studentCSVLines = studentCSV.split("\n");
+        const studentCSVLines = studentCSV.split("\n").map((l) => l.trim());
+
         if (studentCSVLines.length < 2) {
             throw new ApplicationError("error.schoolModule.invalidRequest", "The CSV file must contain at least one student.");
         }
@@ -165,7 +166,7 @@ export class StudentsRESTController extends BaseController {
             studentCSV = updatePinInCSV(studentCSV, studentToCreate.id.toString(), pin);
         }
 
-        return this.ok(Result.ok("OK"));
+        return this.ok(Result.ok(studentCSV));
     }
 
     @POST
