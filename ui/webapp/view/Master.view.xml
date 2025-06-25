@@ -37,15 +37,30 @@
             >
                 <headerToolbar>
                     <OverflowToolbar>
+                        <Title text="Liste aller vorhandenen Schüler in der Ablage" />
                         <ToolbarSpacer />
                         <Button
+                            icon="sap-icon://refresh"
+                            text="Aktualisieren"
+                            tooltip="Aktualisiert die Liste der Schüler"
+                            press=".onRefresh"
+                        />
+                        <Button
                             icon="sap-icon://upload"
-                            text="Schüler importieren"
+                            text="Importieren"
+                            tooltip="Importiert eine Schülerliste"
                             press=".onOpenAddStudentsDialog"
                         />
                         <Button
-                            text="Onboarding Dokument aller Schüler"
+                            icon="sap-icon://excel-attachment"
+                            text="Liste als CSV"
+                            tooltip="Exportiert die Liste der Schüler als CSV"
+                            press=".onDownloadCSV"
+                        />
+                        <Button
+                            text="Onboarding Dokumente"
                             icon="sap-icon://pdf-attachment"
+                            tooltip="Erstellt eine PDF Datei mit allen Onboarding Dokumenten der Schüler"
                             press=".downloadStudents"
                         />
                         <Button
@@ -79,16 +94,21 @@
                                 <Button
                                     icon="sap-icon://pdf-attachment"
                                     text="Onboarding Dokument"
-                                    press=".onDownloadPdf" />
+                                    press=".onDownloadPdf"
+                                    enabled="{= (${studentModel>status} === 'onboarding')}"
+                                    tooltip="{= (${studentModel>status} === 'onboarding' ? 'Ein PDF Dokument für das Onboarding des Schülers erzeugen' : 'Dieser Schüler ist aktiv, sie können kein Onboarding Dokument mehr erzeugen')}" />
                                 <Button
                                     icon="sap-icon://inspect"
                                     text="Log"
-                                    press=".onStudentLog" />
+                                    press=".onStudentLog"
+                                    enabled="{= (${studentModel>status} !== 'deleted')}"
+                                    tooltip="{= (${studentModel>status} === 'deleted' ? 'Ein gelöschter Schüler besitzt keinen Log mehr.' : 'Zur Fehlerbehandlung, den Log des Schülers aufrufen.')}" />
                                 <Button
                                     icon="sap-icon://delete"
                                     type="Reject"
                                     text="Schüler löschen"
                                     press=".onDeleteStudent"
+                                    tooltip="{= (${studentModel>status} === 'deleted' ? 'Nur noch die Schüler ID ist für diesen Schüler vorhanden, diese kann hiermit gelöscht werden.' : 'Den Schüler und seine Daten aus der Ablage löschen.')}"
                                 />
                             </HBox>
                         </cells>
