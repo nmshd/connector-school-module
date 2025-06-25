@@ -1,5 +1,7 @@
 import axios from "axios";
+import { Button$PressEventParameters } from "sap/m/Button";
 import Dialog from "sap/m/Dialog";
+import MessageBox from "sap/m/MessageBox";
 import { Route$MatchedEvent } from "sap/ui/core/routing/Route";
 import { FileUploader$ChangeEvent } from "sap/ui/unified/FileUploader";
 import { StudentDTO } from "../../../src/types";
@@ -18,15 +20,6 @@ export default class Master extends BaseController {
     }
 
     private async onObjectMatched() {
-        // const studentModel = this.getModel("studentModel");
-
-        // const studentsResponse = await axios.get<{ result: StudentDTO[] }>("/students", {
-        //     headers: {
-        //         "X-API-KEY": this.getOwnerComponent().getApiKey()
-        //     }
-        // });
-
-        // studentModel.setProperty("/students", studentsResponse.data.result);
         await this.loadStudents();
     }
 
@@ -67,6 +60,30 @@ export default class Master extends BaseController {
             this.dialog.close();
         };
         reader.readAsText(this.csvFile);
+    }
+
+    public onDeleteStudent(event: Button$PressEventParameters): void {
+        MessageBox.confirm("Are you sure you want to delete this student?", {
+            onClose: (action) => {
+                if (action === "OK") {
+                    const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
+                    this.deleteStudent(studentId);
+                }
+            }
+        });
+    }
+
+    private deleteStudent(studentId: number): void {
+        axios
+            .delete(`/students/${studentId}`, {
+                headers: {
+                    "X-API-KEY": this.getOwnerComponent().getApiKey()
+                }
+            })
+            .then(() => this.loadStudents())
+            .catch((error) => {
+                console.error("Error deleting student:", error);
+            });
     }
 
     private async loadStudents(): Promise<void> {

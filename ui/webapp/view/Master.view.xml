@@ -44,7 +44,7 @@
                         />
                         <Button
                             text="Download all onboarding PDFs"
-                            press="downloadStudents"
+                            press=".downloadStudents"
                             width="17.5rem"
                         />
                     </OverflowToolbar>
@@ -56,6 +56,8 @@
                     <Column hAlign="End">
                         <Text text="Status" />
                     </Column>
+                    <Column>
+                    </Column>
                 </columns>
                 <items>
                     <ColumnListItem type="Inactive">
@@ -65,6 +67,10 @@
                                 text="{studentModel>id}"
                             />
                             <Text text="{studentModel>status}" />
+                            <Button
+                                icon="sap-icon://delete"
+                                press=".onDeleteStudent"
+                            />
                         </cells>
                     </ColumnListItem>
                 </items>
