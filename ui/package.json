@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "UI5 Application: connectorui",
     "author": "J&amp;S Soft AG",
-    "license": "Apache-2.0",
+    "license": "UNLICENSED",
     "keywords": [
         "ui5",
         "openui5",
@@ -36,6 +36,7 @@
     "dependencies": {
         "axios": "^1.10.0",
         "file-saver": "^2.0.5",
-        "jszip": "^2.2.0"
+        "jszip": "^2.2.0",
+        "json-2-csv": "^5.5.9"
     }
 }

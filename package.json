@@ -15,6 +15,7 @@
         "lint:tsc": "npm run build"
     },
     "dependencies": {
+        "json-2-csv": "^5.5.9",
         "jszip": "^3.10.1",
         "mustache": "^4.2.0",
         "pdf-lib": "1.17.1",
