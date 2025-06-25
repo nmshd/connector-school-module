@@ -16,7 +16,9 @@ export default class Login extends BaseController {
         const reader = new FileReader();
 
         reader.onload = (event) => {
-            this.getModel("config").setProperty("/", JSON.parse(event.target.result));
+            const config = JSON.parse(event.target.result);
+            config.pdfDefaults.place_date = config.pdfDefaults.place_date + ", " + new Date().toLocaleDateString();
+            config.this.getModel("config").setProperty("/", config);
         };
 
         reader.readAsText(this.configFile);

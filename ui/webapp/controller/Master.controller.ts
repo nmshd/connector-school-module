@@ -91,8 +91,7 @@ export default class Master extends BaseController {
             `/students/${studentId}/onboarding`,
             {
                 fields: this.getModel("config").getObject("/pdfDefaults/fields"),
-                // valid logo is needed
-                // logo: this.getModel("config").getObject("/pdfDefaults/logo"),
+                logo: this.getModel("config").getObject("/pdfDefaults/logo")
             },
             {
                 headers: {
@@ -134,7 +133,10 @@ export default class Master extends BaseController {
     public async downloadStudents() {
         const response = await axios.post<Blob>(
             "/students/onboarding",
-            {},
+            {
+                fields: this.getModel("config").getObject("/pdfDefaults/fields"),
+                logo: this.getModel("config").getObject("/pdfDefaults/logo")
+            },
             {
                 responseType: "blob",
                 headers: {
