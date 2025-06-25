@@ -39,8 +39,20 @@ export default class Master extends BaseController {
         this.dialog.open();
     }
 
+    public async onOpenStudentLogDialog(): Promise<void> {
+        this.dialog ??= (await this.loadFragment({
+            name: "eu.enmeshed.connectorui.view.fragments.StudentLogDialog"
+        })) as Dialog;
+        this.dialog.open();
+    }
+
     public onCloseAddStudentsDialog(): void {
         (this.byId("addStudentsDialog") as Dialog)?.close();
+    }
+
+    public onCloseStudentLogDialog(): void {
+        (this.byId("studentLogDialog") as Dialog)?.close();
+        this.getModel("appView").setProperty("/logOutput", "");
     }
 
     public onUploadFiles() {
@@ -77,6 +89,18 @@ export default class Master extends BaseController {
             this.dialog.close();
         };
         reader.readAsText(this.csvFile);
+    }
+
+    public async onStudentLog(event: Button$PressEventParameters): Promise<void> {
+        const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
+        const response = await axios.get(`/students/${studentId}/log`, {
+            headers: {
+                "X-API-KEY": this.getOwnerComponent().getApiKey(),
+                Accept: "text/plain"
+            }
+        });
+        this.onOpenStudentLogDialog();
+        this.getModel("appView").setProperty("/logOutput", response.data);
     }
 
     public onDeleteStudent(event: Button$PressEventParameters): void {

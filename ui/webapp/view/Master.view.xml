@@ -56,16 +56,14 @@
                     </OverflowToolbar>
                 </headerToolbar>
                 <columns>
-                    <Column width="12em">
+                    <Column>
                         <Text text="Schüler" />
                     </Column>
-                    <Column hAlign="End">
+                    <Column>
                         <Text text="Status" />
                     </Column>
                     <Column>
-                    </Column>
-                    <Column>
-
+                        <Text text="Aktionen pro Schüler" />
                     </Column>
                 </columns>
                 <items>
@@ -76,15 +74,23 @@
                                 text="{studentModel>id}"
                             />
                             <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
-                            <Button
-                                icon="sap-icon://delete"
-                                text="Schüler löschen"
-                                press=".onDeleteStudent"
-                            />
-                            <Button
-                                icon="sap-icon://pdf-attachment"
-                                text="Onboarding Dokument"
-                                press=".onDownloadPdf" />
+                            <HBox columnGap="0.25rem">
+
+                                <Button
+                                    icon="sap-icon://pdf-attachment"
+                                    text="Onboarding Dokument"
+                                    press=".onDownloadPdf" />
+                                <Button
+                                    icon="sap-icon://inspect"
+                                    text="Log"
+                                    press=".onStudentLog" />
+                                <Button
+                                    icon="sap-icon://delete"
+                                    type="Reject"
+                                    text="Schüler löschen"
+                                    press=".onDeleteStudent"
+                                />
+                            </HBox>
                         </cells>
                     </ColumnListItem>
                 </items>
