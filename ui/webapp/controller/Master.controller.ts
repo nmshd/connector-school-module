@@ -11,7 +11,8 @@ import BaseController from "./BaseController";
  * @namespace eu.enmeshed.connectorui.controller
  */
 export default class Master extends BaseController {
-    private dialog: Dialog;
+    private addStudentsDialog: Dialog;
+    private studentLogDialog: Dialog;
     private csvFile: Blob;
     public onInit(): void {
         this.getRouter()
@@ -32,18 +33,30 @@ export default class Master extends BaseController {
         this.csvFile = event.getParameter("files")[0] as Blob;
     }
 
+    public async onDownloadCSV() {
+        const response = await axios.get(`/students`, {
+            headers: {
+                "X-API-KEY": this.getOwnerComponent().getApiKey(),
+                Accept: "text/csv"
+            }
+        });
+        const d = new Date();
+        const date = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + "_" + d.getHours() + d.getMinutes() + d.getSeconds() + "_";
+        saveAs(new Blob(["\uFEFF" + response.data], { type: "text/csv; charset=utf-8" }), date + "Schülerliste.csv");
+    }
+
     public async onOpenAddStudentsDialog(): Promise<void> {
-        this.dialog ??= (await this.loadFragment({
+        this.addStudentsDialog ??= (await this.loadFragment({
             name: "eu.enmeshed.connectorui.view.fragments.AddStudentsDialog"
         })) as Dialog;
-        this.dialog.open();
+        this.addStudentsDialog.open();
     }
 
     public async onOpenStudentLogDialog(): Promise<void> {
-        this.dialog ??= (await this.loadFragment({
+        this.studentLogDialog ??= (await this.loadFragment({
             name: "eu.enmeshed.connectorui.view.fragments.StudentLogDialog"
         })) as Dialog;
-        this.dialog.open();
+        this.studentLogDialog.open();
     }
 
     public onCloseAddStudentsDialog(): void {
@@ -56,7 +69,7 @@ export default class Master extends BaseController {
     }
 
     public onUploadFiles() {
-        this.dialog.setBusy(true);
+        this.addStudentsDialog.setBusy(true);
         const reader = new FileReader();
 
         reader.onload = async (event) => {
@@ -73,10 +86,12 @@ export default class Master extends BaseController {
                         }
                     }
                 );
-                saveAs(new Blob([response.data.result]), "test.csv");
+                const d = new Date();
+                const date = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + "_" + d.getHours() + d.getMinutes() + d.getSeconds() + "_";
+                saveAs(new Blob(["\uFEFF" + response.data.result], { type: "text/csv; charset=utf-8" }), date + "ImportierteSchülerMitPIN.csv");
             } catch (error) {
                 if (axios.isAxiosError(error)) {
-                    this.dialog.setBusy(false);
+                    this.addStudentsDialog.setBusy(false);
                     MessageBox.error("An error occurred while uploading the students.", {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                         details: error.response.data.error.message || "Unknown error"
@@ -85,8 +100,8 @@ export default class Master extends BaseController {
                 }
             }
             await this.loadStudents();
-            this.dialog.setBusy(false);
-            this.dialog.close();
+            this.addStudentsDialog.setBusy(false);
+            this.addStudentsDialog.close();
         };
         reader.readAsText(this.csvFile);
     }
@@ -114,8 +129,14 @@ export default class Master extends BaseController {
         });
     }
 
+    public async onRefresh(): Promise<void> {
+        await this.loadStudents();
+    }
+
     public async onDownloadPdf(event: Button$PressEventParameters): Promise<void> {
         const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
+        const vorname = event.getSource().getBindingContext("studentModel").getProperty("givenname") as number;
+        const nachname = event.getSource().getBindingContext("studentModel").getProperty("surname") as number;
         const response = await axios.post<Blob>(
             `/students/${studentId}/onboarding`,
             {
@@ -131,7 +152,7 @@ export default class Master extends BaseController {
             }
         );
 
-        saveAs(response.data, `student_${studentId}_onboarding.pdf`);
+        saveAs(response.data, `${studentId}_${nachname}_${vorname}_Onboarding.pdf`);
     }
 
     private deleteStudent(studentId: number): void {
@@ -174,7 +195,9 @@ export default class Master extends BaseController {
             }
         );
 
-        saveAs(response.data, "combined-onboarding.pdf");
+        const d = new Date();
+        const date = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + "_" + d.getHours() + d.getMinutes() + d.getSeconds() + "_";
+        saveAs(response.data, date + "Alle_Onboarding_Dokumente.pdf");
     }
 
     public formatStatus(value: string): string {
