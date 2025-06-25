@@ -91,7 +91,7 @@ export class StudentsRESTController extends BaseController {
     @POST
     @Path("create/batch")
     @Accept("application/json")
-    public async createBatchOnboardingPDFs(@ContextResponse _response: express.Response, body: any): Promise<Envelope | void> {
+    public async createStudentsAsBatch(@ContextResponse _response: express.Response, body: any): Promise<Envelope | void> {
         const validationResult = batchOnboardingSchema.safeParse(body);
         if (!validationResult.success) {
             throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
@@ -136,7 +136,7 @@ export class StudentsRESTController extends BaseController {
 
         const studentsToCreate = studentsParsed.map((result) => result.data).filter((student) => student !== undefined);
 
-        function updatePinInCSV(csv: string, studentId: string, pin: string): string {
+        function updatePinInCSV(csv: string, studentId: string, status: string, pin: string, link: string): string {
             const lines = csv.split("\n");
             return lines
                 .map((line) => {
@@ -152,18 +152,31 @@ export class StudentsRESTController extends BaseController {
         for (const studentToCreate of studentsToCreate) {
             const existingStudent = await this.studentsController.getStudent(studentToCreate.id.toString());
             let pin = studentToCreate.pin;
+            let status = "onboarding";
+            let link = "";
             if (!existingStudent) {
-                await this.studentsController.createStudent({
+                const student = await this.studentsController.createStudent({
                     id: studentToCreate.id.toString(),
                     givenname: studentToCreate.firstName,
                     surname: studentToCreate.lastName,
                     additionalConsents: data.options.createDefaults.additionalConsents,
                     pin
                 });
+                link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
             } else {
-                pin = (await this.studentsController.getStudentPin(existingStudent)) ?? "";
+                if (existingStudent.correspondingRelationshipId) {
+                    status = "active";
+                    pin = "";
+                } else if (existingStudent.correspondingRelationshipTemplateId) {
+                    const possiblePin = existingStudent.pin === undefined ? await this.studentsController.getStudentPin(existingStudent) : "";
+                    pin = possiblePin ?? "";
+                    link = (await this.studentsController.getOnboardingDataForStudent(existingStudent, {})).value.link;
+                } else {
+                    status = "deleted";
+                    pin = "";
+                }
             }
-            studentCSV = updatePinInCSV(studentCSV, studentToCreate.id.toString(), pin);
+            studentCSV = updatePinInCSV(studentCSV, studentToCreate.id.toString(), status, pin, link);
         }
 
         return this.ok(Result.ok(studentCSV));
@@ -255,14 +268,20 @@ export class StudentsRESTController extends BaseController {
     }
 
     @GET
-    @Accept("application/json")
-    public async getStudents(): Promise<Envelope> {
+    @Accept("application/json", "text/csv")
+    public async getStudents(@ContextAccept accept: string, @ContextResponse response: express.Response): Promise<Envelope | undefined> {
         const students = await this.studentsController.getStudents();
 
         const dtoPromises = students.map((student) => this.studentsController.toStudentDTO(student));
-        const dtos = await Promise.all(dtoPromises);
-
-        return this.ok(Result.ok(dtos));
+        switch (accept) {
+            default:
+                const dtos = await Promise.all(dtoPromises);
+                return this.ok(Result.ok(dtos));
+            case "text/csv":
+                const csv = await this.studentsController.getStudentsAsCSV();
+                response.status(200).send(csv);
+                return;
+        }
     }
 
     @POST
