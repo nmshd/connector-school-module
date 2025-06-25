@@ -1,8 +1,8 @@
 import axios from "axios";
+import { saveAs } from "file-saver";
 import { Button$PressEventParameters } from "sap/m/Button";
 import Dialog from "sap/m/Dialog";
 import MessageBox from "sap/m/MessageBox";
-import { Route$MatchedEvent } from "sap/ui/core/routing/Route";
 import { FileUploader$ChangeEvent } from "sap/ui/unified/FileUploader";
 import { StudentDTO } from "../../../src/types";
 import BaseController from "./BaseController";
@@ -12,11 +12,11 @@ import BaseController from "./BaseController";
  */
 export default class Master extends BaseController {
     private dialog: Dialog;
-    private csvFile: string;
+    private csvFile: Blob;
     public onInit(): void {
         this.getRouter()
             .getRoute("master")
-            .attachPatternMatched((event: Route$MatchedEvent) => void this.onObjectMatched(event), this);
+            .attachPatternMatched(() => void this.onObjectMatched(), this);
     }
 
     private async onObjectMatched() {
@@ -24,7 +24,7 @@ export default class Master extends BaseController {
     }
 
     public onCSVFileChanged(event: FileUploader$ChangeEvent) {
-        this.csvFile = event.getParameter("files")[0];
+        this.csvFile = event.getParameter("files")[0] as Blob;
     }
 
     public async onOpenAddStudentsDialog(): Promise<void> {
@@ -38,23 +38,35 @@ export default class Master extends BaseController {
         (this.byId("addStudentsDialog") as Dialog)?.close();
     }
 
-    public async onUploadFiles() {
+    public onUploadFiles() {
         this.dialog.setBusy(true);
         const reader = new FileReader();
 
         reader.onload = async (event) => {
-            await axios.post(
-                "/students/create/batch",
-                {
-                    students: event.target.result,
-                    options: this.getModel("config").getData()
-                },
-                {
-                    headers: {
-                        "X-API-KEY": this.getOwnerComponent().getApiKey()
+            try {
+                const response = await axios.post<{ result: string }>(
+                    "/students/create/batch",
+                    {
+                        students: event.target.result,
+                        options: this.getModel("config").getData() as unknown
+                    },
+                    {
+                        headers: {
+                            "X-API-KEY": this.getOwnerComponent().getApiKey()
+                        }
                     }
+                );
+                saveAs(response.data.result, "test.csv");
+            } catch (error) {
+                if (axios.isAxiosError(error)) {
+                    this.dialog.setBusy(false);
+                    MessageBox.error("An error occurred while uploading the students.", {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+                        details: error.response.data.error.message || "Unknown error"
+                    });
+                    return;
                 }
-            );
+            }
             await this.loadStudents();
             this.dialog.setBusy(false);
             this.dialog.close();
@@ -97,4 +109,6 @@ export default class Master extends BaseController {
 
         studentModel.setProperty("/students", studentsResponse.data.result);
     }
+
+    public downloadStudents(): void {}
 }

@@ -98,9 +98,9 @@ export class StudentsRESTController extends BaseController {
         }
         const data = validationResult.data;
 
-        let studentCSV = data.students;
+        let studentCSV = data.students.replaceAll("\r", "");
 
-        const studentCSVLines = studentCSV.split("\n").map((l) => l.trim());
+        const studentCSVLines = studentCSV.split("\n");
 
         if (studentCSVLines.length < 2) {
             throw new ApplicationError("error.schoolModule.invalidRequest", "The CSV file must contain at least one student.");

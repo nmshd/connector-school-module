@@ -36,6 +36,7 @@ export default class BaseController extends Controller {
     public getModel(name: "studentModel"): JSONModel;
     public getModel(name: "detailView"): JSONModel;
     public getModel(name: "appView"): JSONModel;
+    public getModel(name: "config"): JSONModel;
     public getModel(name?: string): Model {
         return this.getView().getModel(name);
     }
@@ -56,9 +57,7 @@ export default class BaseController extends Controller {
      * @returns {Promise<sap.base.i18n.ResourceModel>} The i18n resource bundle of the component
      */
     public getResourceBundle(): Promise<ResourceBundle> {
-        const oModel = this.getOwnerComponent().getModel(
-            "i18n"
-        ) as ResourceModel;
+        const oModel = this.getOwnerComponent().getModel("i18n") as ResourceModel;
         return oModel.getResourceBundle() as Promise<ResourceBundle>;
     }
 

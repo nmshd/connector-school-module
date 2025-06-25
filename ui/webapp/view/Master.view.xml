@@ -45,7 +45,6 @@
                         <Button
                             text="Download all onboarding PDFs"
                             press=".downloadStudents"
-                            width="17.5rem"
                         />
                     </OverflowToolbar>
                 </headerToolbar>
