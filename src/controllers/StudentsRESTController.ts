@@ -126,7 +126,7 @@ export class StudentsRESTController extends BaseController {
                     id: JSON.parse(values[2]),
                     emailPrivate: JSON.parse(values[3]),
                     emailSchool: JSON.parse(values[4]),
-                    pin: Math.floor(1000 + Math.random() * 9000).toString()
+                    pin: (Math.floor(Math.random() * 10000) + 10000).toString().substring(1)
                 });
             });
         const errors = studentsParsed.filter((result) => !result.success).map((result) => fromError(result.error));
