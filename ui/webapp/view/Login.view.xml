@@ -4,6 +4,7 @@
     xmlns:f="sap.f"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:core="sap.ui.core"
+    xmlns:l="sap.ui.layout.form"
     xmlns:u="sap.ui.unified"
 >
     <Page>
@@ -16,24 +17,32 @@
             >
                 <items>
                     <Title text="Login" />
-                    <Input
-                        id="apiKeyInput"
-                        type="Password"
-                        submit=".onLogin"
-                        placeholder="API-Key"
-                    />
-                    <u:FileUploader
-                        id="configFileUploader"
-                        name="myConfigFileUpload"
-                        change=".onConfigFileChanged"
-                        tooltip="Upload your csv entry"
-                    />
-                    <Button
-                        width="12rem"
-                        text="Login"
-                        type="Emphasized"
-                        press=".onLogin"
-                    />
+                    <l:SimpleForm editable="true">
+                        <Label text="API Key" />
+                        <Input
+                            id="apiKeyInput"
+                            type="Password"
+                            submit=".onLogin"
+                            placeholder="API-Key"
+                        />
+                        <Label text="Config File" />
+                        <u:FileUploader
+                            id="configFileUploader"
+                            name="myConfigFileUpload"
+                            change=".onConfigFileChanged"
+                            tooltip="Upload your csv entry"
+                            width="100%"
+                        />
+                        <Label text="" />
+                        <Button
+                            width="12rem"
+                            text="Login"
+                            type="Emphasized"
+                            press=".onLogin"
+                        />
+                    </l:SimpleForm>
+
+
                 </items>
             </VBox>
         </content>
