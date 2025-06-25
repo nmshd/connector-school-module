@@ -15,6 +15,7 @@ import {
 } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
 import { LocalRequestDTO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import { json2csv } from "json-2-csv";
 import { DateTime } from "luxon";
 import * as mustache from "mustache";
 import fs from "node:fs";
@@ -160,6 +161,7 @@ export class StudentsController {
             id: data.id,
             givenname: data.givenname,
             surname: data.surname,
+            pin: data.pin,
             correspondingRelationshipTemplateId: template.value.id
         });
 
@@ -754,9 +756,48 @@ export class StudentsController {
         return template.value.passwordProtection?.password;
     }
 
+    public async getStudentsAsCSV(): Promise<string> {
+        const students = await this.getStudents();
+        const csvData = [];
+        for (const student of students) {
+            let pin = student.pin;
+            let link = "";
+
+            if (student.correspondingRelationshipId) {
+                pin = "";
+            } else if (student.correspondingRelationshipTemplateId) {
+                if (pin === undefined) {
+                    pin = await this.getStudentPin(student);
+                }
+                link = (await this.getOnboardingDataForStudent(student, {})).value.link;
+            } else {
+                pin = "";
+            }
+            const dto = await this.toStudentDTO(student);
+            csvData.push({ ...dto, pin, link });
+        }
+        const csv = await json2csv(csvData, {
+            keys: [
+                { field: "givenname", title: "Vorname" },
+                { field: "surname", title: "Nachname" },
+                { field: "id", title: "Interne ID-Nummer" },
+                { field: "status", title: "Status" },
+                { field: "pin", title: "PIN" },
+                { field: "link", title: "Onboarding Link" }
+            ]
+        });
+        return csv;
+    }
+
     public async createOnboardingPDFForAllStudents(data: PDFSettings): Promise<Result<Buffer<ArrayBuffer>>> {
         const students = await this.getStudents();
-        const pdfs = await Promise.all(students.map((student) => this.getOnboardingDataForStudent(student, data).then((data) => data.value.pdf)));
+        const studentsInOnboardingStatus = students.filter((value) => {
+            if (value.correspondingRelationshipId || !value.correspondingRelationshipTemplateId) {
+                return false;
+            }
+            return true;
+        });
+        const pdfs = await Promise.all(studentsInOnboardingStatus.map((student) => this.getOnboardingDataForStudent(student, data).then((data) => data.value.pdf)));
 
         const combinedPdf = await PDFDocument.create();
 
