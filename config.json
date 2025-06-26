@@ -15,8 +15,7 @@
             "location": "/usr/app/custom-modules/school-module",
             "schoolName": "ISM - Internationales Sprachgymnasium Musterhausen",
             "autoMailAfterOnboarding": true,
-            "autoMailBeforeOffboarding": true,
-            "uiLocation": "/ui"
+            "autoMailBeforeOffboarding": true
         }
     }
 }

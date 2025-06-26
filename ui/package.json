@@ -10,8 +10,7 @@
         "sapui5"
     ],
     "scripts": {
-        "build": "ui5 build --clean-dest",
-        "build:opt": "ui5 build self-contained --clean-dest --all",
+        "build": "ui5 build --clean-dest --dest ../dist/ui",
         "start": "ui5 serve --port 8080",
         "start:dist": "npm start -- --config ui5-dist.yaml",
         "ts-typecheck": "tsc --noEmit",

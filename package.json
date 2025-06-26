@@ -8,13 +8,14 @@
     ],
     "scripts": {
         "build": "tsc",
-        "build:ci": "tsc -p tsconfig.prod.json",
+        "build:ci": "tsc -p tsconfig.prod.json && npm run -w ui build",
         "lint": "npm run lint:tsc && npm run lint:prettier && npm run lint:eslint",
         "lint:eslint": "eslint --ext .ts ./src",
         "lint:prettier": "prettier --check .",
         "lint:tsc": "npm run build"
     },
     "dependencies": {
+        "helmet": "^8.1.0",
         "json-2-csv": "^5.5.9",
         "jszip": "^3.10.1",
         "mustache": "^4.2.0",
