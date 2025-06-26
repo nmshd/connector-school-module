@@ -18,6 +18,7 @@ import BaseController from "./BaseController";
 export default class Master extends BaseController {
     private addStudentsDialog: Dialog;
     private studentLogDialog: Dialog;
+    private studentQRDialog: Dialog;
     private csvFile: Blob;
 
     private _oGlobalFilter: Filter;
@@ -73,6 +74,10 @@ export default class Master extends BaseController {
         this.addStudentsDialog.open();
     }
 
+    public onCloseAddStudentsDialog(): void {
+        (this.byId("addStudentsDialog") as Dialog)?.close();
+    }
+
     public async onOpenStudentLogDialog(): Promise<void> {
         this.studentLogDialog ??= (await this.loadFragment({
             name: "eu.enmeshed.connectorui.view.fragments.StudentLogDialog"
@@ -80,8 +85,23 @@ export default class Master extends BaseController {
         this.studentLogDialog.open();
     }
 
-    public onCloseAddStudentsDialog(): void {
-        (this.byId("addStudentsDialog") as Dialog)?.close();
+    public onCloseStudentLogDialog(): void {
+        (this.byId("studentLogDialog") as Dialog)?.close();
+        this.getModel("appView").setProperty("/logOutput", "");
+    }
+
+    public async onOpenStudentQRDialog(): Promise<void> {
+        this.studentQRDialog ??= (await this.loadFragment({
+            name: "eu.enmeshed.connectorui.view.fragments.StudentQRDialog"
+        })) as Dialog;
+        this.studentQRDialog.open();
+    }
+
+    public onCloseStudentQRDialog(): void {
+        (this.byId("studentQRDialog") as Dialog)?.close();
+        this.getModel("appView").setProperty("/studentQR", "");
+        this.getModel("appView").setProperty("/studentLink", "");
+        this.getModel("appView").setProperty("/student", {});
     }
 
     public searchTable(oEvent: any): void {
@@ -102,11 +122,6 @@ export default class Master extends BaseController {
 
         const table = this.byId("table") as Table;
         (table.getBinding() as JSONListBinding).filter(this._oGlobalFilter, "Application");
-    }
-
-    public onCloseStudentLogDialog(): void {
-        (this.byId("studentLogDialog") as Dialog)?.close();
-        this.getModel("appView").setProperty("/logOutput", "");
     }
 
     public onUploadFiles() {
@@ -157,6 +172,21 @@ export default class Master extends BaseController {
         });
         this.onOpenStudentLogDialog();
         this.getModel("appView").setProperty("/logOutput", response.data);
+    }
+
+    public async onStudentQR(event: Button$PressEvent): Promise<void> {
+        const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
+        const response = await axios.get(`/students/${studentId}/onboarding`, {
+            headers: {
+                "X-API-KEY": this.getOwnerComponent().getApiKey(),
+                Accept: "application/json"
+            }
+        });
+        const studentObject: any = event.getSource().getBindingContext("studentModel").getObject();
+        this.getModel("appView").setProperty("/student", studentObject);
+        this.getModel("appView").setProperty("/studentLink", response.data.result.link);
+        this.getModel("appView").setProperty("/studentQR", "data:image/png;base64," + response.data.result.png);
+        this.onOpenStudentQRDialog();
     }
 
     public onDeleteSelectedStudents(event: Button$PressEvent): void {

@@ -10,7 +10,6 @@
         id="masterPage"
         stickySubheaderProvider="iconTabBar"
         class="sapUiNoContentPadding"
-        height="100%"
     >
         <!-- DynamicPage Title -->
         <f:title>
@@ -58,7 +57,6 @@
         <f:content>
             <t:Table
                 id="table"
-                inset="false"
                 rows="{
 						path: 'studentModel>/students',
 						sorter: {
@@ -67,10 +65,8 @@
 					}"
                 class="sapFDynamicPageAlignContent"
                 width="auto"
-                scrolling=""
                 rowSelectionChange=".onRowSelectionChange"
                 busyIndicatorDelay="0"
-                height="100%"
                 visibleRowCountMode="Auto"
             >
                 <t:extension>
@@ -122,7 +118,8 @@
                     <t:Column id="pin" width="4em" sortProperty="pin" resizable="true">
                         <Text text="PIN" />
                         <t:template>
-                            <Text text="{studentModel>pin}" />
+                            <Text text="{studentModel>pin}"
+                                visible="{=${studentModel>status} === 'onboarding'}" />
                         </t:template>
                     </t:Column>
                     <t:Column id="status" width="10em" sortProperty="status">
@@ -131,15 +128,21 @@
                             <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="17em">
+                    <t:Column width="20em">
                         <Text text="Aktionen pro Schüler" />
                         <t:template>
                             <HBox columnGap="0.25rem">
 
                                 <Button
                                     icon="sap-icon://pdf-attachment"
-                                    text="Onboarding Dokument"
+                                    text="Dokument"
                                     press=".onDownloadPdf"
+                                    enabled="{= (${studentModel>status} === 'onboarding')}"
+                                    tooltip="{= (${studentModel>status} === 'onboarding' ? 'Ein PDF Dokument für das Onboarding des Schülers erzeugen' : 'Dieser Schüler ist aktiv, sie können kein Onboarding Dokument mehr erzeugen')}" />
+                                <Button
+                                    icon="sap-icon://qr-code"
+                                    text="QR Code"
+                                    press=".onStudentQR"
                                     enabled="{= (${studentModel>status} === 'onboarding')}"
                                     tooltip="{= (${studentModel>status} === 'onboarding' ? 'Ein PDF Dokument für das Onboarding des Schülers erzeugen' : 'Dieser Schüler ist aktiv, sie können kein Onboarding Dokument mehr erzeugen')}" />
                                 <Button
