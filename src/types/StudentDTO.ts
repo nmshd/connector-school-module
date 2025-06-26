@@ -5,6 +5,8 @@ export interface StudentDTO {
     givenname?: string;
     surname?: string;
     pin?: string;
+    emailSchool?: string;
+    emailPrivate?: string;
     correspondingRelationshipTemplateId?: string;
     correspondingRelationshipId?: string;
     status: StudentStatus;

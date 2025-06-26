@@ -48,6 +48,8 @@ export class StudentsController {
         givenname: string;
         surname: string;
         pin?: string;
+        emailSchool?: string;
+        emailPrivate?: string;
         additionalConsents: {
             mustBeAccepted?: boolean;
             consent: string;
@@ -163,6 +165,8 @@ export class StudentsController {
             givenname: data.givenname,
             surname: data.surname,
             pin: data.pin,
+            emailPrivate: data.emailPrivate,
+            emailSchool: data.emailSchool,
             correspondingRelationshipTemplateId: template.value.id
         });
 
@@ -750,6 +754,8 @@ export class StudentsController {
                 { field: "givenname", title: "Vorname" },
                 { field: "surname", title: "Nachname" },
                 { field: "id", title: "Interne ID-Nummer" },
+                { field: "emailPrivate", title: "E-Mail (privat)" },
+                { field: "emailSchool", title: "E-Mail (schulisch)" },
                 { field: "status", title: "Status" },
                 { field: "pin", title: "PIN" },
                 { field: "link", title: "Onboarding Link" }
@@ -785,13 +791,13 @@ export class StudentsController {
 
         const csvDataAsArray = [];
         for (const entry of csvData) {
-            csvDataAsArray.push([entry.givenname, entry.surname, entry.id, entry.status, entry.pin, entry.link]);
+            csvDataAsArray.push([entry.givenname, entry.surname, entry.id, entry.emailPrivate, entry.emailSchool, entry.status, entry.pin, entry.link]);
         }
 
         const sheet = workbook.addWorksheet("Schüler", {
             pageSetup: { paperSize: 9 }
         });
-        sheet.columns = [{ width: 50 }, { width: 50 }, { width: 10 }, { width: 20 }, { width: 10 }, { width: 100 }];
+        sheet.columns = [{ width: 50 }, { width: 50 }, { width: 10 }, { width: 40 }, { width: 40 }, { width: 20 }, { width: 10 }, { width: 100 }];
         sheet.addTable({
             name: "Schüler",
             ref: "A1",
@@ -801,28 +807,54 @@ export class StudentsController {
                 { name: "Vorname", filterButton: true },
                 { name: "Nachname", filterButton: true },
                 { name: "Interne ID-Nummer", filterButton: true },
+                { name: "E-Mail (privat)", filterButton: true },
+                { name: "E-Mail (schulisch)", filterButton: true },
                 { name: "Status", filterButton: true },
                 { name: "PIN", filterButton: true },
                 { name: "Link", filterButton: true }
             ],
             rows: csvDataAsArray
         });
-        const table = sheet.getTable("Schüler");
-        const column = table.getColumn(1) as any;
-        column.width = 30;
 
-        const sheet2 = workbook.addWorksheet("Schüler Normal", {
+        const buffer = await workbook.xlsx.writeBuffer();
+        const newBuffer = Buffer.from(buffer);
+
+        return newBuffer;
+    }
+
+    public async createXLSXOutOfGivenStudents(students: any): Promise<Buffer> {
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = "Schul Modul";
+        workbook.lastModifiedBy = "Schul Modul";
+        workbook.created = new Date();
+        workbook.modified = new Date();
+
+        const csvDataAsArray = [];
+        for (const entry of students) {
+            csvDataAsArray.push([entry.givenname, entry.surname, entry.id, entry.emailPrivate, entry.emailSchool, entry.status, entry.pin, entry.link]);
+        }
+
+        const sheet = workbook.addWorksheet("Schüler", {
             pageSetup: { paperSize: 9 }
         });
-        sheet2.columns = [
-            { header: "Vorname", key: "givenname", width: 30 },
-            { header: "Nachname", key: "surname" },
-            { header: "Interne ID-Nummer", key: "id" },
-            { header: "Status", key: "status" },
-            { header: "PIN", key: "pin" },
-            { header: "Link", key: "link" }
-        ];
-        sheet2.addRows(csvData);
+        sheet.columns = [{ width: 50 }, { width: 50 }, { width: 10 }, { width: 40 }, { width: 40 }, { width: 20 }, { width: 10 }, { width: 100 }];
+        sheet.addTable({
+            name: "Schüler",
+            ref: "A1",
+            headerRow: true,
+            totalsRow: false,
+            columns: [
+                { name: "Vorname", filterButton: true },
+                { name: "Nachname", filterButton: true },
+                { name: "Interne ID-Nummer", filterButton: true },
+                { name: "E-Mail (privat)", filterButton: true },
+                { name: "E-Mail schulisch)", filterButton: true },
+                { name: "Status", filterButton: true },
+                { name: "PIN", filterButton: true },
+                { name: "Link", filterButton: true }
+            ],
+            rows: csvDataAsArray
+        });
 
         const buffer = await workbook.xlsx.writeBuffer();
         const newBuffer = Buffer.from(buffer);
