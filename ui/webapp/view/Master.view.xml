@@ -10,6 +10,7 @@
         id="masterPage"
         stickySubheaderProvider="iconTabBar"
         class="sapUiNoContentPadding"
+        height="100%"
     >
         <!-- DynamicPage Title -->
         <f:title>
@@ -66,8 +67,11 @@
 					}"
                 class="sapFDynamicPageAlignContent"
                 width="auto"
+                scrolling=""
                 rowSelectionChange=".onRowSelectionChange"
                 busyIndicatorDelay="0"
+                height="100%"
+                visibleRowCountMode="Auto"
             >
                 <t:extension>
                     <OverflowToolbar>
