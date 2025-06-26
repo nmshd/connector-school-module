@@ -91,8 +91,8 @@ export class StudentsRESTController extends BaseController {
 
     @POST
     @Path("create/batch")
-    @Accept("application/json")
-    public async createStudentsAsBatch(@ContextResponse _response: express.Response, body: any): Promise<Envelope | void> {
+    @Accept("application/json", "text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public async createStudentsAsBatch(@ContextAccept accept: string, @ContextResponse response: express.Response, body: any): Promise<Envelope | void> {
         const validationResult = batchOnboardingSchema.safeParse(body);
         if (!validationResult.success) {
             throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
@@ -152,37 +152,59 @@ export class StudentsRESTController extends BaseController {
                 .join("\n");
         }
 
+        const studentsArray = [];
         for (const studentToCreate of studentsToCreate) {
-            const existingStudent = await this.studentsController.getStudent(studentToCreate.id.toString());
-            let pin = studentToCreate.pin;
+            let student = await this.studentsController.getStudent(studentToCreate.id.toString());
+            let pin = undefined;
             let status = "onboarding";
             let link = "";
-            if (!existingStudent) {
-                const student = await this.studentsController.createStudent({
+            if (!student) {
+                student = await this.studentsController.createStudent({
                     id: studentToCreate.id.toString(),
                     givenname: studentToCreate.firstName,
                     surname: studentToCreate.lastName,
+                    emailPrivate: studentToCreate.emailPrivate,
+                    emailSchool: studentToCreate.emailSchool,
                     additionalConsents: data.options.createDefaults.additionalConsents,
-                    pin
+                    pin: studentToCreate.pin
                 });
+                pin = student.pin ?? "";
                 link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
-            } else if (existingStudent.correspondingRelationshipId) {
+            } else if (student.correspondingRelationshipId) {
                 status = "active";
                 pin = "";
-            } else if (existingStudent.correspondingRelationshipTemplateId) {
-                const possiblePin = existingStudent.pin === undefined ? await this.studentsController.getStudentPin(existingStudent) : "";
-                pin = possiblePin ?? "";
-                link = (await this.studentsController.getOnboardingDataForStudent(existingStudent, {})).value.link;
+            } else if (student.correspondingRelationshipTemplateId) {
+                pin = (await this.studentsController.getStudentPin(student)) ?? "";
+                link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
             } else {
                 status = "deleted";
                 pin = "";
             }
             studentCSV = updatePinInCSV(studentCSV, studentToCreate.id.toString(), status, pin, link);
+            studentsArray.push({
+                ...studentToCreate,
+                givenname: studentToCreate.firstName,
+                surname: studentToCreate.lastName,
+                status,
+                pin,
+                link
+            });
         }
         const csvSplit = studentCSV.split("\n");
-        csvSplit[0] = `${csvSplit[0]};"pin";"status";"link"`;
+        csvSplit[0] = `${csvSplit[0]};"PIN";"Status";"Link"`;
         studentCSV = csvSplit.join("\n");
-        return this.ok(Result.ok(studentCSV));
+
+        switch (accept) {
+            case "application/json":
+                return this.ok(Result.ok(studentCSV));
+            case "text/csv":
+                response.status(200).send(studentCSV);
+                return;
+            case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                const xlsx = await this.studentsController.createXLSXOutOfGivenStudents(studentsArray);
+                response.status(200).send(xlsx);
+                return;
+        }
     }
 
     @POST
