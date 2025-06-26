@@ -15,7 +15,7 @@ import {
 } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
 import { LocalRequestDTO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
-import ExcelJS from "exceljs";
+import excelJS from "exceljs";
 import { json2csv } from "json-2-csv";
 import { DateTime } from "luxon";
 import * as mustache from "mustache";
@@ -783,7 +783,7 @@ export class StudentsController {
             csvData.push({ ...dto, pin, link });
         }
 
-        const workbook = new ExcelJS.Workbook();
+        const workbook = new excelJS.Workbook();
         workbook.creator = "Schul Modul";
         workbook.lastModifiedBy = "Schul Modul";
         workbook.created = new Date();
@@ -823,7 +823,7 @@ export class StudentsController {
     }
 
     public async createXLSXOutOfGivenStudents(students: any): Promise<Buffer> {
-        const workbook = new ExcelJS.Workbook();
+        const workbook = new excelJS.Workbook();
         workbook.creator = "Schul Modul";
         workbook.lastModifiedBy = "Schul Modul";
         workbook.created = new Date();
@@ -868,7 +868,7 @@ export class StudentsController {
             if (value.correspondingRelationshipId || !value.correspondingRelationshipTemplateId) {
                 return false;
             }
-            if (data.students && data.students.indexOf(value.id.toString()) < 0) {
+            if (data.students && !data.students.includes(value.id.toString())) {
                 return false;
             }
             return true;
