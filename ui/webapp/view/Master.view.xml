@@ -35,7 +35,7 @@
                     />
                     <Button
                         icon="sap-icon://excel-attachment"
-                        text="Liste als CSV"
+                        text="CSV Export"
                         tooltip="Exportiert die Liste der Schüler als CSV"
                         press=".onDownloadCSV"
                     />
@@ -127,7 +127,7 @@
                             <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="25em">
+                    <t:Column width="17em">
                         <Text text="Aktionen pro Schüler" />
                         <t:template>
                             <HBox columnGap="0.25rem">
