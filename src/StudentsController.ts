@@ -444,16 +444,12 @@ export class StudentsController {
     }
 
     public async getStudentByTemplateId(templateId: string): Promise<Student> {
-        const doc = await this.#studentsCollection.findOne({
-            correspondingRelationshipTemplateId: templateId
-        });
+        const doc = await this.#studentsCollection.findOne({ correspondingRelationshipTemplateId: templateId });
         return Student.from(doc);
     }
 
     public async getStudentByRelationshipId(relationshipId: string): Promise<Student | undefined> {
-        const doc = await this.#studentsCollection.findOne({
-            correspondingRelationshipId: relationshipId
-        });
+        const doc = await this.#studentsCollection.findOne({ correspondingRelationshipId: relationshipId });
 
         return doc ? Student.from(doc) : undefined;
     }
@@ -485,33 +481,21 @@ export class StudentsController {
 
             switch (relationship.status) {
                 case RelationshipStatus.Pending:
-                    await this.services.transportServices.relationships.rejectRelationship({
-                        relationshipId: student.correspondingRelationshipId.toString()
-                    });
-                    await this.services.transportServices.relationships.decomposeRelationship({
-                        relationshipId: student.correspondingRelationshipId.toString()
-                    });
+                    await this.services.transportServices.relationships.rejectRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
                 case RelationshipStatus.Active:
-                    await this.services.transportServices.relationships.terminateRelationship({
-                        relationshipId: student.correspondingRelationshipId.toString()
-                    });
-                    await this.services.transportServices.relationships.decomposeRelationship({
-                        relationshipId: student.correspondingRelationshipId.toString()
-                    });
+                    await this.services.transportServices.relationships.terminateRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
+                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
                 case RelationshipStatus.Rejected:
                 case RelationshipStatus.Revoked:
                 case RelationshipStatus.Terminated:
                 case RelationshipStatus.DeletionProposed:
-                    await this.services.transportServices.relationships.decomposeRelationship({
-                        relationshipId: student.correspondingRelationshipId.toString()
-                    });
+                    await this.services.transportServices.relationships.decomposeRelationship({ relationshipId: student.correspondingRelationshipId.toString() });
             }
         }
 
         if (student.correspondingRelationshipTemplateId) {
-            await this.services.transportServices.relationshipTemplates.deleteRelationshipTemplate({
-                templateId: student.correspondingRelationshipTemplateId.toString()
-            });
+            await this.services.transportServices.relationshipTemplates.deleteRelationshipTemplate({ templateId: student.correspondingRelationshipTemplateId.toString() });
         }
 
         await this.#studentsCollection.delete({ id: student.id.toString() });
@@ -612,19 +596,10 @@ export class StudentsController {
 
     public async sendFile(
         student: Student,
-        data: {
-            file: string;
-            title: string;
-            filename: string;
-            mimetype: string;
-            tags?: string[] | undefined;
-            messageSubject?: string;
-            messageBody?: string;
-        }
+        data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined; messageSubject?: string; messageBody?: string }
     ): Promise<SchoolFileDTO> {
-        if (!student.correspondingRelationshipId) {
-            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
-        }
+        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
         const title = await this.fillTemplateStringWithStudentAndOrganizationData(student, data.title);
@@ -657,10 +632,7 @@ export class StudentsController {
             peer: relationship.value.peer
         });
 
-        await this.services.transportServices.messages.sendMessage({
-            content: request.value.content,
-            recipients: [relationship.value.peer]
-        });
+        await this.services.transportServices.messages.sendMessage({ content: request.value.content, recipients: [relationship.value.peer] });
 
         const fileDTO = await this.requestToFileDVO(request.value);
         return fileDTO;
@@ -725,9 +697,7 @@ export class StudentsController {
     private async requestToFileDVO(request: LocalRequestDTO): Promise<SchoolFileDTO> {
         const requestItem = request.content.items[0] as TransferFileOwnershipRequestItemJSON;
 
-        const file = await this.services.transportServices.files.getOrLoadFile({
-            reference: requestItem.fileReference
-        });
+        const file = await this.services.transportServices.files.getOrLoadFile({ reference: requestItem.fileReference });
 
         const responseItem = request.response?.content.items[0] as TransferFileOwnershipAcceptResponseItemJSON | RejectResponseItemJSON | undefined;
 
