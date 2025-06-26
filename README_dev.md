@@ -2,28 +2,28 @@
 
 ## Prerequisites
 
--   Docker
--   [Taskfile](https://taskfile.dev/installation/)
--   [xh cli](https://github.com/ducaale/xh?tab=readme-ov-file#installation)
--   Node.js / npm
--   [jq](https://jqlang.org/download/)  
-    `sudo apt-get install jq` or `brew install jq`
--   [qrencode](https://github.com/fukuchi/libqrencode)  
-    `sudo apt-get install qrencode` or `brew install qrencode`
--   (only on mac) [coreutils](https://formulae.brew.sh/formula/coreutils)  
-    `brew install coreutils`
+- Docker
+- [Taskfile](https://taskfile.dev/installation/)
+- [xh cli](https://github.com/ducaale/xh?tab=readme-ov-file#installation)
+- Node.js / npm
+- [jq](https://jqlang.org/download/)  
+  `sudo apt-get install jq` or `brew install jq`
+- [qrencode](https://github.com/fukuchi/libqrencode)  
+  `sudo apt-get install qrencode` or `brew install qrencode`
+- (only on mac) [coreutils](https://formulae.brew.sh/formula/coreutils)  
+  `brew install coreutils`
 
 ## Taskfile tasks
 
 The `Taskfile.yml` in this repository defines various tasks to help with the development and management of the custom Connector module. Here are the tasks defined:
 
--   **prepare**: Prepares the environment by installing necessary npm packages.
--   **build**: Builds the custom module after preparing the environment.
--   **watch**: Watches the custom module and rebuilds it on changes.
--   **up**: Starts the Connector using Docker Compose.
--   **restart**: Restarts the Connector.
--   **logs**: Shows the logs of the Connector.
--   ... -> run `task --list` to see all available tasks
+- **prepare**: Prepares the environment by installing necessary npm packages.
+- **build**: Builds the custom module after preparing the environment.
+- **watch**: Watches the custom module and rebuilds it on changes.
+- **up**: Starts the Connector using Docker Compose.
+- **restart**: Restarts the Connector.
+- **logs**: Shows the logs of the Connector.
+- ... -> run `task --list` to see all available tasks
 
 These tasks can be run using the `task` command followed by the task name, for example, `task build` to build the custom module.
 
