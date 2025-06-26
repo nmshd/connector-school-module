@@ -1,8 +1,13 @@
 import axios from "axios";
 import { saveAs } from "file-saver";
-import { Button$PressEventParameters } from "sap/m/Button";
+import { Button$PressEvent } from "sap/m/Button";
 import Dialog from "sap/m/Dialog";
 import MessageBox from "sap/m/MessageBox";
+import Filter from "sap/ui/model/Filter";
+import FilterOperator from "sap/ui/model/FilterOperator";
+import JSONListBinding from "sap/ui/model/json/JSONListBinding";
+import JSONModel from "sap/ui/model/json/JSONModel";
+import Table, { Table$RowSelectionChangeEvent } from "sap/ui/table/Table";
 import { FileUploader$ChangeEvent } from "sap/ui/unified/FileUploader";
 import { StudentDTO } from "../../../src/types";
 import BaseController from "./BaseController";
@@ -14,6 +19,9 @@ export default class Master extends BaseController {
     private addStudentsDialog: Dialog;
     private studentLogDialog: Dialog;
     private csvFile: Blob;
+
+    private _oGlobalFilter: Filter;
+
     public onInit(): void {
         this.getRouter()
             .getRoute("master")
@@ -27,6 +35,19 @@ export default class Master extends BaseController {
 
     private async onObjectMatched() {
         await this.loadStudents();
+        this.setModel(
+            new JSONModel({
+                selectedItemCount: 0,
+                globalFilter: ""
+            }),
+            "ui"
+        );
+    }
+
+    public onRowSelectionChange(event: Table$RowSelectionChangeEvent) {
+        const table = this.byId("table") as Table;
+        const selectedItems = table.getSelectedIndices();
+        this.getModel("ui").setProperty("/selectedItemCount", selectedItems.length);
     }
 
     public onCSVFileChanged(event: FileUploader$ChangeEvent) {
@@ -61,6 +82,26 @@ export default class Master extends BaseController {
 
     public onCloseAddStudentsDialog(): void {
         (this.byId("addStudentsDialog") as Dialog)?.close();
+    }
+
+    public searchTable(oEvent: any): void {
+        const sQuery = oEvent.getParameter("query");
+        this._oGlobalFilter = null;
+
+        if (sQuery) {
+            this._oGlobalFilter = new Filter(
+                [
+                    new Filter("id", FilterOperator.Contains, sQuery),
+                    new Filter("surname", FilterOperator.Contains, sQuery),
+                    new Filter("givenname", FilterOperator.Contains, sQuery),
+                    new Filter("pin", FilterOperator.Contains, sQuery)
+                ],
+                false
+            );
+        }
+
+        const table = this.byId("table") as Table;
+        (table.getBinding() as JSONListBinding).filter(this._oGlobalFilter, "Application");
     }
 
     public onCloseStudentLogDialog(): void {
@@ -106,7 +147,7 @@ export default class Master extends BaseController {
         reader.readAsText(this.csvFile);
     }
 
-    public async onStudentLog(event: Button$PressEventParameters): Promise<void> {
+    public async onStudentLog(event: Button$PressEvent): Promise<void> {
         const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
         const response = await axios.get(`/students/${studentId}/log`, {
             headers: {
@@ -118,8 +159,32 @@ export default class Master extends BaseController {
         this.getModel("appView").setProperty("/logOutput", response.data);
     }
 
-    public onDeleteStudent(event: Button$PressEventParameters): void {
-        MessageBox.confirm("Are you sure you want to delete this student?", {
+    public onDeleteSelectedStudents(event: Button$PressEvent): void {
+        const selectedItemCount = this.getModel("ui").getProperty("/selectedItemCount");
+        let message = `Bitte bestätigen Sie die Löschung von ${selectedItemCount} Schülern.`;
+        if (selectedItemCount === 1) {
+            message = `Bitte bestätigen Sie die Löschung von einem Schüler.`;
+        }
+        MessageBox.confirm(message, {
+            onClose: async (action: string) => {
+                if (action === "OK") {
+                    const table = this.byId("table") as Table;
+                    const selectedIndices = table.getSelectedIndices();
+                    const items = table.getRows();
+                    for (const selectedIndex of selectedIndices) {
+                        table.getBindingPath("");
+                        const item = items[selectedIndex];
+                        const studentId = item.getBindingContext("studentModel").getProperty("id");
+                        await this.deleteStudent(studentId, false);
+                    }
+                    this.loadStudents();
+                }
+            }
+        });
+    }
+
+    public onDeleteStudent(event: Button$PressEvent): void {
+        MessageBox.confirm("Möchten Sie den Schüler wirklich löschen?", {
             onClose: (action: string) => {
                 if (action === "OK") {
                     const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
@@ -133,7 +198,7 @@ export default class Master extends BaseController {
         await this.loadStudents();
     }
 
-    public async onDownloadPdf(event: Button$PressEventParameters): Promise<void> {
+    public async onDownloadPdf(event: Button$PressEvent): Promise<void> {
         const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
         const vorname = event.getSource().getBindingContext("studentModel").getProperty("givenname") as number;
         const nachname = event.getSource().getBindingContext("studentModel").getProperty("surname") as number;
@@ -155,17 +220,23 @@ export default class Master extends BaseController {
         saveAs(response.data, `${studentId}_${nachname}_${vorname}_Onboarding.pdf`);
     }
 
-    private deleteStudent(studentId: number): void {
-        axios
-            .delete(`/students/${studentId}`, {
-                headers: {
-                    "X-API-KEY": this.getOwnerComponent().getApiKey()
-                }
-            })
-            .then(() => this.loadStudents())
-            .catch((error) => {
-                console.error("Error deleting student:", error);
-            });
+    private async deleteStudent(studentId: number, reload: boolean = true): Promise<void> {
+        return new Promise((resolve, reject) => {
+            axios
+                .delete(`/students/${studentId}`, {
+                    headers: {
+                        "X-API-KEY": this.getOwnerComponent().getApiKey()
+                    }
+                })
+                .then(() => {
+                    if (reload) this.loadStudents();
+                    resolve();
+                })
+                .catch((error) => {
+                    console.error("Error deleting student:", error);
+                    reject(error);
+                });
+        });
     }
 
     private async loadStudents(): Promise<void> {

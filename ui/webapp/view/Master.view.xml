@@ -2,6 +2,7 @@
     controllerName="eu.enmeshed.connectorui.controller.Master"
     xmlns="sap.m"
     xmlns:f="sap.f"
+    xmlns:t="sap.ui.table"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:core="sap.ui.core"
 >
@@ -19,13 +20,45 @@
                         level="H2"
                     />
                 </f:heading>
+                <f:actions>
+                    <Button
+                        icon="sap-icon://refresh"
+                        text="Aktualisieren"
+                        tooltip="Aktualisiert die Liste der Schüler"
+                        press=".onRefresh"
+                    />
+                    <Button
+                        icon="sap-icon://upload"
+                        text="Importieren"
+                        tooltip="Importiert eine Schülerliste"
+                        press=".onOpenAddStudentsDialog"
+                    />
+                    <Button
+                        icon="sap-icon://excel-attachment"
+                        text="Liste als CSV"
+                        tooltip="Exportiert die Liste der Schüler als CSV"
+                        press=".onDownloadCSV"
+                    />
+                    <Button
+                        text="Onboarding Dokumente"
+                        icon="sap-icon://pdf-attachment"
+                        tooltip="Erstellt eine PDF Datei mit allen Onboarding Dokumenten der Schüler"
+                        press=".downloadStudents"
+                    />
+                    <Button
+                        text="Abmelden"
+                        icon="sap-icon://log"
+                        press=".logout"
+                    />
+                </f:actions>
             </f:DynamicPageTitle>
         </f:title>
+
         <f:content>
-            <Table
-                id="productsTable"
+            <t:Table
+                id="table"
                 inset="false"
-                items="{
+                rows="{
 						path: 'studentModel>/students',
 						sorter: {
 							path: 'Name'
@@ -33,62 +66,70 @@
 					}"
                 class="sapFDynamicPageAlignContent"
                 width="auto"
+                rowSelectionChange=".onRowSelectionChange"
                 busyIndicatorDelay="0"
             >
-                <headerToolbar>
+                <t:extension>
                     <OverflowToolbar>
                         <Title text="Liste aller vorhandenen Schüler in der Ablage" />
                         <ToolbarSpacer />
                         <Button
-                            icon="sap-icon://refresh"
-                            text="Aktualisieren"
-                            tooltip="Aktualisiert die Liste der Schüler"
-                            press=".onRefresh"
+                            icon="sap-icon://delete"
+                            type="Reject"
+                            text="Schüler löschen"
+                            press=".onDeleteSelectedStudents"
+                            tooltip="Löscht die selektierten Schüler"
+                            visible="{= ${ui>/selectedItemCount} > 0}"
                         />
-                        <Button
-                            icon="sap-icon://upload"
-                            text="Importieren"
-                            tooltip="Importiert eine Schülerliste"
-                            press=".onOpenAddStudentsDialog"
-                        />
-                        <Button
-                            icon="sap-icon://excel-attachment"
-                            text="Liste als CSV"
-                            tooltip="Exportiert die Liste der Schüler als CSV"
-                            press=".onDownloadCSV"
-                        />
-                        <Button
-                            text="Onboarding Dokumente"
-                            icon="sap-icon://pdf-attachment"
-                            tooltip="Erstellt eine PDF Datei mit allen Onboarding Dokumenten der Schüler"
-                            press=".downloadStudents"
-                        />
-                        <Button
-                            text="Abmelden"
-                            icon="sap-icon://log"
-                            press=".logout"
-                        />
+                        <ToolbarSeparator />
+                        <SearchField
+                            placeholder="Search"
+                            value="{ui>/globalFilter}"
+                            search="searchTable"
+                            width="15rem" />
                     </OverflowToolbar>
-                </headerToolbar>
-                <columns>
-                    <Column>
-                        <Text text="Schüler" />
-                    </Column>
-                    <Column>
-                        <Text text="Status" />
-                    </Column>
-                    <Column>
-                        <Text text="Aktionen pro Schüler" />
-                    </Column>
-                </columns>
-                <items>
-                    <ColumnListItem type="Inactive">
-                        <cells>
-                            <ObjectIdentifier
-                                title="{studentModel>givenname} {studentModel>surname}"
-                                text="{studentModel>id}"
+                </t:extension>
+                <t:columns>
+                    <t:Column id="id" width="6em" sortProperty="id" filterProperty="id"
+                        resizable="true">
+                        <Label text="Schüler ID" />
+                        <t:template>
+                            <Text text="{studentModel>id}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column id="givenname" sortProperty="givenname" filterProperty="givenname"
+                        resizable="true">
+                        <Text text="Vorname" />
+                        <t:template>
+                            <Text
+                                text="{studentModel>givenname}"
                             />
+                        </t:template>
+                    </t:Column>
+                    <t:Column id="surname" sortProperty="surname" filterProperty="surname"
+                        resizable="true">
+                        <Text text="Nachname" />
+                        <t:template>
+                            <Text
+                                text="{studentModel>surname}"
+                            />
+                        </t:template>
+                    </t:Column>
+                    <t:Column id="pin" width="4em" sortProperty="pin" resizable="true">
+                        <Text text="PIN" />
+                        <t:template>
+                            <Text text="{studentModel>pin}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column id="status" width="10em" sortProperty="status">
+                        <Text text="Status" />
+                        <t:template>
                             <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="25em">
+                        <Text text="Aktionen pro Schüler" />
+                        <t:template>
                             <HBox columnGap="0.25rem">
 
                                 <Button
@@ -103,18 +144,12 @@
                                     press=".onStudentLog"
                                     enabled="{= (${studentModel>status} !== 'deleted')}"
                                     tooltip="{= (${studentModel>status} === 'deleted' ? 'Ein gelöschter Schüler besitzt keinen Log mehr.' : 'Zur Fehlerbehandlung, den Log des Schülers aufrufen.')}" />
-                                <Button
-                                    icon="sap-icon://delete"
-                                    type="Reject"
-                                    text="Schüler löschen"
-                                    press=".onDeleteStudent"
-                                    tooltip="{= (${studentModel>status} === 'deleted' ? 'Nur noch die Schüler ID ist für diesen Schüler vorhanden, diese kann hiermit gelöscht werden.' : 'Den Schüler und seine Daten aus der Ablage löschen.')}"
-                                />
+
                             </HBox>
-                        </cells>
-                    </ColumnListItem>
-                </items>
-            </Table>
+                        </t:template>
+                    </t:Column>
+                </t:columns>
+            </t:Table>
         </f:content>
     </f:DynamicPage>
 </mvc:View>
