@@ -766,9 +766,7 @@ export class StudentsController {
             if (student.correspondingRelationshipId) {
                 pin = "";
             } else if (student.correspondingRelationshipTemplateId) {
-                if (pin === undefined) {
-                    pin = await this.getStudentPin(student);
-                }
+                pin ??= await this.getStudentPin(student);
                 link = (await this.getOnboardingDataForStudent(student, {})).value.link;
             } else {
                 pin = "";
@@ -776,7 +774,7 @@ export class StudentsController {
             const dto = await this.toStudentDTO(student);
             csvData.push({ ...dto, pin, link });
         }
-        const csv = await json2csv(csvData, {
+        const csv = json2csv(csvData, {
             keys: [
                 { field: "givenname", title: "Vorname" },
                 { field: "surname", title: "Nachname" },
