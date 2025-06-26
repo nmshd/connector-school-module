@@ -8,8 +8,7 @@ import { CoreId } from "@nmshd/core-types";
 import { OutgoingRequestFromRelationshipCreationCreatedAndCompletedEvent, RelationshipChangedEvent, RelationshipStatus } from "@nmshd/runtime";
 import { Container, Scope } from "@nmshd/typescript-ioc";
 import express from "express";
-import fs from "fs";
-import path from "path";
+import helmet from "helmet";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "./StudentsController";
@@ -23,7 +22,6 @@ const schoolModuleConfigurationSchema = z.object({
         .optional(),
     schoolName: z.string(),
     assetsLocation: z.string(),
-    uiLocation: z.string(),
     autoMailAfterOnboarding: z.boolean().optional(),
     autoMailBeforeOffboarding: z.boolean().optional()
 });
@@ -59,14 +57,23 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
             .factory(() => this.#studentsController)
             .scope(Scope.Singleton);
 
-        this.runtime.infrastructure.httpServer.addEndpoint("get", "/", false, async (_, res) => {
-            const indexHtmlPath = path.resolve(path.join(this.configuration.uiLocation, "..", "ui", "index.html"));
-            const fileContent = await fs.promises.readFile(indexHtmlPath, "utf-8");
+        const uiLocation = `${__dirname}/ui`;
 
-            res.status(200).send(fileContent);
+        this.runtime.infrastructure.httpServer.addMiddleware("/", false, (req, res, next) => {
+            helmet({
+                contentSecurityPolicy: {
+                    directives: {
+                        defaultSrc: ["'self'"],
+                        scriptSrc: ["'self'", "https://sdk.openui5.org"],
+                        styleSrc: ["'self'", "https://sdk.openui5.org"],
+                        imgSrc: ["'self'"],
+                        connectSrc: ["'self'", "https://sdk.openui5.org"]
+                    }
+                }
+            })(req, res, () => {
+                express.static(uiLocation)(req, res, next);
+            });
         });
-        this.runtime.infrastructure.httpServer.addMiddleware("/", false, express.static(path.resolve(path.join(this.configuration.uiLocation, "..", "ui"))));
-
         this.runtime.infrastructure.httpServer.addControllers(["controllers/*.js", "controllers/*.ts", "!controllers/*.d.ts"], __dirname);
     }
 
