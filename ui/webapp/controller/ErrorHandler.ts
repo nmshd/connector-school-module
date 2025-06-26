@@ -2,10 +2,7 @@ import ResourceBundle from "sap/base/i18n/ResourceBundle";
 import MessageBox from "sap/m/MessageBox";
 import UI5Object from "sap/ui/base/Object";
 import UIComponent from "sap/ui/core/UIComponent";
-import ODataModel, {
-    ODataModel$MetadataFailedEvent,
-    ODataModel$RequestFailedEvent
-} from "sap/ui/model/odata/v2/ODataModel";
+import ODataModel, { ODataModel$MetadataFailedEvent, ODataModel$RequestFailedEvent } from "sap/ui/model/odata/v2/ODataModel";
 import ResourceModel from "sap/ui/model/resource/ResourceModel";
 import AppComponent from "../Component";
 
@@ -45,29 +42,19 @@ export default class ErrorHandler extends UI5Object {
         this.model = component.getModel() as ODataModel;
         this.messageOpen = false;
 
-        this.model.attachMetadataFailed(
-            (event: ODataModel$MetadataFailedEvent) => {
-                const responseText = event.getParameter(
-                    "response"
-                ) as ui5Response;
-                void this.showServiceError(responseText);
+        this.model.attachMetadataFailed((event: ODataModel$MetadataFailedEvent) => {
+            const responseText = event.getParameter("response") as ui5Response;
+            void this.showServiceError(responseText);
+        });
+        this.model.attachRequestFailed((event: ODataModel$RequestFailedEvent) => {
+            const response = event.getParameter("response") as ui5Response;
+            // An entity that was not found in the service is also throwing a 404 error in oData.
+            // We already cover this case with a notFound target so we skip it here.
+            // A request that cannot be sent to the server is a technical error that we have to handle though
+            if (response.statusCode !== "404" || (response.statusCode == "404" && response.responseText.indexOf("Cannot POST") === 0)) {
+                void this.showServiceError(response);
             }
-        );
-        this.model.attachRequestFailed(
-            (event: ODataModel$RequestFailedEvent) => {
-                const response = event.getParameter("response") as ui5Response;
-                // An entity that was not found in the service is also throwing a 404 error in oData.
-                // We already cover this case with a notFound target so we skip it here.
-                // A request that cannot be sent to the server is a technical error that we have to handle though
-                if (
-                    response.statusCode !== "404" ||
-                    (response.statusCode == "404" &&
-                        response.responseText.indexOf("Cannot POST") === 0)
-                ) {
-                    void this.showServiceError(response);
-                }
-            }
-        );
+        });
     }
 
     /**
@@ -84,9 +71,7 @@ export default class ErrorHandler extends UI5Object {
         let responseText: string;
 
         if (!this.errorText) {
-            this.resourceBundle = await ((
-                this.component.getModel("i18n") as ResourceModel
-            ).getResourceBundle() as Promise<ResourceBundle>);
+            this.resourceBundle = await ((this.component.getModel("i18n") as ResourceModel).getResourceBundle() as Promise<ResourceBundle>);
             this.errorText = this.resourceBundle.getText("errorText");
         }
 

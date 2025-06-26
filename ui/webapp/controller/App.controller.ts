@@ -16,15 +16,10 @@ export default class App extends BaseController {
 
     public onInit(): void {
         // apply content density mode to root view
-        this.getView().addStyleClass(
-            this.getOwnerComponent().getContentDensityClass()
-        );
+        this.getView().addStyleClass(this.getOwnerComponent().getContentDensityClass());
         this.getOwnerComponent()
             .getRouter()
-            .attachRouteMatched(
-                (event: Router$RouteMatchedEvent) => this.onRouteMatched(event),
-                this
-            );
+            .attachRouteMatched((event: Router$RouteMatchedEvent) => this.onRouteMatched(event), this);
     }
 
     public onStateChanged(event: FlexibleColumnLayout$StateChangeEvent): void {
@@ -35,14 +30,7 @@ export default class App extends BaseController {
 
         // Replace the URL with the new layout if a navigation arrow was used
         if (isNavigationArrow) {
-            this.getOwnerComponent()
-                .getRouter()
-                .navTo(
-                    this.currentRouteName,
-                    { layout: layout, id: this.currentId },
-                    {},
-                    true
-                );
+            this.getOwnerComponent().getRouter().navTo(this.currentRouteName, { layout: layout, id: this.currentId }, {}, true);
         }
     }
 
@@ -68,10 +56,7 @@ export default class App extends BaseController {
     public onExit(): void {
         const router = this.getRouter();
         if (router) {
-            this.getRouter().detachRouteMatched(
-                (event: Router$RouteMatchedEvent) => this.onRouteMatched(event),
-                this
-            );
+            this.getRouter().detachRouteMatched((event: Router$RouteMatchedEvent) => this.onRouteMatched(event), this);
         }
     }
 }

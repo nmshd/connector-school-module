@@ -49,13 +49,13 @@ export default class Login extends BaseController {
 
     async login(config: any, apikey: string) {
         const d = new Date();
-        
+
         if (!config.dateReplaced) {
             config.pdfDefaults.fields.place = config.pdfDefaults.fields.place_date;
             config.pdfDefaults.fields.place_date = `${config.pdfDefaults.fields.place_date}, ${d.getDate()}.${d.getMonth()}.${d.getFullYear()}`;
             config.dateReplaced = true;
         }
-        
+
         this.getModel("config").setProperty("/", config);
 
         const students = await axios

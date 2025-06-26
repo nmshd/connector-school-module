@@ -22,29 +22,20 @@ export default class Detail extends BaseController {
 
         this.getRouter()
             .getRoute("detail")
-            .attachPatternMatched(
-                (event: Route$MatchedEvent) => void this.onObjectMatched(event),
-                this
-            );
+            .attachPatternMatched((event: Route$MatchedEvent) => void this.onObjectMatched(event), this);
     }
 
     private async onObjectMatched(event: Route$MatchedEvent) {
         const viewModel = this.getModel("detailView");
 
         viewModel.setProperty("/busy", true);
-        this.id =
-            (event.getParameter("arguments") as inputParameters).id ||
-            this.id ||
-            "0";
+        this.id = (event.getParameter("arguments") as inputParameters).id || this.id || "0";
 
-        const student = await axios.get<{ result: Student }>(
-            "/students/" + this.id,
-            {
-                headers: {
-                    "X-API-KEY": this.getOwnerComponent().getApiKey()
-                }
+        const student = await axios.get<{ result: Student }>("/students/" + this.id, {
+            headers: {
+                "X-API-KEY": this.getOwnerComponent().getApiKey()
             }
-        );
+        });
 
         viewModel.setProperty("/detailStudent", student.data.result);
 
@@ -60,31 +51,22 @@ export default class Detail extends BaseController {
     }
 
     public onCloseDetailPress(): void {
-        this.getModel("appView").setProperty(
-            "/actionButtonsInfo/midColumn/fullScreen",
-            false
-        );
+        this.getModel("appView").setProperty("/actionButtonsInfo/midColumn/fullScreen", false);
         this.getRouter().navTo("master");
     }
 
     public handleFullScreen(): void {
-        const nextLayout = this.getModel("appView").getProperty(
-            "/actionButtonsInfo/midColumn/fullScreen"
-        ) as string;
+        const nextLayout = this.getModel("appView").getProperty("/actionButtonsInfo/midColumn/fullScreen") as string;
         this.getRouter().navTo("detail", { layout: nextLayout, id: this.id });
     }
 
     public handleExitFullScreen(): void {
-        const nextLayout = this.getModel("appView").getProperty(
-            "/actionButtonsInfo/midColumn/exitFullScreen"
-        ) as string;
+        const nextLayout = this.getModel("appView").getProperty("/actionButtonsInfo/midColumn/exitFullScreen") as string;
         this.getRouter().navTo("detail", { layout: nextLayout, id: this.id });
     }
 
     public handleClose(): void {
-        const nextLayout = this.getModel("appView").getProperty(
-            "/actionButtonsInfo/midColumn/closeColumn"
-        ) as string;
+        const nextLayout = this.getModel("appView").getProperty("/actionButtonsInfo/midColumn/closeColumn") as string;
         this.getRouter().navTo("master", { layout: nextLayout });
     }
 }
