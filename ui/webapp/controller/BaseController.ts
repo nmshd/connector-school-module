@@ -37,6 +37,8 @@ export default class BaseController extends Controller {
     public getModel(name: "detailView"): JSONModel;
     public getModel(name: "appView"): JSONModel;
     public getModel(name: "config"): JSONModel;
+    public getModel(name: "ui"): JSONModel;
+    public getModel(name: "apiKey"): JSONModel;
     public getModel(name?: string): Model {
         return this.getView().getModel(name);
     }
