@@ -40,11 +40,12 @@
                         press=".onDownloadCSV"
                     />
                     <Button
-                        text="Onboarding Dokumente"
-                        icon="sap-icon://pdf-attachment"
-                        tooltip="Erstellt eine PDF Datei mit allen Onboarding Dokumenten der Schüler"
-                        press=".downloadStudents"
+                        icon="sap-icon://excel-attachment"
+                        text="XLSX Export"
+                        tooltip="Exportiert die Liste der Schüler als XLSX"
+                        press=".onDownloadXLSX"
                     />
+
                     <Button
                         text="Abmelden"
                         icon="sap-icon://log"
@@ -73,6 +74,12 @@
                     <OverflowToolbar>
                         <Title text="Liste aller vorhandenen Schüler in der Ablage" />
                         <ToolbarSpacer />
+                        <Button
+                            text="Sammeldokument erstellen"
+                            icon="sap-icon://pdf-attachment"
+                            tooltip="Erstellt eine PDF Datei mit allen Onboarding Dokumenten der selektierten Schüler"
+                            press=".downloadStudents"
+                        />
                         <Button
                             icon="sap-icon://delete"
                             type="Reject"
