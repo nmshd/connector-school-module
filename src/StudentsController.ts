@@ -15,6 +15,7 @@ import {
 } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
 import { LocalRequestDTO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import ExcelJS from "exceljs";
 import { json2csv } from "json-2-csv";
 import { DateTime } from "luxon";
 import * as mustache from "mustache";
@@ -22,7 +23,7 @@ import fs from "node:fs";
 import path from "path";
 import { PDFDocument, PDFImage } from "pdf-lib";
 import qrCodeLib from "qrcode";
-import { PDFLogoSettings, PDFSettings, SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
+import { PDFLogoSettings, PDFSettings, PDFSettingsWithStudentFilter, SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
 import { getFileTypeForBuffer } from "./utils/getFileTypeForBuffer";
 
 export class StudentsController {
@@ -757,10 +758,85 @@ export class StudentsController {
         return csv;
     }
 
-    public async createOnboardingPDFForAllStudents(data: PDFSettings): Promise<Result<Buffer<ArrayBuffer>>> {
+    public async getStudentsAsXLSX(): Promise<Buffer> {
+        const students = await this.getStudents();
+        const csvData = [];
+        for (const student of students) {
+            let pin = student.pin;
+            let link = "";
+
+            if (student.correspondingRelationshipId) {
+                pin = "";
+            } else if (student.correspondingRelationshipTemplateId) {
+                pin ??= await this.getStudentPin(student);
+                link = (await this.getOnboardingDataForStudent(student, {})).value.link;
+            } else {
+                pin = "";
+            }
+            const dto = await this.toStudentDTO(student);
+            csvData.push({ ...dto, pin, link });
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = "Schul Modul";
+        workbook.lastModifiedBy = "Schul Modul";
+        workbook.created = new Date();
+        workbook.modified = new Date();
+
+        const csvDataAsArray = [];
+        for (const entry of csvData) {
+            csvDataAsArray.push([entry.givenname, entry.surname, entry.id, entry.status, entry.pin, entry.link]);
+        }
+
+        const sheet = workbook.addWorksheet("Schüler", {
+            pageSetup: { paperSize: 9 }
+        });
+        sheet.columns = [{ width: 50 }, { width: 50 }, { width: 10 }, { width: 20 }, { width: 10 }, { width: 100 }];
+        sheet.addTable({
+            name: "Schüler",
+            ref: "A1",
+            headerRow: true,
+            totalsRow: false,
+            columns: [
+                { name: "Vorname", filterButton: true },
+                { name: "Nachname", filterButton: true },
+                { name: "Interne ID-Nummer", filterButton: true },
+                { name: "Status", filterButton: true },
+                { name: "PIN", filterButton: true },
+                { name: "Link", filterButton: true }
+            ],
+            rows: csvDataAsArray
+        });
+        const table = sheet.getTable("Schüler");
+        const column = table.getColumn(1) as any;
+        column.width = 30;
+
+        const sheet2 = workbook.addWorksheet("Schüler Normal", {
+            pageSetup: { paperSize: 9 }
+        });
+        sheet2.columns = [
+            { header: "Vorname", key: "givenname", width: 30 },
+            { header: "Nachname", key: "surname" },
+            { header: "Interne ID-Nummer", key: "id" },
+            { header: "Status", key: "status" },
+            { header: "PIN", key: "pin" },
+            { header: "Link", key: "link" }
+        ];
+        sheet2.addRows(csvData);
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const newBuffer = Buffer.from(buffer);
+
+        return newBuffer;
+    }
+
+    public async createOnboardingPDFForAllStudents(data: PDFSettingsWithStudentFilter): Promise<Result<Buffer<ArrayBuffer>>> {
         const students = await this.getStudents();
         const studentsInOnboardingStatus = students.filter((value) => {
             if (value.correspondingRelationshipId || !value.correspondingRelationshipTemplateId) {
+                return false;
+            }
+            if (data.students && data.students.indexOf(value.id.toString()) < 0) {
                 return false;
             }
             return true;
