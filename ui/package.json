@@ -35,7 +35,7 @@
     "dependencies": {
         "axios": "^1.10.0",
         "file-saver": "^2.0.5",
-        "jszip": "^2.2.0",
-        "json-2-csv": "^5.5.9"
+        "json-2-csv": "^5.5.9",
+        "jszip": "^3.10.1"
     }
 }
