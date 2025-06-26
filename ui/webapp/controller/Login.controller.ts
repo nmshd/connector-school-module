@@ -1,6 +1,7 @@
 import axios from "axios";
 import { LayoutType } from "sap/f/library";
 import Input from "sap/m/Input";
+import DateFormat from "sap/ui/core/format/DateFormat";
 import { FileUploader$ChangeEvent } from "sap/ui/unified/FileUploader";
 import { Student } from "../../../src/types";
 import BaseController from "./BaseController";
@@ -48,11 +49,13 @@ export default class Login extends BaseController {
     }
 
     async login(config: any, apikey: string) {
-        const d = new Date();
+        const dateString = DateFormat.getDateInstance({
+            pattern: "dd.MM.yyyy"
+        }).format(new Date());
 
         if (!config.dateReplaced) {
             config.pdfDefaults.fields.place = config.pdfDefaults.fields.place_date;
-            config.pdfDefaults.fields.place_date = `${config.pdfDefaults.fields.place_date}, ${d.getDate()}.${d.getMonth()}.${d.getFullYear()}`;
+            config.pdfDefaults.fields.place_date = `${config.pdfDefaults.fields.place_date}, ${dateString}`;
             config.dateReplaced = true;
         }
 

@@ -3,6 +3,7 @@ import { saveAs } from "file-saver";
 import { Button$PressEvent } from "sap/m/Button";
 import Dialog from "sap/m/Dialog";
 import MessageBox from "sap/m/MessageBox";
+import DateFormat from "sap/ui/core/format/DateFormat";
 import Filter from "sap/ui/model/Filter";
 import FilterOperator from "sap/ui/model/FilterOperator";
 import JSONListBinding from "sap/ui/model/json/JSONListBinding";
@@ -62,8 +63,9 @@ export default class Master extends BaseController {
                 Accept: "text/csv"
             }
         });
-        const d = new Date();
-        const date = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + "_" + d.getHours() + d.getMinutes() + d.getSeconds() + "_";
+        const date = DateFormat.getDateInstance({
+            pattern: "yyMMdd_HHmmss_"
+        }).format(new Date());
         saveAs(new Blob(["\uFEFF" + response.data], { type: "text/csv; charset=utf-8" }), date + "Schülerliste.csv");
     }
 
@@ -75,8 +77,9 @@ export default class Master extends BaseController {
             },
             responseType: "blob"
         });
-        const d = new Date();
-        const date = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + "_" + d.getHours() + d.getMinutes() + d.getSeconds() + "_";
+        const date = DateFormat.getDateInstance({
+            pattern: "yyMMdd_HHmmss_"
+        }).format(new Date());
         saveAs(response.data, date + "Schülerliste.xlsx");
     }
 
@@ -155,8 +158,9 @@ export default class Master extends BaseController {
                         }
                     }
                 );
-                const d = new Date();
-                const date = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + "_" + d.getHours() + d.getMinutes() + d.getSeconds() + "_";
+                const date = DateFormat.getDateInstance({
+                    pattern: "yyMMdd_HHmmss_"
+                }).format(new Date());
                 saveAs(new Blob(["\uFEFF" + response.data.result], { type: "text/csv; charset=utf-8" }), date + "ImportierteSchülerMitPIN.csv");
             } catch (error) {
                 if (axios.isAxiosError(error)) {
@@ -321,8 +325,9 @@ export default class Master extends BaseController {
             }
         );
 
-        const d = new Date();
-        const date = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + "_" + d.getHours() + d.getMinutes() + d.getSeconds() + "_";
+        const date = DateFormat.getDateInstance({
+            pattern: "yyMMdd_HHmmss_"
+        }).format(new Date());
         saveAs(response.data, date + "Gesammelte_Onboarding_Dokumente.pdf");
     }
 
