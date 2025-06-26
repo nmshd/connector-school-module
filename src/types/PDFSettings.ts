@@ -10,3 +10,9 @@ export interface PDFLogoSettings {
     maxWidth?: number;
     maxHeight?: number;
 }
+
+export interface PDFSettingsWithStudentFilter {
+    logo?: PDFLogoSettings;
+    fields?: Record<string, string>;
+    students?: string[];
+}

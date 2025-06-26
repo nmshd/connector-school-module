@@ -34,6 +34,20 @@ export const createStudentOnboardingPDFSchema = z.object({
     fields: z.record(z.string()).optional()
 });
 
+export const createStudentsOnboardingPDFSchema = z.object({
+    logo: z
+        .object({
+            bytes: z.string().base64().optional(),
+            x: z.number().min(0).optional(),
+            y: z.number().min(0).optional(),
+            maxWidth: z.number().min(0).optional(),
+            maxHeight: z.number().min(0).optional()
+        })
+        .optional(),
+    fields: z.record(z.string()).optional(),
+    students: z.array(z.string().min(1)).optional()
+});
+
 export const batchOnboardingSchema = z.object({
     students: z.string(),
     options: z.object({

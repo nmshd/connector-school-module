@@ -12,6 +12,7 @@ import {
     batchOnboardingSchema,
     createStudentOnboardingPDFSchema,
     createStudentRequestSchema,
+    createStudentsOnboardingPDFSchema,
     sendAbiturzeugnisRequestSchema,
     sendFileRequestSchema,
     sendMailRequestSchema
@@ -212,7 +213,7 @@ export class StudentsRESTController extends BaseController {
     @Path("/onboarding")
     @Accept("application/pdf")
     public async createBatchOnboardingPDFsForStudents(@ContextResponse response: express.Response, body: any): Promise<Envelope | void> {
-        const validationResult = createStudentOnboardingPDFSchema.safeParse(body);
+        const validationResult = createStudentsOnboardingPDFSchema.safeParse(body);
         if (!validationResult.success) {
             throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
         }
@@ -270,7 +271,7 @@ export class StudentsRESTController extends BaseController {
     }
 
     @GET
-    @Accept("application/json", "text/csv")
+    @Accept("application/json", "text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     public async getStudents(@ContextAccept accept: string, @ContextResponse response: express.Response): Promise<Envelope | undefined> {
         const students = await this.studentsController.getStudents();
 
@@ -279,6 +280,10 @@ export class StudentsRESTController extends BaseController {
             case "text/csv":
                 const csv = await this.studentsController.getStudentsAsCSV();
                 response.status(200).send(csv);
+                return;
+            case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                const xlsx = await this.studentsController.getStudentsAsXLSX();
+                response.status(200).send(xlsx);
                 return;
             default:
                 const dtos = await Promise.all(dtoPromises);
