@@ -67,6 +67,19 @@ export default class Master extends BaseController {
         saveAs(new Blob(["\uFEFF" + response.data], { type: "text/csv; charset=utf-8" }), date + "Schülerliste.csv");
     }
 
+    public async onDownloadXLSX() {
+        const response = await axios.get(`/students`, {
+            headers: {
+                "X-API-KEY": this.getOwnerComponent().getApiKey(),
+                Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            },
+            responseType: "blob"
+        });
+        const d = new Date();
+        const date = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + "_" + d.getHours() + d.getMinutes() + d.getSeconds() + "_";
+        saveAs(response.data, date + "Schülerliste.xlsx");
+    }
+
     public async onOpenAddStudentsDialog(): Promise<void> {
         this.addStudentsDialog ??= (await this.loadFragment({
             name: "eu.enmeshed.connectorui.view.fragments.AddStudentsDialog"
@@ -202,8 +215,8 @@ export default class Master extends BaseController {
                     const selectedIndices = table.getSelectedIndices();
                     const items = table.getRows();
                     for (const selectedIndex of selectedIndices) {
-                        table.getBindingPath("");
                         const item = items[selectedIndex];
+                        if (!item) continue;
                         const studentId = item.getBindingContext("studentModel").getProperty("id");
                         await this.deleteStudent(studentId, false);
                     }
@@ -282,11 +295,23 @@ export default class Master extends BaseController {
     }
 
     public async downloadStudents() {
+        const table = this.byId("table") as Table;
+        const selectedIndices = table.getSelectedIndices();
+        const items = table.getRows();
+        const selectedStudentIds = [];
+        for (const selectedIndex of selectedIndices) {
+            const item = items[selectedIndex];
+            if (!item) continue;
+            const studentId = item.getBindingContext("studentModel").getProperty("id");
+            selectedStudentIds.push(studentId);
+        }
+
         const response = await axios.post<Blob>(
             "/students/onboarding",
             {
                 fields: this.getModel("config").getObject("/pdfDefaults/fields"),
-                logo: this.getModel("config").getObject("/pdfDefaults/logo")
+                logo: this.getModel("config").getObject("/pdfDefaults/logo"),
+                students: selectedStudentIds.length > 0 ? selectedStudentIds : undefined
             },
             {
                 responseType: "blob",
@@ -298,7 +323,7 @@ export default class Master extends BaseController {
 
         const d = new Date();
         const date = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + "_" + d.getHours() + d.getMinutes() + d.getSeconds() + "_";
-        saveAs(response.data, date + "Alle_Onboarding_Dokumente.pdf");
+        saveAs(response.data, date + "Gesammelte_Onboarding_Dokumente.pdf");
     }
 
     public formatStatus(value: string): string {
