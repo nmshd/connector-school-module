@@ -143,6 +143,8 @@ export class StudentsRESTController extends BaseController {
                     const values = line.split(";");
                     if (values[2] === studentId) {
                         values[5] = JSON.stringify(pin);
+                        values[6] = JSON.stringify(status);
+                        values[7] = JSON.stringify(link);
                     }
                     return values.join(";");
                 })
@@ -163,22 +165,22 @@ export class StudentsRESTController extends BaseController {
                     pin
                 });
                 link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
+            } else if (existingStudent.correspondingRelationshipId) {
+                status = "active";
+                pin = "";
+            } else if (existingStudent.correspondingRelationshipTemplateId) {
+                const possiblePin = existingStudent.pin === undefined ? await this.studentsController.getStudentPin(existingStudent) : "";
+                pin = possiblePin ?? "";
+                link = (await this.studentsController.getOnboardingDataForStudent(existingStudent, {})).value.link;
             } else {
-                if (existingStudent.correspondingRelationshipId) {
-                    status = "active";
-                    pin = "";
-                } else if (existingStudent.correspondingRelationshipTemplateId) {
-                    const possiblePin = existingStudent.pin === undefined ? await this.studentsController.getStudentPin(existingStudent) : "";
-                    pin = possiblePin ?? "";
-                    link = (await this.studentsController.getOnboardingDataForStudent(existingStudent, {})).value.link;
-                } else {
-                    status = "deleted";
-                    pin = "";
-                }
+                status = "deleted";
+                pin = "";
             }
             studentCSV = updatePinInCSV(studentCSV, studentToCreate.id.toString(), status, pin, link);
         }
-
+        const csvSplit = studentCSV.split("\n");
+        csvSplit[0] = `${csvSplit[0]};"pin";"status";"link"`;
+        studentCSV = csvSplit.join("\n");
         return this.ok(Result.ok(studentCSV));
     }
 
@@ -274,13 +276,13 @@ export class StudentsRESTController extends BaseController {
 
         const dtoPromises = students.map((student) => this.studentsController.toStudentDTO(student));
         switch (accept) {
-            default:
-                const dtos = await Promise.all(dtoPromises);
-                return this.ok(Result.ok(dtos));
             case "text/csv":
                 const csv = await this.studentsController.getStudentsAsCSV();
                 response.status(200).send(csv);
                 return;
+            default:
+                const dtos = await Promise.all(dtoPromises);
+                return this.ok(Result.ok(dtos));
         }
     }
 
