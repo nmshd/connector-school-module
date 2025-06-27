@@ -427,16 +427,24 @@ export default class Master extends BaseController {
         saveAs(response.data, date + "Gesammelte_Onboarding_Dokumente.pdf");
     }
 
-    public formatStatus(value: string): string {
+    public formatStatus(value: string, zeugnisSend: boolean): string {
+        let res = "";
         switch (value) {
             case "onboarding":
-                return "Warten auf Schüler";
+                res = "Warten auf Schüler";
+                break;
             case "deleted":
-                return "Schüler hat sich gelöscht";
+                res = "Schüler hat sich gelöscht";
+                break;
             case "rejected":
-                return "Schüler hat Einwilligung abgelehnt";
+                res = "Schüler hat Einwilligung abgelehnt";
+                break;
             case "active":
-                return "Aktiv";
+                res = "Aktiv";
+                break;
         }
+        res += zeugnisSend ? " (Zeugnis versendet)" : "";
+
+        return res;
     }
 }

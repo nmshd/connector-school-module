@@ -38,7 +38,7 @@ export class StudentsRESTController extends BaseController {
             throw new ApplicationError("error.schoolModule.studentAlreadyExists", "The student already exists.");
         }
 
-        const student = await this.studentsController.createStudent(data);
+        const student = await this.studentsController.createStudent({ ...data, zeugnisSend: false });
 
         const dto = await this.studentsController.toStudentDTO(student);
 
@@ -167,7 +167,8 @@ export class StudentsRESTController extends BaseController {
                     emailPrivate: studentToCreate.emailPrivate,
                     emailSchool: studentToCreate.emailSchool,
                     additionalConsents: data.options.createDefaults.additionalConsents,
-                    pin: studentToCreate.pin
+                    pin: studentToCreate.pin,
+                    zeugnisSend: false
                 });
                 pin = student.pin ?? "";
                 link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
@@ -430,6 +431,9 @@ export class StudentsRESTController extends BaseController {
         };
 
         const fileDTO = await this.studentsController.sendFile(student, data);
+        student.zeugnisSend = true;
+
+        await this.studentsController.updateStudent(student);
         return this.ok(Result.ok(fileDTO));
     }
 }

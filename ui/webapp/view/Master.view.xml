@@ -133,10 +133,10 @@
                                 visible="{=${studentModel>status} === 'onboarding'}" />
                         </t:template>
                     </t:Column>
-                    <t:Column id="status" width="10em" sortProperty="status">
+                    <t:Column id="status" width="20em" sortProperty="status">
                         <Text text="Status" />
                         <t:template>
-                            <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
+                            <Text text="{parts:[{path:'studentModel>status'}, {path:'studentModel>zeugnisSend'}],formatter:'.formatStatus'}" />
                         </t:template>
                     </t:Column>
                     <t:Column width="27em">
@@ -165,7 +165,7 @@
                                     icon="sap-icon://inspect"
                                     text="Zeugnis hochladen"
                                     press=".onSendZeugnis"
-                                    enabled="{= (${studentModel>status} === 'active')}"
+                                    enabled="{= ${studentModel>status} === 'active' &amp;&amp; !${studentModel>zeugnisSend}}"
                                     tooltip="{= (${studentModel>status} !== 'active' ? 'Nur Schüler mit einer aktiven Beziehung können ein Zeugnis erhalten' : 'Zeugnis für einen Schüler hochladen')}" />
 
                             </HBox>
