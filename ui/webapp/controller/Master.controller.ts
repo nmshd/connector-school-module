@@ -329,20 +329,31 @@ export default class Master extends BaseController {
         MessageBox.confirm(message, {
             onClose: async (action: string) => {
                 if (action === "OK") {
-                    const table = this.byId("table") as Table;
-                    const selectedIndices = table.getSelectedIndices();
-
-                    const items = (table.getBinding() as ListBinding).getAllCurrentContexts();
-                    for (const selectedIndex of selectedIndices) {
-                        const item = items[selectedIndex];
-                        if (!item) continue;
-                        const studentId = item.getProperty("id");
-                        await this.deleteStudent(studentId, false);
-                    }
-                    await this.loadStudents();
+                    await this.deleteSelectedStudents();
                 }
             }
         });
+    }
+
+    public async deleteSelectedStudents() {
+        this.page.setBusy(true);
+        try {
+            const table = this.byId("table") as Table;
+            const selectedIndices = table.getSelectedIndices();
+
+            const items = (table.getBinding() as ListBinding).getAllCurrentContexts();
+            for (const selectedIndex of selectedIndices) {
+                const item = items[selectedIndex];
+                if (!item) continue;
+                const studentId = item.getProperty("id");
+                await this.deleteStudent(studentId, false);
+            }
+            await this.loadStudents();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            this.page.setBusy(false);
+        }
     }
 
     public onDeleteStudent(event: Button$PressEvent): void {
@@ -414,12 +425,11 @@ export default class Master extends BaseController {
     }
 
     public async downloadStudents() {
-        const table = this.byId("table") as Table;
-        const selectedIndices = table.getSelectedIndices();
-        const selectedStudentIds = [];
-
-        this.page.setBusy(true);
         try {
+            const table = this.byId("table") as Table;
+            const selectedIndices = table.getSelectedIndices();
+            const selectedStudentIds = [];
+            this.page.setBusy(true);
             const items = (table.getBinding() as ListBinding).getAllCurrentContexts();
             for (const selectedIndex of selectedIndices) {
                 const item = items[selectedIndex];
