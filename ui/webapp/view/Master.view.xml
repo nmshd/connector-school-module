@@ -26,6 +26,7 @@
                         tooltip="Aktualisiert die Liste der Schüler"
                         press=".onRefresh"
                     />
+
                     <Button
                         icon="sap-icon://upload"
                         text="Importieren"
@@ -43,6 +44,12 @@
                         text="XLSX Export"
                         tooltip="Exportiert die Liste der Schüler als XLSX"
                         press=".onDownloadXLSX"
+                    />
+
+                    <Button
+                        text="Schüler hinzufügen"
+                        icon="sap-icon://add"
+                        press=".onOpenAddStudentDialog"
                     />
 
                     <Button
@@ -73,11 +80,6 @@
                     <OverflowToolbar>
                         <Title text="Liste aller vorhandenen Schüler in der Ablage" />
                         <ToolbarSpacer />
-                        <Button
-                            text="Schüler hinzufügen"
-                            icon="sap-icon://add"
-                            press=".onOpenAddStudentDialog"
-                        />
                         <Button
                             text="Sammeldokument erstellen"
                             icon="sap-icon://pdf-attachment"
@@ -133,13 +135,13 @@
                                 visible="{=${studentModel>status} === 'onboarding'}" />
                         </t:template>
                     </t:Column>
-                    <t:Column id="status" width="20em" sortProperty="status">
+                    <t:Column id="status" width="10em" sortProperty="status">
                         <Text text="Status" />
                         <t:template>
                             <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="27em">
+                    <t:Column width="20em">
                         <Text text="Aktionen pro Schüler" />
                         <t:template>
                             <HBox columnGap="0.25em">

@@ -17,7 +17,7 @@
                 layout="ResponsiveGridLayout"
             >
                 <f:content>
-                    <Label text="Interne ID-Nummer"/>
+                    <Label text="Interne ID-Nummer" />
                     <Input
                         id="studentIdInput"
                         value="{addStudentModel>/id}"
@@ -40,15 +40,20 @@
                     <Input
                         id="emailInput"
                         value="{addStudentModel>/emailPrivate}"
-                        required="true"
                         type="Email"
                     />
                     <Label text="E-Mail (schulisch)" />
                     <Input
                         id="schoolEmailInput"
                         value="{addStudentModel>/emailSchool}"
-                        required="true"
                         type="Email"
+                    />
+                    <Label text="PIN" />
+                    <CheckBox
+                        id="schoolGeneratePin"
+                        text="PIN automatisch generieren"
+                        value="{addStudentModel>/generatePin}"
+                        selected="true"
                     />
                 </f:content>
             </f:SimpleForm>

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { saveAs } from "file-saver";
 import { Button$PressEvent } from "sap/m/Button";
+import CheckBox from "sap/m/CheckBox";
 import Dialog from "sap/m/Dialog";
 import MessageBox from "sap/m/MessageBox";
 import Page from "sap/m/Page";
@@ -69,40 +70,60 @@ export default class Master extends BaseController {
     }
 
     public async onDownloadCSV() {
-        const response = await axios.get(`/students`, {
-            headers: {
-                "X-API-KEY": this.getOwnerComponent().getApiKey(),
-                Accept: "text/csv"
-            }
-        });
-        const date = DateFormat.getDateInstance({
-            pattern: "yyMMdd_HHmmss_"
-        }).format(new Date());
-        saveAs(new Blob(["\uFEFF" + response.data], { type: "text/csv; charset=utf-8" }), date + "Schülerliste.csv");
+        try {
+            this.page.setBusy(true);
+            const response = await axios.get(`/students`, {
+                headers: {
+                    "X-API-KEY": this.getOwnerComponent().getApiKey(),
+                    Accept: "text/csv"
+                }
+            });
+            const date = DateFormat.getDateInstance({
+                pattern: "yyMMdd_HHmmss_"
+            }).format(new Date());
+            saveAs(new Blob(["\uFEFF" + response.data], { type: "text/csv; charset=utf-8" }), date + "Schülerliste.csv");
+        } catch (e) {
+            console.error(e);
+        } finally {
+            this.page.setBusy(false);
+        }
     }
 
     public async onDownloadXLSX() {
-        const response = await axios.get(`/students`, {
-            headers: {
-                "X-API-KEY": this.getOwnerComponent().getApiKey(),
-                Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            },
-            responseType: "blob"
-        });
-        const date = DateFormat.getDateInstance({
-            pattern: "yyMMdd_HHmmss_"
-        }).format(new Date());
-        saveAs(response.data, date + "Schülerliste.xlsx");
+        try {
+            this.page.setBusy(true);
+            const response = await axios.get(`/students`, {
+                headers: {
+                    "X-API-KEY": this.getOwnerComponent().getApiKey(),
+                    Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                },
+                responseType: "blob"
+            });
+            const date = DateFormat.getDateInstance({
+                pattern: "yyMMdd_HHmmss_"
+            }).format(new Date());
+            saveAs(response.data, date + "Schülerliste.xlsx");
+        } catch (e) {
+            console.error(e);
+        } finally {
+            this.page.setBusy(false);
+        }
     }
 
     // add one student
     public async onAddStudent(): Promise<void> {
         const addStudentModel = this.addStudentDialog.getModel("addStudentModel") as JSONModel;
         const studentData = addStudentModel.getData();
-        if (!studentData.surname || !studentData.givenname || !studentData.id || !studentData.emailPrivate || !studentData.emailSchool) {
+        if (!studentData.surname || !studentData.givenname || !studentData.id) {
             MessageBox.error("Bitte füllen Sie alle Pflichtfelder aus.");
             return;
         }
+
+        const generatePin = this.byId("schoolGeneratePin") as CheckBox;
+        if (generatePin.getSelected()) {
+            studentData.pin = (Math.floor(Math.random() * 10000) + 10000).toString().substring(1);
+        }
+
         try {
             await axios.post("/students", studentData, {
                 headers: {
@@ -130,6 +151,7 @@ export default class Master extends BaseController {
         (this.byId("csvFileUploader") as FileUploader)?.setValue("");
         this.csvFile = null;
     }
+
     // add one student manually via dialog
     public async onOpenAddStudentDialog(): Promise<void> {
         const addStudentModel = new JSONModel();
