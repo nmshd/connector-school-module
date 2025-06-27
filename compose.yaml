@@ -26,10 +26,9 @@ services:
     container_name: mongodb
     hostname: mongo
     image: mongo
-    volumes:
-      - mongo_data:/data/db
-    logging:
-      driver: none
-
-volumes:
-  mongo_data:
+    ports:
+      - "27017:27017"
+    # volumes:
+    # - mongo_data:/data/db
+# volumes:
+# mongo_data:

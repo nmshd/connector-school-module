@@ -1,0 +1,29 @@
+{
+    "generator-ui5-ts-app-fcl": {
+        "application": "connectorui",
+        "namespace": "eu.enmeshed",
+        "endpoint": "https://services.odata.org/V2/OData/OData.svc/",
+        "entity": "Categories",
+        "key": "ID",
+        "title": "Name",
+        "otherField": "Name",
+        "framework": "OpenUI5",
+        "frameworkVersion": "1.136.0",
+        "author": "J&S Soft AG",
+        "tstypes": "@openui5/types",
+        "tstypesVersion": "1.136.0",
+        "appId": "eu.enmeshed.connectorui",
+        "appURI": "eu/enmeshed/connectorui",
+        "cdnDomain": "sdk.openui5.org",
+        "defaultTheme": "sap_horizon",
+        "gte11130": true,
+        "gte11150": true,
+        "gte11160": true,
+        "gte11170": true,
+        "lt11200": false,
+        "origin": "https://services.odata.org",
+        "path": "/V2/OData/OData.svc/",
+        "pathPrefix": "/V2",
+        "setupCompleted": true
+    }
+}
