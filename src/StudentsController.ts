@@ -15,6 +15,7 @@ import {
 } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
 import { LocalRequestDTO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import fontkit from "@pdf-lib/fontkit";
 import excelJS from "exceljs";
 import { json2csv } from "json-2-csv";
 import { DateTime } from "luxon";
@@ -319,8 +320,14 @@ export class StudentsController {
             );
         }
 
+        const pathToFont = path.resolve("bundled_assets/NotoSans/NotoSans-Regular.ttf");
+        const fontBytes = await fs.promises.readFile(pathToFont);
+
         const formPdfBytes = await fs.promises.readFile(pathToPdf);
         const pdfDoc = await PDFDocument.load(formPdfBytes);
+
+        pdfDoc.registerFontkit(fontkit);
+        const formFont = await pdfDoc.embedFont(fontBytes);
 
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
         const form = pdfDoc.getForm();
@@ -348,6 +355,7 @@ export class StudentsController {
         await this.embedImage(pdfDoc, settings.logo);
 
         try {
+            form.updateFieldAppearances(formFont);
             form.flatten();
         } catch (error) {
             if (error instanceof Error && error.message.includes("WinAnsi cannot encode")) {
