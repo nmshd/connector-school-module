@@ -18,6 +18,7 @@ import BaseController from "./BaseController";
  */
 export default class Master extends BaseController {
     private addStudentsDialog: Dialog;
+    private addStudentDialog: Dialog;
     private studentLogDialog: Dialog;
     private studentQRDialog: Dialog;
     private csvFile: Blob;
@@ -87,11 +88,52 @@ export default class Master extends BaseController {
         saveAs(response.data, date + "Schülerliste.xlsx");
     }
 
+    // add one student
+    public async onAddStudent(): Promise<void> {
+        const addStudentModel = this.addStudentDialog.getModel("addStudentModel") as JSONModel;
+        const studentData = addStudentModel.getData();
+        if (!studentData.surname || !studentData.givenname || !studentData.id || !studentData.emailPrivate || !studentData.emailSchool) {
+            MessageBox.error("Bitte füllen Sie alle Pflichtfelder aus.");
+            return;
+        }
+        try {
+            await axios.post("/students", studentData, {
+                headers: {
+                    "X-API-KEY": this.getOwnerComponent().getApiKey()
+                }
+            });
+            await this.loadStudents();
+            this.onCloseAddStudentDialog();
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                MessageBox.error("Fehler beim Hinzufügen des Schülers.", {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+                    details: error.response.data.error.message || "Unbekannter Fehler"
+                });
+            }
+        }
+    }
+
+    // Import students from CSV file
     public async onOpenAddStudentsDialog(): Promise<void> {
         this.addStudentsDialog ??= (await this.loadFragment({
             name: "eu.enmeshed.connectorui.view.fragments.AddStudentsDialog"
         })) as Dialog;
         this.addStudentsDialog.open();
+    }
+    // add one student manually via dialog
+    public async onOpenAddStudentDialog(): Promise<void> {
+        const addStudentModel = new JSONModel();
+        this.addStudentDialog ??= (await this.loadFragment({
+            name: "eu.enmeshed.connectorui.view.fragments.AddStudentDialog"
+        })) as Dialog;
+        this.addStudentDialog.setModel(addStudentModel, "addStudentModel");
+        this.addStudentDialog.open();
+    }
+
+    public onCloseAddStudentDialog(): void {
+        (this.addStudentDialog.getModel("addStudentModel") as JSONModel).setData({});
+        (this.byId("addStudentDialog") as Dialog)?.close();
     }
 
     public onCloseAddStudentsDialog(): void {
@@ -221,11 +263,11 @@ export default class Master extends BaseController {
                 if (action === "OK") {
                     const table = this.byId("table") as Table;
                     const selectedIndices = table.getSelectedIndices();
-                    const items = table.getRows();
+                    const items = table.getBindingContext("rows");
                     for (const selectedIndex of selectedIndices) {
-                        const item = items[selectedIndex];
-                        if (!item) continue;
-                        const studentId = item.getBindingContext("studentModel").getProperty("id");
+                        const context = table.getContextByIndex(selectedIndex);
+                        if (!context) continue;
+                        const studentId = context.getProperty("id");
                         await this.deleteStudent(studentId, false);
                     }
                     this.loadStudents();

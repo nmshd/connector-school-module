@@ -74,6 +74,11 @@
                         <Title text="Liste aller vorhandenen Schüler in der Ablage" />
                         <ToolbarSpacer />
                         <Button
+                            text="Schüler hinzufügen"
+                            icon="sap-icon://add"
+                            press=".onOpenAddStudentDialog"
+                        />
+                        <Button
                             text="Sammeldokument erstellen"
                             icon="sap-icon://pdf-attachment"
                             tooltip="Erstellt eine PDF Datei mit allen Onboarding Dokumenten der selektierten Schüler"

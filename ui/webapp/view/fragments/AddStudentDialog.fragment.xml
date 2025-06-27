@@ -1,0 +1,69 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:f="sap.ui.layout.form"
+>
+    <Dialog
+        id="addStudentDialog"
+        title="Schüler hinzufügen"
+        class="sapUiContentPadding"
+    >
+        <content>
+            <Text text="Hiermit können neue Schüler hinzugefügt werden."
+                class="sapUiNoMarginBottom" />
+            <f:SimpleForm
+                id="addStudentForm"
+                editable="true"
+                layout="ResponsiveGridLayout"
+            >
+                <f:content>
+                    <Label text="Interne ID-Nummer"/>
+                    <Input
+                        id="studentIdInput"
+                        value="{addStudentModel>/id}"
+                        required="true"
+                        type="Number"
+                    />
+                    <Label text="Vorname" />
+                    <Input
+                        id="firstNameInput"
+                        value="{addStudentModel>/givenname}"
+                        required="true"
+                    />
+                    <Label text="Nachname" />
+                    <Input
+                        id="lastNameInput"
+                        value="{addStudentModel>/surname}"
+                        required="true"
+                    />
+                    <Label text="E-Mail (privat)" />
+                    <Input
+                        id="emailInput"
+                        value="{addStudentModel>/emailPrivate}"
+                        required="true"
+                        type="Email"
+                    />
+                    <Label text="E-Mail (schulisch)" />
+                    <Input
+                        id="schoolEmailInput"
+                        value="{addStudentModel>/emailSchool}"
+                        required="true"
+                        type="Email"
+                    />
+                </f:content>
+            </f:SimpleForm>
+        </content>
+        <beginButton>
+            <Button
+                text="Schließen"
+                press=".onCloseAddStudentDialog"
+            />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Schüler hinzufügen"
+                press=".onAddStudent"
+            />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>
