@@ -1,9 +1,7 @@
 <mvc:View
     controllerName="eu.enmeshed.connectorui.controller.Login"
     xmlns="sap.m"
-    xmlns:f="sap.f"
     xmlns:mvc="sap.ui.core.mvc"
-    xmlns:core="sap.ui.core"
     xmlns:l="sap.ui.layout.form"
     xmlns:u="sap.ui.unified"
 >
@@ -47,13 +45,5 @@
                 </items>
             </VBox>
         </content>
-        <footer>
-            <Bar>
-                <contentLeft />
-                <contentRight>
-                    <Text text="myLogin" />
-                </contentRight>
-            </Bar>
-        </footer>
     </Page>
 </mvc:View>

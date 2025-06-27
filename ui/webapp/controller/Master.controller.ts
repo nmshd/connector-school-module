@@ -8,7 +8,7 @@ import Filter from "sap/ui/model/Filter";
 import FilterOperator from "sap/ui/model/FilterOperator";
 import JSONListBinding from "sap/ui/model/json/JSONListBinding";
 import JSONModel from "sap/ui/model/json/JSONModel";
-import Table, { Table$RowSelectionChangeEvent } from "sap/ui/table/Table";
+import Table from "sap/ui/table/Table";
 import { FileUploader$ChangeEvent } from "sap/ui/unified/FileUploader";
 import { StudentDTO } from "../../../src/types";
 import BaseController from "./BaseController";
@@ -20,8 +20,10 @@ export default class Master extends BaseController {
     private addStudentsDialog: Dialog;
     private addStudentDialog: Dialog;
     private studentLogDialog: Dialog;
+    private studentZeugnisDialog: Dialog;
     private studentQRDialog: Dialog;
     private csvFile: Blob;
+    private zeugnisFile: Blob;
 
     private _oGlobalFilter: Filter;
 
@@ -47,7 +49,7 @@ export default class Master extends BaseController {
         );
     }
 
-    public onRowSelectionChange(event: Table$RowSelectionChangeEvent) {
+    public onRowSelectionChange() {
         const table = this.byId("table") as Table;
         const selectedItems = table.getSelectedIndices();
         this.getModel("ui").setProperty("/selectedItemCount", selectedItems.length);
@@ -233,8 +235,56 @@ export default class Master extends BaseController {
                 Accept: "text/plain"
             }
         });
-        this.onOpenStudentLogDialog();
+        await this.onOpenStudentLogDialog();
         this.getModel("appView").setProperty("/logOutput", response.data);
+    }
+
+    public async onSendZeugnis(event: Button$PressEvent): Promise<void> {
+        this.studentZeugnisDialog ??= (await this.loadFragment({
+            name: "eu.enmeshed.connectorui.view.fragments.UploadZeugnis"
+        })) as Dialog;
+        this.studentZeugnisDialog.open();
+        this.getView().addDependent(this.studentZeugnisDialog);
+        this.studentZeugnisDialog.setBindingContext(event.getSource().getBindingContext("studentModel"), "studentModel");
+    }
+
+    public onCloseZeugnisDialog() {
+        this.studentZeugnisDialog.close();
+        this.studentZeugnisDialog.setBindingContext(null, "studentModel");
+    }
+    public onZeugnisUpload() {
+        this.studentZeugnisDialog.setBusy(true);
+        const reader = new FileReader();
+        const studentId = this.studentZeugnisDialog.getBindingContext("studentModel").getProperty("id") as number;
+        reader.onload = async (event) => {
+            const dataUrl = event.target.result as string;
+
+            const base64 = dataUrl.split(",")[1];
+            try {
+                await axios.post(
+                    `/students/${studentId}/files/abiturzeugnis`,
+                    {
+                        file: base64
+                    },
+                    {
+                        headers: {
+                            "X-API-KEY": this.getOwnerComponent().getApiKey()
+                        }
+                    }
+                );
+            } catch (e: unknown) {
+                if (axios.isAxiosError(e)) {
+                    MessageBox.error("Fehler beim Hochladen des Zeugnisses.", {
+                        details: JSON.stringify(e.response.data)
+                    });
+                }
+            }
+        };
+
+        reader.readAsDataURL(this.zeugnisFile);
+
+        this.studentZeugnisDialog.close();
+        this.studentZeugnisDialog.setBindingContext(null, "studentModel");
     }
 
     public async onStudentQR(event: Button$PressEvent): Promise<void> {
@@ -245,14 +295,14 @@ export default class Master extends BaseController {
                 Accept: "application/json"
             }
         });
-        const studentObject: any = event.getSource().getBindingContext("studentModel").getObject();
+        const studentObject = event.getSource().getBindingContext("studentModel").getObject();
         this.getModel("appView").setProperty("/student", studentObject);
         this.getModel("appView").setProperty("/studentLink", response.data.result.link);
         this.getModel("appView").setProperty("/studentQR", "data:image/png;base64," + response.data.result.png);
-        this.onOpenStudentQRDialog();
+        await this.onOpenStudentQRDialog();
     }
 
-    public onDeleteSelectedStudents(event: Button$PressEvent): void {
+    public onDeleteSelectedStudents(): void {
         const selectedItemCount = this.getModel("ui").getProperty("/selectedItemCount");
         let message = `Bitte bestätigen Sie die Löschung von ${selectedItemCount} Schülern.`;
         if (selectedItemCount === 1) {
@@ -270,7 +320,7 @@ export default class Master extends BaseController {
                         const studentId = context.getProperty("id");
                         await this.deleteStudent(studentId, false);
                     }
-                    this.loadStudents();
+                    await this.loadStudents();
                 }
             }
         });
@@ -321,8 +371,8 @@ export default class Master extends BaseController {
                         "X-API-KEY": this.getOwnerComponent().getApiKey()
                     }
                 })
-                .then(() => {
-                    if (reload) this.loadStudents();
+                .then(async () => {
+                    if (reload) await this.loadStudents();
                     resolve();
                 })
                 .catch((error) => {

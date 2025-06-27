@@ -139,7 +139,7 @@
                             <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="20em">
+                    <t:Column width="27em">
                         <Text text="Aktionen pro Schüler" />
                         <t:template>
                             <HBox>
@@ -165,8 +165,8 @@
                                     icon="sap-icon://inspect"
                                     text="Zeugnis hochladen"
                                     press=".onSendZeugnis"
-                                    enabled="{= (${studentModel>status} !== 'deleted')}"
-                                    tooltip="{= (${studentModel>status} === 'deleted' ? 'Ein gelöschter Schüler kann kein neues Zeugnis mehr geschickt bekommen' : 'Zeugnis für einen Schüler hochladen')}" />
+                                    enabled="{= (${studentModel>status} === 'active')}"
+                                    tooltip="{= (${studentModel>status} !== 'active' ? 'Nur Schüler mit einer aktiven Beziehung können ein Zeugnis erhalten' : 'Zeugnis für einen Schüler hochladen')}" />
 
                             </HBox>
                         </t:template>
