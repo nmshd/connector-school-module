@@ -142,7 +142,7 @@
                     <t:Column width="27em">
                         <Text text="Aktionen pro Schüler" />
                         <t:template>
-                            <HBox>
+                            <HBox columnGap="0.25em">
                                 <Button
                                     icon="sap-icon://pdf-attachment"
                                     text="Dokument"
