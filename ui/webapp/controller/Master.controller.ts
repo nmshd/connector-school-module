@@ -3,13 +3,15 @@ import { saveAs } from "file-saver";
 import { Button$PressEvent } from "sap/m/Button";
 import Dialog from "sap/m/Dialog";
 import MessageBox from "sap/m/MessageBox";
+import Page from "sap/m/Page";
 import DateFormat from "sap/ui/core/format/DateFormat";
 import Filter from "sap/ui/model/Filter";
 import FilterOperator from "sap/ui/model/FilterOperator";
 import JSONListBinding from "sap/ui/model/json/JSONListBinding";
 import JSONModel from "sap/ui/model/json/JSONModel";
+import ListBinding from "sap/ui/model/ListBinding";
 import Table, { Table$RowSelectionChangeEvent } from "sap/ui/table/Table";
-import { FileUploader$ChangeEvent } from "sap/ui/unified/FileUploader";
+import FileUploader, { FileUploader$ChangeEvent } from "sap/ui/unified/FileUploader";
 import { StudentDTO } from "../../../src/types";
 import BaseController from "./BaseController";
 
@@ -21,6 +23,8 @@ export default class Master extends BaseController {
     private studentLogDialog: Dialog;
     private studentQRDialog: Dialog;
     private csvFile: Blob;
+
+    private page: Page;
 
     private _oGlobalFilter: Filter;
 
@@ -36,6 +40,7 @@ export default class Master extends BaseController {
     }
 
     private async onObjectMatched() {
+        this.page = this.byId("masterPage") as Page;
         await this.loadStudents();
         this.setModel(
             new JSONModel({
@@ -88,6 +93,8 @@ export default class Master extends BaseController {
             name: "eu.enmeshed.connectorui.view.fragments.AddStudentsDialog"
         })) as Dialog;
         this.addStudentsDialog.open();
+        (this.byId("csvFileUploader") as FileUploader)?.setValue("");
+        this.csvFile = null;
     }
 
     public onCloseAddStudentsDialog(): void {
@@ -140,43 +147,54 @@ export default class Master extends BaseController {
         (table.getBinding() as JSONListBinding).filter(this._oGlobalFilter, "Application");
     }
 
-    public onUploadFiles() {
-        this.addStudentsDialog.setBusy(true);
-        const reader = new FileReader();
+    private readFileAsText(blob: Blob): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                resolve("" + event.target.result);
+            };
+            reader.onerror = (event) => {
+                reject(event);
+            };
+            reader.readAsText(blob);
+        });
+    }
 
-        reader.onload = async (event) => {
-            try {
-                const response = await axios.post<{ result: string }>(
-                    "/students/create/batch",
-                    {
-                        students: event.target.result,
-                        options: this.getModel("config").getData() as unknown
-                    },
-                    {
-                        headers: {
-                            "X-API-KEY": this.getOwnerComponent().getApiKey()
-                        }
+    public async onUploadFiles() {
+        if (!this.csvFile) return;
+        this.addStudentsDialog.setBusy(true);
+        try {
+            const csv = await this.readFileAsText(this.csvFile);
+            const response = await axios.post<{ result: string }>(
+                "/students/create/batch",
+                {
+                    students: csv,
+                    options: this.getModel("config").getData() as unknown
+                },
+                {
+                    headers: {
+                        "X-API-KEY": this.getOwnerComponent().getApiKey()
                     }
-                );
-                const date = DateFormat.getDateInstance({
-                    pattern: "yyMMdd_HHmmss_"
-                }).format(new Date());
-                saveAs(new Blob(["\uFEFF" + response.data.result], { type: "text/csv; charset=utf-8" }), date + "ImportierteSchülerMitPIN.csv");
-            } catch (error) {
-                if (axios.isAxiosError(error)) {
-                    this.addStudentsDialog.setBusy(false);
-                    MessageBox.error("An error occurred while uploading the students.", {
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-                        details: error.response.data.error.message || "Unknown error"
-                    });
-                    return;
                 }
-            }
+            );
+            const date = DateFormat.getDateInstance({
+                pattern: "yyMMdd_HHmmss_"
+            }).format(new Date());
+            saveAs(new Blob(["\uFEFF" + response.data.result], { type: "text/csv; charset=utf-8" }), date + "ImportierteSchülerMitPIN.csv");
             await this.loadStudents();
+        } catch (error) {
+            console.error(error);
+            if (axios.isAxiosError(error)) {
+                MessageBox.error("Während des Imports ist ein Fehler passiert.", {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+                    details: error.response.data.error.message || "Unknown error"
+                });
+                return;
+            }
+        } finally {
             this.addStudentsDialog.setBusy(false);
             this.addStudentsDialog.close();
-        };
-        reader.readAsText(this.csvFile);
+        }
     }
 
     public async onStudentLog(event: Button$PressEvent): Promise<void> {
@@ -217,11 +235,12 @@ export default class Master extends BaseController {
                 if (action === "OK") {
                     const table = this.byId("table") as Table;
                     const selectedIndices = table.getSelectedIndices();
-                    const items = table.getRows();
+
+                    const items = (table.getBinding() as ListBinding).getAllCurrentContexts();
                     for (const selectedIndex of selectedIndices) {
                         const item = items[selectedIndex];
                         if (!item) continue;
-                        const studentId = item.getBindingContext("studentModel").getProperty("id");
+                        const studentId = item.getProperty("id");
                         await this.deleteStudent(studentId, false);
                     }
                     this.loadStudents();
@@ -301,34 +320,42 @@ export default class Master extends BaseController {
     public async downloadStudents() {
         const table = this.byId("table") as Table;
         const selectedIndices = table.getSelectedIndices();
-        const items = table.getRows();
         const selectedStudentIds = [];
-        for (const selectedIndex of selectedIndices) {
-            const item = items[selectedIndex];
-            if (!item) continue;
-            const studentId = item.getBindingContext("studentModel").getProperty("id");
-            selectedStudentIds.push(studentId);
-        }
 
-        const response = await axios.post<Blob>(
-            "/students/onboarding",
-            {
-                fields: this.getModel("config").getObject("/pdfDefaults/fields"),
-                logo: this.getModel("config").getObject("/pdfDefaults/logo"),
-                students: selectedStudentIds.length > 0 ? selectedStudentIds : undefined
-            },
-            {
-                responseType: "blob",
-                headers: {
-                    "X-API-KEY": this.getOwnerComponent().getApiKey()
-                }
+        this.page.setBusy(true);
+        try {
+            const items = (table.getBinding() as ListBinding).getAllCurrentContexts();
+            for (const selectedIndex of selectedIndices) {
+                const item = items[selectedIndex];
+                if (!item) continue;
+                const studentId = item.getProperty("id");
+                selectedStudentIds.push(studentId);
             }
-        );
 
-        const date = DateFormat.getDateInstance({
-            pattern: "yyMMdd_HHmmss_"
-        }).format(new Date());
-        saveAs(response.data, date + "Gesammelte_Onboarding_Dokumente.pdf");
+            const response = await axios.post<Blob>(
+                "/students/onboarding",
+                {
+                    fields: this.getModel("config").getObject("/pdfDefaults/fields"),
+                    logo: this.getModel("config").getObject("/pdfDefaults/logo"),
+                    students: selectedStudentIds.length > 0 ? selectedStudentIds : undefined
+                },
+                {
+                    responseType: "blob",
+                    headers: {
+                        "X-API-KEY": this.getOwnerComponent().getApiKey()
+                    }
+                }
+            );
+
+            const date = DateFormat.getDateInstance({
+                pattern: "yyMMdd_HHmmss_"
+            }).format(new Date());
+            saveAs(response.data, date + "Gesammelte_Onboarding_Dokumente.pdf");
+        } catch (e) {
+            console.error(e);
+        } finally {
+            this.page.setBusy(false);
+        }
     }
 
     public formatStatus(value: string): string {
