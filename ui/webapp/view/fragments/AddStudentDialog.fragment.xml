@@ -52,7 +52,6 @@
                     <CheckBox
                         id="schoolGeneratePin"
                         text="PIN automatisch generieren"
-                        value="{addStudentModel>/generatePin}"
                         selected="true"
                     />
                 </f:content>
