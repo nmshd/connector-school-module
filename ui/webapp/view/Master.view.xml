@@ -166,7 +166,7 @@
                                     text="Zeugnis hochladen"
                                     press=".onSendZeugnis"
                                     visible="false"
-                                    enabled="{= ${studentModel>status} === 'active'"
+                                    enabled="{= ${studentModel>status} === 'active' }"
                                     tooltip="{= (${studentModel>status} !== 'active' ? 'Nur Schüler mit einer aktiven Beziehung können ein Zeugnis erhalten' : 'Zeugnis für einen Schüler hochladen')}" />
 
                             </HBox>
