@@ -135,7 +135,7 @@
                                 visible="{=${studentModel>status} === 'onboarding'}" />
                         </t:template>
                     </t:Column>
-                    <t:Column id="status" width="10em" sortProperty="status">
+                    <t:Column id="status" width="15em" sortProperty="status">
                         <Text text="Status" />
                         <t:template>
                             <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
