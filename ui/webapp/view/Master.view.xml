@@ -4,7 +4,6 @@
     xmlns:f="sap.f"
     xmlns:t="sap.ui.table"
     xmlns:mvc="sap.ui.core.mvc"
-    xmlns:core="sap.ui.core"
 >
     <f:DynamicPage
         id="masterPage"
@@ -75,6 +74,11 @@
                         <Title text="Liste aller vorhandenen Schüler in der Ablage" />
                         <ToolbarSpacer />
                         <Button
+                            text="Schüler hinzufügen"
+                            icon="sap-icon://add"
+                            press=".onOpenAddStudentDialog"
+                        />
+                        <Button
                             text="Sammeldokument erstellen"
                             icon="sap-icon://pdf-attachment"
                             tooltip="Erstellt eine PDF Datei mit allen Onboarding Dokumenten der selektierten Schüler"
@@ -129,17 +133,16 @@
                                 visible="{=${studentModel>status} === 'onboarding'}" />
                         </t:template>
                     </t:Column>
-                    <t:Column id="status" width="10em" sortProperty="status">
+                    <t:Column id="status" width="20em" sortProperty="status">
                         <Text text="Status" />
                         <t:template>
                             <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="20em">
+                    <t:Column width="27em">
                         <Text text="Aktionen pro Schüler" />
                         <t:template>
-                            <HBox columnGap="0.25rem">
-
+                            <HBox>
                                 <Button
                                     icon="sap-icon://pdf-attachment"
                                     text="Dokument"
@@ -158,6 +161,13 @@
                                     press=".onStudentLog"
                                     enabled="{= (${studentModel>status} !== 'deleted')}"
                                     tooltip="{= (${studentModel>status} === 'deleted' ? 'Ein gelöschter Schüler besitzt keinen Log mehr.' : 'Zur Fehlerbehandlung, den Log des Schülers aufrufen.')}" />
+                                <Button
+                                    icon="sap-icon://inspect"
+                                    text="Zeugnis hochladen"
+                                    press=".onSendZeugnis"
+                                    visible="false"
+                                    enabled="{= ${studentModel>status} === 'active' }"
+                                    tooltip="{= (${studentModel>status} !== 'active' ? 'Nur Schüler mit einer aktiven Beziehung können ein Zeugnis erhalten' : 'Zeugnis für einen Schüler hochladen')}" />
 
                             </HBox>
                         </t:template>

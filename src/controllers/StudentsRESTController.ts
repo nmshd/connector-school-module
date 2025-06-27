@@ -32,6 +32,7 @@ export class StudentsRESTController extends BaseController {
             throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
         }
         const data = validationResult.data;
+        data.pin = data.pin ?? (Math.floor(Math.random() * 10000) + 10000).toString().substring(1);
 
         if (await this.studentsController.existsStudent(data.id)) {
             throw new ApplicationError("error.schoolModule.studentAlreadyExists", "The student already exists.");
@@ -429,6 +430,8 @@ export class StudentsRESTController extends BaseController {
         };
 
         const fileDTO = await this.studentsController.sendFile(student, data);
+
+        await this.studentsController.updateStudent(student);
         return this.ok(Result.ok(fileDTO));
     }
 }

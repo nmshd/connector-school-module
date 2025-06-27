@@ -2,35 +2,34 @@
     xmlns="sap.m"
     xmlns:core="sap.ui.core"
     xmlns:u="sap.ui.unified"
-
 >
     <Dialog
-        id="addStudentsDialog"
-        title="Schüler importieren"
+        id="idZeugnisDialog"
+        title="Zeugnis hochladen"
         class="sapUiContentPadding"
     >
         <content>
-            <Text text="Hiermit können aus SchILD exportierte Schüler importiert werden."
+            <Text text="Hiermit können Sie das Zeugnis des Schülers hochladen."
                 class="sapUiSmallMarginBottom" />
             <u:FileUploader
-                id="csvFileUploader"
-                name="myCSVFileUpload"
-                change=".onCSVFileChanged"
-                tooltip="Upload your csv entry"
-                fileType="txt,csv"
+                id="idZeugnisFileUploader"
+                name="myPDFFileUpload"
+                change=".onZeugnisFileChanged"
+                tooltip="Zeugnis des Schülers hochladen"
+                fileType="pdf"
             />
 
         </content>
         <beginButton>
             <Button
                 text="Schließen"
-                press=".onCloseAddStudentsDialog"
+                press=".onCloseZeugnisDialog"
             />
         </beginButton>
         <endButton>
             <Button
-                text="Schüler importieren"
-                press=".onUploadFiles"
+                text="Zeugnis versenden"
+                press=".onZeugnisUpload"
             />
         </endButton>
     </Dialog>
