@@ -32,7 +32,6 @@ export class StudentsRESTController extends BaseController {
             throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
         }
         const data = validationResult.data;
-        data.pin = data.pin ?? (Math.floor(Math.random() * 10000) + 10000).toString().substring(1);
 
         if (await this.studentsController.existsStudent(data.id)) {
             throw new ApplicationError("error.schoolModule.studentAlreadyExists", "The student already exists.");
@@ -123,11 +122,11 @@ export class StudentsRESTController extends BaseController {
             .map((line) => {
                 const values = line.split(";");
                 return studentCSVSchema.safeParse({
-                    firstName: JSON.parse(values[0]),
-                    lastName: JSON.parse(values[1]),
-                    id: JSON.parse(values[2]),
-                    emailPrivate: JSON.parse(values[3]),
-                    emailSchool: JSON.parse(values[4]),
+                    firstName: values[0] && JSON.parse(values[0]),
+                    lastName: values[1] && JSON.parse(values[1]),
+                    id: values[2] && JSON.parse(values[2]),
+                    emailPrivate: values[3] && JSON.parse(values[3]),
+                    emailSchool: values[4] && JSON.parse(values[4]),
                     pin: (Math.floor(Math.random() * 10000) + 10000).toString().substring(1)
                 });
             });
@@ -430,8 +429,6 @@ export class StudentsRESTController extends BaseController {
         };
 
         const fileDTO = await this.studentsController.sendFile(student, data);
-
-        await this.studentsController.updateStudent(student);
         return this.ok(Result.ok(fileDTO));
     }
 }
