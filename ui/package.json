@@ -35,5 +35,14 @@
     "dependencies": {
         "axios": "^1.10.0",
         "file-saver": "^2.0.5"
+    },
+    "ui5": {
+        "ui5linter": {
+            "idNamingPattern": "",
+            "eventNamingPattern": "",
+            "usage": {
+                "TagAttributeLinter": false
+            }
+        }
     }
 }

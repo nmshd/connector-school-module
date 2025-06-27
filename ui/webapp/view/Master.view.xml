@@ -4,7 +4,6 @@
     xmlns:f="sap.f"
     xmlns:t="sap.ui.table"
     xmlns:mvc="sap.ui.core.mvc"
-    xmlns:core="sap.ui.core"
 >
     <f:DynamicPage
         id="masterPage"
@@ -138,8 +137,7 @@
                     <t:Column width="20em">
                         <Text text="Aktionen pro Schüler" />
                         <t:template>
-                            <HBox columnGap="0.25rem">
-
+                            <HBox>
                                 <Button
                                     icon="sap-icon://pdf-attachment"
                                     text="Dokument"
@@ -158,6 +156,12 @@
                                     press=".onStudentLog"
                                     enabled="{= (${studentModel>status} !== 'deleted')}"
                                     tooltip="{= (${studentModel>status} === 'deleted' ? 'Ein gelöschter Schüler besitzt keinen Log mehr.' : 'Zur Fehlerbehandlung, den Log des Schülers aufrufen.')}" />
+                                <Button
+                                    icon="sap-icon://inspect"
+                                    text="Zeugnis hochladen"
+                                    press=".onSendZeugnis"
+                                    enabled="{= (${studentModel>status} !== 'deleted')}"
+                                    tooltip="{= (${studentModel>status} === 'deleted' ? 'Ein gelöschter Schüler kann kein neues Zeugnis mehr geschickt bekommen' : 'Zeugnis für einen Schüler hochladen')}" />
 
                             </HBox>
                         </t:template>

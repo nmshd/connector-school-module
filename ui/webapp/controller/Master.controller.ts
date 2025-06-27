@@ -56,6 +56,10 @@ export default class Master extends BaseController {
         this.csvFile = event.getParameter("files")[0] as Blob;
     }
 
+    public onZeugnisFileChanged(event: FileUploader$ChangeEvent) {
+        this.zeugnisFile = event.getParameter("files")[0] as Blob;
+    }
+
     public async onDownloadCSV() {
         const response = await axios.get(`/students`, {
             headers: {

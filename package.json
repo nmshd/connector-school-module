@@ -45,5 +45,12 @@
     },
     "workspaces": [
         "ui"
-    ]
+    ],
+    "ui5": {
+        "ui5parser": {
+            "proxyWorkspaces": [
+                "ui"
+            ]
+        }
+    }
 }
