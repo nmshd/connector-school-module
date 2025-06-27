@@ -64,6 +64,9 @@
             },
             "config": {
                 "type": "sap.ui.model.json.JSONModel"
+            },
+            "app": {
+                "type": "sap.ui.model.json.JSONModel"
             }
         },
         "resources": {

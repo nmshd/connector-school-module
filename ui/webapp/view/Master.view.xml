@@ -16,7 +16,7 @@
             <f:DynamicPageTitle>
                 <f:heading>
                     <Title
-                        text="{i18n>appTitle}"
+                        text="{i18n>appTitle} für Schule {app>/schoolModuleConfig/schoolName}"
                         level="H2"
                     />
                 </f:heading>

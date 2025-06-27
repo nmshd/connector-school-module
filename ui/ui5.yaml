@@ -34,3 +34,8 @@ server:
       mountPath: /students
       configuration:
         baseUri: http://localhost:8099/students
+    - name: ui5-middleware-simpleproxy
+      afterMiddleware: compression
+      mountPath: /Monitoring
+      configuration:
+        baseUri: http://localhost:8099/Monitoring

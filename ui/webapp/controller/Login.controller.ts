@@ -71,6 +71,14 @@ export default class Login extends BaseController {
                 console.error("Fehler beim Login", e);
             });
 
+        const supportInfo = await axios.get("/Monitoring/Support", {
+            headers: {
+                "X-API-KEY": apikey
+            }
+        });
+        const schoolModuleConfig = supportInfo.data.configuration.modules.school;
+        this.getModel("app").setProperty("/schoolModuleConfig", schoolModuleConfig);
+
         if (students && config) {
             this.getModel("apiKey").setProperty("/key", apikey);
             this.getRouter().navTo("master", { layout: LayoutType.OneColumn });
