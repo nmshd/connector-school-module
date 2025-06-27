@@ -30,7 +30,8 @@
                             id="configFileUploader"
                             name="myConfigFileUpload"
                             change=".onConfigFileChanged"
-                            tooltip="Upload your csv entry"
+                            tooltip="Upload your json config"
+                            fileType="json"
                             width="100%"
                         />
                         <Label text="" />

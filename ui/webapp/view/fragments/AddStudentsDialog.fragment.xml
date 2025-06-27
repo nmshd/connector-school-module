@@ -16,6 +16,7 @@
                 name="myCSVFileUpload"
                 change=".onCSVFileChanged"
                 tooltip="Upload your csv entry"
+                fileType="txt,csv"
             />
 
         </content>
