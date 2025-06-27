@@ -56,7 +56,6 @@ export class StudentsController {
             link?: string;
             linkDisplayText?: string;
         }[];
-        zeugnisSend: boolean;
     }): Promise<Student> {
         const identityInfo = await this.services.transportServices.account.getIdentityInfo();
 
@@ -168,8 +167,7 @@ export class StudentsController {
             pin: data.pin,
             emailPrivate: data.emailPrivate,
             emailSchool: data.emailSchool,
-            correspondingRelationshipTemplateId: template.value.id,
-            zeugnisSend: data.zeugnisSend
+            correspondingRelationshipTemplateId: template.value.id
         });
 
         await this.#studentsCollection.create(student.toJSON());

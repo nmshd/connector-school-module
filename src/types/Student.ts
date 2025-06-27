@@ -10,7 +10,6 @@ export interface StudentJSON {
     emailPrivate?: string;
     correspondingRelationshipTemplateId?: string;
     correspondingRelationshipId?: string;
-    zeugnisSend?: boolean;
 }
 
 export interface IStudent extends ISerializable {
@@ -22,7 +21,6 @@ export interface IStudent extends ISerializable {
     emailPrivate?: string;
     correspondingRelationshipTemplateId?: ICoreId;
     correspondingRelationshipId?: ICoreId;
-    zeugnisSend?: boolean;
 }
 
 export class Student extends Serializable implements IStudent {
@@ -57,10 +55,6 @@ export class Student extends Serializable implements IStudent {
     @serialize()
     @validate({ nullable: true })
     public correspondingRelationshipId?: CoreId;
-
-    @serialize()
-    @validate({ nullable: true })
-    public zeugnisSend?: boolean;
 
     public static from(value: IStudent | StudentJSON): Student {
         return this.fromAny(value);
