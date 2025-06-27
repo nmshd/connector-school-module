@@ -124,6 +124,11 @@ export default class Master extends BaseController {
             studentData.pin = (Math.floor(Math.random() * 10000) + 10000).toString().substring(1);
         }
 
+        const defaultConfig = this.getModel("config").getData() as any;
+        if (defaultConfig && defaultConfig.createDefaults && defaultConfig.createDefaults.additionalConsents) {
+            studentData.additionalConsents = defaultConfig.createDefaults.additionalConsents;
+        }
+
         try {
             await axios.post("/students", studentData, {
                 headers: {
