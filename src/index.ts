@@ -66,7 +66,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
                         defaultSrc: ["'self'"],
                         scriptSrc: ["'self'", "https://sdk.openui5.org"],
                         styleSrc: ["'self'", "https://sdk.openui5.org"],
-                        imgSrc: ["'self'"],
+                        imgSrc: ["'self'", "data:"],
                         connectSrc: ["'self'", "https://sdk.openui5.org"]
                     }
                 }
