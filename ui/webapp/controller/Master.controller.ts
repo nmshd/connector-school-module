@@ -124,7 +124,7 @@ export default class Master extends BaseController {
             studentData.pin = (Math.floor(Math.random() * 10000) + 10000).toString().substring(1);
         }
 
-        const defaultConfig = this.getModel("config").getData() as any;
+        const defaultConfig = this.getModel("config").getData();
         if (defaultConfig && defaultConfig.createDefaults && defaultConfig.createDefaults.additionalConsents) {
             studentData.additionalConsents = defaultConfig.createDefaults.additionalConsents;
         }
@@ -442,9 +442,14 @@ export default class Master extends BaseController {
     private async loadStudents(): Promise<void> {
         const studentModel = this.getModel("studentModel");
 
+        const apiKey = this.getOwnerComponent().getApiKey();
+        if (!apiKey) {
+            return;
+        }
+
         const studentsResponse = await axios.get<{ result: StudentDTO[] }>("/students", {
             headers: {
-                "X-API-KEY": this.getOwnerComponent().getApiKey()
+                "X-API-KEY": apiKey
             }
         });
 

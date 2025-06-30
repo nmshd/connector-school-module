@@ -60,6 +60,17 @@ export default class Component extends UIComponent {
     }
 
     private async onBeforeRouteMatched(oEvent: Router$BeforeRouteMatchedEvent) {
+        const key = this.getModel("apiKey").getProperty("/key") as string;
+
+        const routeName = oEvent.getParameter("name");
+
+        if (routeName !== "login" && !key) {
+            // If the user is not logged in, redirect to the login page
+            this.getRouter().navTo("login");
+            oEvent.preventDefault();
+            return;
+        }
+
         const model = this.getModel("appView") as JSONModel,
             layout = (oEvent.getParameters() as routeParameters).arguments.layout;
 
@@ -101,7 +112,6 @@ export default class Component extends UIComponent {
         if (key) {
             return key;
         }
-        this.getRouter().navTo("login");
         return "";
     }
 }

@@ -15,7 +15,7 @@ export default class Login extends BaseController {
     public onInit(): void {
         this.getRouter()
             .getRoute("login")
-            .attachPatternMatched(() => this.onObjectMatched(), this);
+            .attachPatternMatched(() => void this.onObjectMatched(), this);
     }
 
     private async onObjectMatched() {
