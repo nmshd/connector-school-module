@@ -65,14 +65,20 @@ export default class Component extends UIComponent {
         const routeName = oEvent.getParameter("name");
 
         if (routeName !== "login" && !key) {
+            const routeArguments = oEvent.getParameter("arguments");
             // If the user is not logged in, redirect to the login page
-            this.getRouter().navTo("login");
+            this.getRouter().navTo("login", {
+                afterLoginRoute: JSON.stringify({ name: routeName, arguments: routeArguments })
+            });
             oEvent.preventDefault();
             return;
         }
-
-        const model = this.getModel("appView") as JSONModel,
-            layout = (oEvent.getParameters() as routeParameters).arguments.layout;
+        const model = this.getModel("appView") as JSONModel;
+        if (routeName === "login") {
+            model.setProperty("/layout", LayoutType.OneColumn);
+            return;
+        }
+        const layout = (oEvent.getParameters() as routeParameters).arguments.layout;
 
         // If there is no layout parameter, query for the default level 0 layout (normally OneColumn)
         if (!layout) {

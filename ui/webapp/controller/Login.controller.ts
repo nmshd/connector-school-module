@@ -2,6 +2,7 @@ import axios from "axios";
 import { LayoutType } from "sap/f/library";
 import Input from "sap/m/Input";
 import DateFormat from "sap/ui/core/format/DateFormat";
+import { Route$PatternMatchedEvent } from "sap/ui/core/routing/Route";
 import { FileUploader$ChangeEvent } from "sap/ui/unified/FileUploader";
 import { Student } from "../../../src/types";
 import BaseController from "./BaseController";
@@ -11,14 +12,21 @@ import BaseController from "./BaseController";
  */
 export default class Login extends BaseController {
     private configFile: any;
+    private routeAfterLogin: { name: string; arguments: object } | undefined;
 
     public onInit(): void {
         this.getRouter()
             .getRoute("login")
-            .attachPatternMatched(() => void this.onObjectMatched(), this);
+            .attachPatternMatched((event) => void this.onObjectMatched(event), this);
     }
 
-    private async onObjectMatched() {
+    private async onObjectMatched(event: Route$PatternMatchedEvent) {
+        const args = event.getParameter("arguments");
+        try {
+            this.routeAfterLogin = JSON.parse(args.afterLoginRoute);
+        } catch (error: unknown) {
+            this.routeAfterLogin = undefined;
+        }
         const apikey = window.sessionStorage.getItem("apikey");
         const config = JSON.parse(window.sessionStorage.getItem("config"));
         if (apikey && config) {
@@ -81,7 +89,12 @@ export default class Login extends BaseController {
 
         if (students && config) {
             this.getModel("apiKey").setProperty("/key", apikey);
-            this.getRouter().navTo("master", { layout: LayoutType.OneColumn });
+            if (this.routeAfterLogin) {
+                this.getRouter().navTo(this.routeAfterLogin.name, this.routeAfterLogin.arguments, false);
+            } else {
+                this.getRouter().navTo("master", { layout: LayoutType.OneColumn });
+            }
+
             window.sessionStorage.setItem("apikey", apikey);
             window.sessionStorage.setItem("config", JSON.stringify(config));
             this.clear();

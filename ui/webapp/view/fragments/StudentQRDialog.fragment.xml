@@ -1,7 +1,6 @@
 <core:FragmentDefinition
     xmlns="sap.m"
     xmlns:core="sap.ui.core"
-    xmlns:u="sap.ui.unified"
     xmlns:l="sap.ui.layout.form"
 >
     <Dialog
@@ -16,18 +15,24 @@
                     <Label text="Schüler ID" />
                     <Text text="{appView>/student/id}" />
                     <Label text="Schüler" />
-                    <Text text="{appView>/student/givenname} {appView>/student/surname}" />
+                    <Text
+                        text="{appView>/student/givenname} {appView>/student/surname}"
+                    />
                     <Label text="PIN" />
                     <Text text="{appView>/student/pin}" />
                     <Label text="Link" />
-                    <Link text="Link" href="{appView>/studentLink}"
-                        target="_blank" />
+                    <Link
+                        text="Link"
+                        href="{appView>/studentLink}"
+                        target="_blank"
+                    />
                     <Label text="QR Code" />
-                    <Image id="qrcode" src="{appView>/studentQR}" />
+                    <Image
+                        id="qrcode"
+                        src="{appView>/studentQR}"
+                    />
                 </l:SimpleForm>
             </VBox>
-
-
         </content>
         <beginButton>
             <Button
@@ -35,7 +40,6 @@
                 press=".onCloseStudentQRDialog"
             />
         </beginButton>
-        <endButton>
-        </endButton>
+        <endButton />
     </Dialog>
 </core:FragmentDefinition>

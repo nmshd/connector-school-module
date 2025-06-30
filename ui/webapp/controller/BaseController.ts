@@ -1,4 +1,9 @@
+import axios from "axios";
+import * as saveAs from "file-saver";
 import ResourceBundle from "sap/base/i18n/ResourceBundle";
+import { Button$PressEvent } from "sap/m/Button";
+import Dialog from "sap/m/Dialog";
+import MessageBox from "sap/m/MessageBox";
 import Controller from "sap/ui/core/mvc/Controller";
 import History from "sap/ui/core/routing/History";
 import Router from "sap/ui/core/routing/Router";
@@ -6,12 +11,15 @@ import UIComponent from "sap/ui/core/UIComponent";
 import JSONModel from "sap/ui/model/json/JSONModel";
 import Model from "sap/ui/model/Model";
 import ResourceModel from "sap/ui/model/resource/ResourceModel";
+import { FileUploader$ChangeEvent } from "sap/ui/unified/FileUploader";
 import AppComponent from "../Component";
 
 /**
  * @namespace eu.enmeshed.connectorui.controller
  */
 export default class BaseController extends Controller {
+    private studentZeugnisDialog: Dialog;
+    private zeugnisFile: Blob;
     /**
      * Convenience method for accessing the component of the controller's view.
      * @returns The component of the controller's view
@@ -78,5 +86,83 @@ export default class BaseController extends Controller {
         } else {
             this.getRouter().navTo("master", {}, {}, true);
         }
+    }
+
+    public onZeugnisFileChanged(event: FileUploader$ChangeEvent) {
+        this.zeugnisFile = event.getParameter("files")[0] as Blob;
+    }
+
+    public async onDownloadPdf(event: Button$PressEvent, modelName: string): Promise<void> {
+        const studentId = event.getSource().getBindingContext(modelName).getProperty("id") as number;
+        const vorname = event.getSource().getBindingContext(modelName).getProperty("givenname") as number;
+        const nachname = event.getSource().getBindingContext(modelName).getProperty("surname") as number;
+        const response = await axios.post<Blob>(
+            `/students/${studentId}/onboarding`,
+            {
+                fields: this.getModel("config").getObject("/pdfDefaults/fields"),
+                logo: this.getModel("config").getObject("/pdfDefaults/logo")
+            },
+            {
+                headers: {
+                    "X-API-KEY": this.getOwnerComponent().getApiKey(),
+                    Accept: "application/pdf"
+                },
+                responseType: "blob"
+            }
+        );
+
+        saveAs(response.data, `${studentId}_${nachname}_${vorname}_Onboarding.pdf`);
+    }
+
+    public async onSendZeugnis(event: Button$PressEvent, modelName: string): Promise<void> {
+        this.studentZeugnisDialog ??= (await this.loadFragment({
+            name: "eu.enmeshed.connectorui.view.fragments.UploadZeugnis"
+        })) as Dialog;
+        this.studentZeugnisDialog.open();
+        this.studentZeugnisDialog.setModel(
+            new JSONModel({
+                id: event.getSource().getBindingContext(modelName).getProperty("id")
+            }),
+            "studentModel"
+        );
+    }
+
+    public onCloseZeugnisDialog() {
+        this.studentZeugnisDialog.close();
+    }
+    public onZeugnisUpload() {
+        this.studentZeugnisDialog.setBusy(true);
+        const reader = new FileReader();
+        const studentId = this.studentZeugnisDialog.getModel("studentModel").getProperty("/id") as number;
+        reader.onload = async (event) => {
+            const dataUrl = event.target.result as string;
+
+            const base64 = dataUrl.split(",")[1];
+            try {
+                await axios.post(
+                    `/students/${studentId}/files/abiturzeugnis`,
+                    {
+                        file: base64
+                    },
+                    {
+                        headers: {
+                            "X-API-KEY": this.getOwnerComponent().getApiKey()
+                        }
+                    }
+                );
+            } catch (e: unknown) {
+                if (axios.isAxiosError(e)) {
+                    MessageBox.error("Fehler beim Hochladen des Zeugnisses.", {
+                        details: JSON.stringify(e.response.data)
+                    });
+                }
+            } finally {
+                this.studentZeugnisDialog.setBusy(false);
+            }
+        };
+
+        reader.readAsDataURL(this.zeugnisFile);
+
+        this.studentZeugnisDialog.close();
     }
 }

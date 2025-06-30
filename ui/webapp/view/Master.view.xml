@@ -78,7 +78,9 @@
             >
                 <t:extension>
                     <OverflowToolbar>
-                        <Title text="Liste aller vorhandenen Schüler in der Ablage" />
+                        <Title
+                            text="Liste aller vorhandenen Schüler in der Ablage"
+                        />
                         <ToolbarSpacer />
                         <Button
                             text="Sammeldokument erstellen"
@@ -99,79 +101,115 @@
                             placeholder="Search"
                             value="{ui>/globalFilter}"
                             search="searchTable"
-                            width="15rem" />
+                            width="15rem"
+                        />
                     </OverflowToolbar>
                 </t:extension>
                 <t:columns>
-                    <t:Column id="id" width="6em" sortProperty="id" filterProperty="id"
-                        resizable="true">
+                    <t:Column
+                        id="id"
+                        width="6em"
+                        sortProperty="id"
+                        filterProperty="id"
+                        resizable="true"
+                    >
                         <Label text="Schüler ID" />
                         <t:template>
                             <Text text="{studentModel>id}" />
                         </t:template>
                     </t:Column>
-                    <t:Column id="givenname" sortProperty="givenname" filterProperty="givenname"
-                        resizable="true">
+                    <t:Column
+                        id="givenname"
+                        sortProperty="givenname"
+                        filterProperty="givenname"
+                        resizable="true"
+                    >
                         <Text text="Vorname" />
                         <t:template>
-                            <Text
-                                text="{studentModel>givenname}"
-                            />
+                            <Text text="{studentModel>givenname}" />
                         </t:template>
                     </t:Column>
-                    <t:Column id="surname" sortProperty="surname" filterProperty="surname"
-                        resizable="true">
+                    <t:Column
+                        id="surname"
+                        sortProperty="surname"
+                        filterProperty="surname"
+                        resizable="true"
+                    >
                         <Text text="Nachname" />
                         <t:template>
+                            <Text text="{studentModel>surname}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column
+                        id="pin"
+                        width="4em"
+                        sortProperty="pin"
+                        resizable="true"
+                    >
+                        <Text text="PIN" />
+                        <t:template>
                             <Text
-                                text="{studentModel>surname}"
+                                text="{studentModel>pin}"
+                                visible="{=${studentModel>status} === 'onboarding'}"
                             />
                         </t:template>
                     </t:Column>
-                    <t:Column id="pin" width="4em" sortProperty="pin" resizable="true">
-                        <Text text="PIN" />
-                        <t:template>
-                            <Text text="{studentModel>pin}"
-                                visible="{=${studentModel>status} === 'onboarding'}" />
-                        </t:template>
-                    </t:Column>
-                    <t:Column id="status" width="15em" sortProperty="status">
+                    <t:Column
+                        id="status"
+                        width="15em"
+                        sortProperty="status"
+                    >
                         <Text text="Status" />
                         <t:template>
-                            <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
+                            <Text
+                                text="{path:'studentModel>status',formatter:'.formatter.formatStatus'}"
+                            />
                         </t:template>
                     </t:Column>
-                    <t:Column width="20em">
-                        <Text text="Aktionen pro Schüler" />
+                    <t:Column
+                        visible="{= ${appView>/layout} === 'OneColumn'}"
+                        width="28em"
+                    >
                         <t:template>
                             <HBox columnGap="0.25em">
                                 <Button
                                     icon="sap-icon://pdf-attachment"
                                     text="Dokument"
-                                    press=".onDownloadPdf"
+                                    press=".onDownloadPdf($event, 'studentModel')"
                                     enabled="{= (${studentModel>status} === 'onboarding')}"
-                                    tooltip="{= (${studentModel>status} === 'onboarding' ? 'Ein PDF Dokument für das Onboarding des Schülers erzeugen' : 'Dieser Schüler ist aktiv, sie können kein Onboarding Dokument mehr erzeugen')}" />
+                                    tooltip="{= (${studentModel>status} === 'onboarding' ? 'Ein PDF Dokument für das Onboarding des Schülers erzeugen' : 'Dieser Schüler ist aktiv, sie können kein Onboarding Dokument mehr erzeugen')}"
+                                />
                                 <Button
                                     icon="sap-icon://qr-code"
                                     text="QR Code"
                                     press=".onStudentQR"
                                     enabled="{= (${studentModel>status} === 'onboarding')}"
-                                    tooltip="{= (${studentModel>status} === 'onboarding' ? 'Ein PDF Dokument für das Onboarding des Schülers erzeugen' : 'Dieser Schüler ist aktiv, sie können kein Onboarding Dokument mehr erzeugen')}" />
+                                    tooltip="{= (${studentModel>status} === 'onboarding' ? 'Ein PDF Dokument für das Onboarding des Schülers erzeugen' : 'Dieser Schüler ist aktiv, sie können kein Onboarding Dokument mehr erzeugen')}"
+                                />
                                 <Button
                                     icon="sap-icon://inspect"
                                     text="Log"
                                     press=".onStudentLog"
                                     enabled="{= (${studentModel>status} !== 'deleted')}"
-                                    tooltip="{= (${studentModel>status} === 'deleted' ? 'Ein gelöschter Schüler besitzt keinen Log mehr.' : 'Zur Fehlerbehandlung, den Log des Schülers aufrufen.')}" />
+                                    tooltip="{= (${studentModel>status} === 'deleted' ? 'Ein gelöschter Schüler besitzt keinen Log mehr.' : 'Zur Fehlerbehandlung, den Log des Schülers aufrufen.')}"
+                                />
                                 <Button
                                     icon="sap-icon://inspect"
                                     text="Zeugnis hochladen"
-                                    press=".onSendZeugnis"
-                                    visible="false"
+                                    press=".onSendZeugnis($event, 'studentModel')"
                                     enabled="{= ${studentModel>status} === 'active' }"
-                                    tooltip="{= (${studentModel>status} !== 'active' ? 'Nur Schüler mit einer aktiven Beziehung können ein Zeugnis erhalten' : 'Zeugnis für einen Schüler hochladen')}" />
-
+                                    tooltip="{= (${studentModel>status} !== 'active' ? 'Nur Schüler mit einer aktiven Beziehung können ein Zeugnis erhalten' : 'Zeugnis für einen Schüler hochladen')}"
+                                />
                             </HBox>
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="3.5em">
+                        <Text text="" />
+                        <t:template>
+                            <Button
+                                press="onNavToDetail"
+                                icon="sap-icon://navigation-right-arrow"
+                            />
                         </t:template>
                     </t:Column>
                 </t:columns>

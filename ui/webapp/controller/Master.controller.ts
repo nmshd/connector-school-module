@@ -14,19 +14,20 @@ import ListBinding from "sap/ui/model/ListBinding";
 import Table from "sap/ui/table/Table";
 import FileUploader, { FileUploader$ChangeEvent } from "sap/ui/unified/FileUploader";
 import { StudentDTO } from "../../../src/types";
+import formatter from "../model/formatter";
 import BaseController from "./BaseController";
 
 /**
  * @namespace eu.enmeshed.connectorui.controller
  */
 export default class Master extends BaseController {
+    private formatter = formatter;
+
     private addStudentsDialog: Dialog;
     private addStudentDialog: Dialog;
     private studentLogDialog: Dialog;
-    private studentZeugnisDialog: Dialog;
     private studentQRDialog: Dialog;
     private csvFile: Blob;
-    private zeugnisFile: Blob;
 
     private page: Page;
 
@@ -35,6 +36,9 @@ export default class Master extends BaseController {
     public onInit(): void {
         this.getRouter()
             .getRoute("master")
+            .attachPatternMatched(() => void this.onObjectMatched(), this);
+        this.getRouter()
+            .getRoute("detail")
             .attachPatternMatched(() => void this.onObjectMatched(), this);
     }
 
@@ -61,12 +65,17 @@ export default class Master extends BaseController {
         this.getModel("ui").setProperty("/selectedItemCount", selectedItems.length);
     }
 
-    public onCSVFileChanged(event: FileUploader$ChangeEvent) {
-        this.csvFile = event.getParameter("files")[0] as Blob;
+    public onNavToDetail(event: Button$PressEvent): void {
+        const studentId = event.getSource().getBindingContext("studentModel").getProperty("id");
+
+        this.getRouter().navTo("detail", {
+            id: studentId,
+            layout: "TwoColumnsMidExpanded"
+        });
     }
 
-    public onZeugnisFileChanged(event: FileUploader$ChangeEvent) {
-        this.zeugnisFile = event.getParameter("files")[0] as Blob;
+    public onCSVFileChanged(event: FileUploader$ChangeEvent) {
+        this.csvFile = event.getParameter("files")[0] as Blob;
     }
 
     public async onDownloadCSV() {
@@ -284,54 +293,6 @@ export default class Master extends BaseController {
         this.getModel("appView").setProperty("/logOutput", response.data);
     }
 
-    public async onSendZeugnis(event: Button$PressEvent): Promise<void> {
-        this.studentZeugnisDialog ??= (await this.loadFragment({
-            name: "eu.enmeshed.connectorui.view.fragments.UploadZeugnis"
-        })) as Dialog;
-        this.studentZeugnisDialog.open();
-        this.getView().addDependent(this.studentZeugnisDialog);
-        this.studentZeugnisDialog.setBindingContext(event.getSource().getBindingContext("studentModel"), "studentModel");
-    }
-
-    public onCloseZeugnisDialog() {
-        this.studentZeugnisDialog.close();
-        this.studentZeugnisDialog.setBindingContext(null, "studentModel");
-    }
-    public onZeugnisUpload() {
-        this.studentZeugnisDialog.setBusy(true);
-        const reader = new FileReader();
-        const studentId = this.studentZeugnisDialog.getBindingContext("studentModel").getProperty("id") as number;
-        reader.onload = async (event) => {
-            const dataUrl = event.target.result as string;
-
-            const base64 = dataUrl.split(",")[1];
-            try {
-                await axios.post(
-                    `/students/${studentId}/files/abiturzeugnis`,
-                    {
-                        file: base64
-                    },
-                    {
-                        headers: {
-                            "X-API-KEY": this.getOwnerComponent().getApiKey()
-                        }
-                    }
-                );
-            } catch (e: unknown) {
-                if (axios.isAxiosError(e)) {
-                    MessageBox.error("Fehler beim Hochladen des Zeugnisses.", {
-                        details: JSON.stringify(e.response.data)
-                    });
-                }
-            }
-        };
-
-        reader.readAsDataURL(this.zeugnisFile);
-
-        this.studentZeugnisDialog.close();
-        this.studentZeugnisDialog.setBindingContext(null, "studentModel");
-    }
-
     public async onStudentQR(event: Button$PressEvent): Promise<void> {
         const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
         const response = await axios.get(`/students/${studentId}/onboarding`, {
@@ -369,12 +330,14 @@ export default class Master extends BaseController {
             const selectedIndices = table.getSelectedIndices();
 
             const items = (table.getBinding() as ListBinding).getAllCurrentContexts();
-            for (const selectedIndex of selectedIndices) {
-                const item = items[selectedIndex];
-                if (!item) continue;
-                const studentId = item.getProperty("id");
-                await this.deleteStudent(studentId, false);
-            }
+            await Promise.all(
+                selectedIndices.map(async (selectedIndex) => {
+                    const item = items[selectedIndex];
+                    if (!item) return;
+                    const studentId = item.getProperty("id");
+                    await this.deleteStudent(studentId, false);
+                })
+            );
             await this.loadStudents();
         } catch (e) {
             console.error(e);
@@ -388,7 +351,7 @@ export default class Master extends BaseController {
             onClose: (action: string) => {
                 if (action === "OK") {
                     const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
-                    this.deleteStudent(studentId);
+                    void this.deleteStudent(studentId);
                 }
             }
         });
@@ -396,28 +359,6 @@ export default class Master extends BaseController {
 
     public async onRefresh(): Promise<void> {
         await this.loadStudents();
-    }
-
-    public async onDownloadPdf(event: Button$PressEvent): Promise<void> {
-        const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
-        const vorname = event.getSource().getBindingContext("studentModel").getProperty("givenname") as number;
-        const nachname = event.getSource().getBindingContext("studentModel").getProperty("surname") as number;
-        const response = await axios.post<Blob>(
-            `/students/${studentId}/onboarding`,
-            {
-                fields: this.getModel("config").getObject("/pdfDefaults/fields"),
-                logo: this.getModel("config").getObject("/pdfDefaults/logo")
-            },
-            {
-                headers: {
-                    "X-API-KEY": this.getOwnerComponent().getApiKey(),
-                    Accept: "application/pdf"
-                },
-                responseType: "blob"
-            }
-        );
-
-        saveAs(response.data, `${studentId}_${nachname}_${vorname}_Onboarding.pdf`);
     }
 
     private async deleteStudent(studentId: number, reload: boolean = true): Promise<void> {
@@ -493,19 +434,6 @@ export default class Master extends BaseController {
             console.error(e);
         } finally {
             this.page.setBusy(false);
-        }
-    }
-
-    public formatStatus(value: string): string {
-        switch (value) {
-            case "onboarding":
-                return "Warten auf Schüler";
-            case "deleted":
-                return "Schüler hat sich gelöscht";
-            case "rejected":
-                return "Schüler hat Einwilligung abgelehnt";
-            case "active":
-                return "Aktiv";
         }
     }
 }

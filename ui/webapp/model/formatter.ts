@@ -1,19 +1,34 @@
+import DateFormat from "sap/ui/core/format/DateFormat";
+
+const parser = DateFormat.getDateInstance({
+    pattern: "dd.MM.yyyy HH:mm:ss"
+});
+
 export default {
-    /**
-     * Rounds the currency value to 2 digits
-     *
-     * @public
-     * @param {string} value value to be formatted
-     * @returns {string} formatted currency value with 2 digits
-     */
-    formatValue: (value: string) => {
-        if (!value) {
-            return "";
+    formatStatus(value: string): string {
+        switch (value) {
+            case "onboarding":
+                return "Warten auf Schüler";
+            case "deleted":
+                return "Schüler hat sich gelöscht";
+            case "rejected":
+                return "Schüler hat Einwilligung abgelehnt";
+            case "active":
+                return "Aktiv";
         }
-        try {
-            return parseFloat(value).toFixed(2);
-        } catch {
-            return value;
+    },
+    formatFileStatus(value: string): string {
+        switch (value) {
+            case "accepted":
+                return "Akzeptiert";
+            case "pending":
+                return "Warten auf Schüler";
+            case "rejected":
+                return "Abgelehnt";
         }
+    },
+
+    formateDate(value: string): string {
+        return parser.format(new Date(value));
     }
 };

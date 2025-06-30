@@ -12,11 +12,12 @@ import BaseController from "./BaseController";
 export default class Detail extends BaseController {
     private id: string;
     private formatter = formatter;
+
     public onInit(): void {
         const viewModel = new JSONModel({
             busy: false,
             delay: 0,
-            detailStudent: {}
+            student: {}
         });
         this.setModel(viewModel, "detailView");
 
@@ -25,44 +26,52 @@ export default class Detail extends BaseController {
             .attachPatternMatched((event: Route$MatchedEvent) => void this.onObjectMatched(event), this);
     }
 
-    private async onObjectMatched(event: Route$MatchedEvent) {
+    public async onRefresh() {
+        await this.onObjectMatched();
+    }
+
+    private async onObjectMatched(event?: Route$MatchedEvent) {
         const viewModel = this.getModel("detailView");
 
         viewModel.setProperty("/busy", true);
-        this.id = (event.getParameter("arguments") as inputParameters).id || this.id || "0";
+        this.id = (event?.getParameter("arguments") as inputParameters)?.id || this.id || "0";
 
+        const apiKey = this.getOwnerComponent().getApiKey();
+        if (!apiKey) {
+            return;
+        }
         const student = await axios.get<{ result: Student }>("/students/" + this.id, {
             headers: {
-                "X-API-KEY": this.getOwnerComponent().getApiKey()
+                "X-API-KEY": apiKey
             }
         });
 
         viewModel.setProperty("/detailStudent", student.data.result);
 
+        const response = await axios.get(`/students/${this.id}/onboarding`, {
+            headers: {
+                "X-API-KEY": apiKey,
+                Accept: "application/json"
+            }
+        });
+        viewModel.setProperty("/studentLink", response.data.result.link);
+        viewModel.setProperty("/studentQR", "data:image/png;base64," + response.data.result.png);
+
+        const logResponse = await axios.get(`/students/${this.id}/log`, {
+            headers: {
+                "X-API-KEY": apiKey,
+                Accept: "text/plain"
+            }
+        });
+        viewModel.setProperty("/logOutput", logResponse.data);
+        const filesResponse = await axios.get(`/students/${this.id}/files`, {
+            headers: {
+                "X-API-KEY": apiKey
+            }
+        });
+        viewModel.setProperty("/files", filesResponse.data.result);
+
         viewModel.setProperty("/busy", false);
-    }
-
-    private onBindingChange() {
-        const elementBinding = this.getView().getElementBinding();
-        // No data for the binding
-        if (!elementBinding.getBoundContext()) {
-            void this.getRouter().getTargets().display("detailObjectNotFound");
-        }
-    }
-
-    public onCloseDetailPress(): void {
-        this.getModel("appView").setProperty("/actionButtonsInfo/midColumn/fullScreen", false);
-        this.getRouter().navTo("master");
-    }
-
-    public handleFullScreen(): void {
-        const nextLayout = this.getModel("appView").getProperty("/actionButtonsInfo/midColumn/fullScreen") as string;
-        this.getRouter().navTo("detail", { layout: nextLayout, id: this.id });
-    }
-
-    public handleExitFullScreen(): void {
-        const nextLayout = this.getModel("appView").getProperty("/actionButtonsInfo/midColumn/exitFullScreen") as string;
-        this.getRouter().navTo("detail", { layout: nextLayout, id: this.id });
     }
 
     public handleClose(): void {

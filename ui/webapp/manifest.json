@@ -93,9 +93,9 @@
             },
             "routes": [
                 {
-                    "pattern": ":layout:",
-                    "name": "login",
-                    "target": ["login"]
+                    "pattern": "detail/{id}/{layout}",
+                    "name": "detail",
+                    "target": ["master", "detail"]
                 },
                 {
                     "pattern": "master/:layout:",
@@ -103,9 +103,9 @@
                     "target": ["master"]
                 },
                 {
-                    "pattern": "detail/{id}/{layout}",
-                    "name": "detail",
-                    "target": ["master", "detail"]
+                    "pattern": ":afterLoginRoute:/:layout:",
+                    "name": "login",
+                    "target": ["login"]
                 }
             ],
             "targets": {
