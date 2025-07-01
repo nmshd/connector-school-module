@@ -17,7 +17,7 @@ import AppComponent from "../Component";
 /**
  * @namespace eu.enmeshed.connectorui.controller
  */
-export default class BaseController extends Controller {
+export default abstract class BaseController extends Controller {
     private studentZeugnisDialog: Dialog;
     private zeugnisFile: Blob;
     /**
@@ -158,11 +158,13 @@ export default class BaseController extends Controller {
                 }
             } finally {
                 this.studentZeugnisDialog.setBusy(false);
+                this.studentZeugnisDialog.close();
+                await this.onRefresh();
             }
         };
 
         reader.readAsDataURL(this.zeugnisFile);
-
-        this.studentZeugnisDialog.close();
     }
+
+    abstract onRefresh(): Promise<void>;
 }

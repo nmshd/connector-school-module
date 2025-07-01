@@ -79,6 +79,60 @@
                     width="auto"
                     class="sapUiResponsiveMargin"
                     accessibleRole="Region"
+                    expandable="true"
+                    expand="true"
+                >
+                    <headerToolbar>
+                        <OverflowToolbar>
+                            <Title text="Gesendete Nachrichten" />
+                            <ToolbarSpacer />
+                            <Button
+                                icon="sap-icon://inspect"
+                                text="Neue Nachricht"
+                                press=".openNewMessageDialog"
+                                enabled="{= ${detailView>status} === 'active' }"
+                                tooltip="{= (${detailView>status} !== 'active' ? 'Nur Schüler mit einer aktiven Beziehung können ein Nachricht erhalten' : 'Neue Nachricht an einen Schüler senden')}"
+                            />
+                        </OverflowToolbar>
+                    </headerToolbar>
+                    <content>
+                        <Table items="{detailView>/mails}">
+                            <columns>
+                                <Column>
+                                    <Text text="Betreff" />
+                                </Column>
+                                <Column>
+                                    <Text text="Versand Datum" />
+                                </Column>
+                                <Column>
+                                    <Text text="Inhalt" />
+                                </Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <Text
+                                            text="{detailView>content/subject}"
+                                        />
+                                        <Text
+                                            text="{path:'detailView>createdAt',formatter:'.formatter.formateDate'}"
+                                        />
+                                        <ExpandableText
+                                            text="{detailView>content/body}"
+                                            overflowMode="Popover"
+                                        />
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </content>
+                </Panel>
+                <Panel
+                    width="auto"
+                    class="sapUiResponsiveMargin"
+                    accessibleRole="Region"
+                    expandable="true"
+                    expand="true"
                 >
                     <headerToolbar>
                         <OverflowToolbar>
@@ -132,6 +186,8 @@
                     width="auto"
                     class="sapUiResponsiveMargin"
                     accessibleRole="Region"
+                    expandable="true"
+                    expand="true"
                 >
                     <headerToolbar>
                         <OverflowToolbar>

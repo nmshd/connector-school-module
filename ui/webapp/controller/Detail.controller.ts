@@ -1,4 +1,6 @@
 import axios from "axios";
+import Dialog from "sap/m/Dialog";
+import MessageBox from "sap/m/MessageBox";
 import { Route$MatchedEvent } from "sap/ui/core/routing/Route";
 import JSONModel from "sap/ui/model/json/JSONModel";
 import { Student } from "../../../src/types";
@@ -12,6 +14,7 @@ import BaseController from "./BaseController";
 export default class Detail extends BaseController {
     private id: string;
     private formatter = formatter;
+    private newMessageDialog: Dialog;
 
     public onInit(): void {
         const viewModel = new JSONModel({
@@ -70,6 +73,12 @@ export default class Detail extends BaseController {
             }
         });
         viewModel.setProperty("/files", filesResponse.data.result);
+        const mailsResponse = await axios.get(`/students/${this.id}/mails`, {
+            headers: {
+                "X-API-KEY": apiKey
+            }
+        });
+        viewModel.setProperty("/mails", mailsResponse.data.result);
 
         viewModel.setProperty("/busy", false);
     }
@@ -77,5 +86,53 @@ export default class Detail extends BaseController {
     public handleClose(): void {
         const nextLayout = this.getModel("appView").getProperty("/actionButtonsInfo/midColumn/closeColumn") as string;
         this.getRouter().navTo("master", { layout: nextLayout });
+    }
+
+    public async openNewMessageDialog(): Promise<void> {
+        this.newMessageDialog ??= (await this.loadFragment({
+            name: "eu.enmeshed.connectorui.view.fragments.NewMessageDialog"
+        })) as Dialog;
+        this.newMessageDialog.open();
+        this.newMessageDialog.setModel(
+            new JSONModel({
+                subject: "",
+                body: ""
+            }),
+            "messageModel"
+        );
+    }
+
+    public onCloseNewMessageDialog() {
+        this.newMessageDialog.close();
+    }
+    public async onNewMessageSend() {
+        this.newMessageDialog.setBusy(true);
+        const messageModel = this.newMessageDialog.getModel("messageModel");
+        const subject = messageModel.getProperty("/subject") as string;
+        const body = messageModel.getProperty("/body") as string;
+
+        try {
+            await axios.post(
+                `/students/${this.id}/mails`,
+                {
+                    body,
+                    subject
+                },
+                {
+                    headers: {
+                        "X-API-KEY": this.getOwnerComponent().getApiKey()
+                    }
+                }
+            );
+        } catch (e: unknown) {
+            if (axios.isAxiosError(e)) {
+                MessageBox.error("Fehler beim Hochladen des Zeugnisses.", {
+                    details: JSON.stringify(e.response.data)
+                });
+            }
+        }
+        this.newMessageDialog.setBusy(false);
+        this.newMessageDialog.close();
+        await this.onRefresh();
     }
 }
