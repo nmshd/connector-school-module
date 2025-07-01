@@ -1,0 +1,38 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:u="sap.ui.unified"
+>
+    <Dialog
+        id="newMessageDialog"
+        title="Neue Nachricht"
+        class="sapUiContentPadding"
+    >
+        <content>
+            <Input
+                id="newMessageInput"
+                placeholder="Betreff eingeben..."
+                value="{messageModel>/subject}"
+            />
+            <TextArea
+                id="newMessageBody"
+                placeholder="Nachrichtentext eingeben..."
+                rows="10"
+                width="100%"
+                value="{messageModel>/body}"
+            />
+        </content>
+        <beginButton>
+            <Button
+                text="Schließen"
+                press=".onCloseNewMessageDialog"
+            />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Nachricht versenden"
+                press=".onNewMessageSend"
+            />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>
