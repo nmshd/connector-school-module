@@ -80,7 +80,7 @@
                     class="sapUiResponsiveMargin"
                     accessibleRole="Region"
                     expandable="true"
-                    expand="true"
+                    expanded="true"
                 >
                     <headerToolbar>
                         <OverflowToolbar>
@@ -132,7 +132,7 @@
                     class="sapUiResponsiveMargin"
                     accessibleRole="Region"
                     expandable="true"
-                    expand="true"
+                    expanded="true"
                 >
                     <headerToolbar>
                         <OverflowToolbar>
@@ -187,7 +187,7 @@
                     class="sapUiResponsiveMargin"
                     accessibleRole="Region"
                     expandable="true"
-                    expand="true"
+                    expanded="true"
                 >
                     <headerToolbar>
                         <OverflowToolbar>

@@ -19,7 +19,7 @@ import AppComponent from "../Component";
  */
 export default abstract class BaseController extends Controller {
     private studentZeugnisDialog: Dialog;
-    private zeugnisFile: Blob;
+    private zeugnisFile: File;
     /**
      * Convenience method for accessing the component of the controller's view.
      * @returns The component of the controller's view
@@ -89,7 +89,7 @@ export default abstract class BaseController extends Controller {
     }
 
     public onZeugnisFileChanged(event: FileUploader$ChangeEvent) {
-        this.zeugnisFile = event.getParameter("files")[0] as Blob;
+        this.zeugnisFile = event.getParameter("files")[0] as File;
     }
 
     public async onDownloadPdf(event: Button$PressEvent, modelName: string): Promise<void> {
@@ -136,13 +136,14 @@ export default abstract class BaseController extends Controller {
         const studentId = this.studentZeugnisDialog.getModel("studentModel").getProperty("/id") as number;
         reader.onload = async (event) => {
             const dataUrl = event.target.result as string;
-
             const base64 = dataUrl.split(",")[1];
             try {
                 await axios.post(
                     `/students/${studentId}/files/abiturzeugnis`,
                     {
-                        file: base64
+                        file: base64,
+                        filename: this.zeugnisFile.name,
+                        ...this.getModel("config").getProperty("/sendDefaults")
                     },
                     {
                         headers: {
