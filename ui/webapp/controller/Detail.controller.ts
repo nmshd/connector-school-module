@@ -43,13 +43,18 @@ export default class Detail extends BaseController {
         if (!apiKey) {
             return;
         }
-        const student = await axios.get<{ result: Student }>("/students/" + this.id, {
-            headers: {
-                "X-API-KEY": apiKey
-            }
-        });
+        try {
+            const student = await axios.get<{ result: Student }>("/students/" + this.id, {
+                headers: {
+                    "X-API-KEY": apiKey
+                }
+            });
 
-        viewModel.setProperty("/detailStudent", student.data.result);
+            viewModel.setProperty("/detailStudent", student.data.result);
+        } catch (e: unknown) {
+            this.getRouter().navTo("master");
+            return;
+        }
 
         const response = await axios.get(`/students/${this.id}/onboarding`, {
             headers: {

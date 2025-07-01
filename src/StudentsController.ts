@@ -525,9 +525,8 @@ export class StudentsController {
     }
 
     public async getMails(student: Student): Promise<MessageDTO[]> {
-        if (!student.correspondingRelationshipId) {
-            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
-        }
+        if (!student.correspondingRelationshipId) return [];
+
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
         if (relationship.isError) throw relationship.error;
 

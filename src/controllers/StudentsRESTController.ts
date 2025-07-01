@@ -108,8 +108,8 @@ export class StudentsRESTController extends BaseController {
         }
 
         const studentCSVSchema = z.object({
-            firstName: z.string(),
-            lastName: z.string(),
+            givenname: z.string(),
+            surname: z.string(),
             id: z.number(),
             emailPrivate: z.string(),
             emailSchool: z.string(),
@@ -122,8 +122,8 @@ export class StudentsRESTController extends BaseController {
             .map((line) => {
                 const values = line.split(";");
                 return studentCSVSchema.safeParse({
-                    firstName: values[0] && JSON.parse(values[0]),
-                    lastName: values[1] && JSON.parse(values[1]),
+                    givenname: values[0] && JSON.parse(values[0]),
+                    surname: values[1] && JSON.parse(values[1]),
                     id: values[2] && JSON.parse(values[2]),
                     emailPrivate: values[3] && JSON.parse(values[3]),
                     emailSchool: values[4] && JSON.parse(values[4]),
@@ -152,44 +152,45 @@ export class StudentsRESTController extends BaseController {
                 .join("\n");
         }
 
-        const studentsArray = [];
-        for (const studentToCreate of studentsToCreate) {
-            let student = await this.studentsController.getStudent(studentToCreate.id.toString());
-            let pin = undefined;
-            let status = "onboarding";
-            let link = "";
-            if (!student) {
-                student = await this.studentsController.createStudent({
-                    id: studentToCreate.id.toString(),
-                    givenname: studentToCreate.firstName,
-                    surname: studentToCreate.lastName,
-                    emailPrivate: studentToCreate.emailPrivate,
-                    emailSchool: studentToCreate.emailSchool,
-                    additionalConsents: data.options.createDefaults.additionalConsents,
-                    pin: studentToCreate.pin
+        const studentsArray: (z.infer<typeof studentCSVSchema> & { status: string; link: string })[] = [];
+
+        await Promise.all(
+            studentsToCreate.map(async (studentToCreate) => {
+                let student = await this.studentsController.getStudent(studentToCreate.id.toString());
+                let pin = undefined;
+                let status = "onboarding";
+                let link = "";
+                if (!student) {
+                    student = await this.studentsController.createStudent({
+                        id: studentToCreate.id.toString(),
+                        givenname: studentToCreate.givenname,
+                        surname: studentToCreate.surname,
+                        emailPrivate: studentToCreate.emailPrivate,
+                        emailSchool: studentToCreate.emailSchool,
+                        additionalConsents: data.options.createDefaults.additionalConsents,
+                        pin: studentToCreate.pin
+                    });
+                    pin = student.pin ?? "";
+                    link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
+                } else if (student.correspondingRelationshipId) {
+                    status = "active";
+                    pin = "";
+                } else if (student.correspondingRelationshipTemplateId) {
+                    pin = (await this.studentsController.getStudentPin(student)) ?? "";
+                    link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
+                } else {
+                    status = "deleted";
+                    pin = "";
+                }
+                studentCSV = updatePinInCSV(studentCSV, studentToCreate.id.toString(), status, pin, link);
+                studentsArray.push({
+                    ...studentToCreate,
+                    status,
+                    pin,
+                    link
                 });
-                pin = student.pin ?? "";
-                link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
-            } else if (student.correspondingRelationshipId) {
-                status = "active";
-                pin = "";
-            } else if (student.correspondingRelationshipTemplateId) {
-                pin = (await this.studentsController.getStudentPin(student)) ?? "";
-                link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
-            } else {
-                status = "deleted";
-                pin = "";
-            }
-            studentCSV = updatePinInCSV(studentCSV, studentToCreate.id.toString(), status, pin, link);
-            studentsArray.push({
-                ...studentToCreate,
-                givenname: studentToCreate.firstName,
-                surname: studentToCreate.lastName,
-                status,
-                pin,
-                link
-            });
-        }
+            })
+        );
         const csvSplit = studentCSV.split("\n");
         csvSplit[0] = `${csvSplit[0]};"PIN";"Status";"Link"`;
         studentCSV = csvSplit.join("\n");

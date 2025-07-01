@@ -136,6 +136,7 @@ export default abstract class BaseController extends Controller {
         const studentId = this.studentZeugnisDialog.getModel("studentModel").getProperty("/id") as number;
         reader.onload = async (event) => {
             const dataUrl = event.target.result as string;
+
             const base64 = dataUrl.split(",")[1];
             try {
                 await axios.post(
