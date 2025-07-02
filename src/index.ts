@@ -61,6 +61,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
         this.runtime.infrastructure.httpServer.addMiddleware("/", false, (req, res, next) => {
             helmet({
+                strictTransportSecurity: false,
                 contentSecurityPolicy: {
                     directives: {
                         defaultSrc: ["'self'"],
