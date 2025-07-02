@@ -5,6 +5,9 @@ export interface StudentJSON {
     id: string;
     givenname?: string;
     surname?: string;
+    pin?: string;
+    emailSchool?: string;
+    emailPrivate?: string;
     correspondingRelationshipTemplateId?: string;
     correspondingRelationshipId?: string;
 }
@@ -13,6 +16,9 @@ export interface IStudent extends ISerializable {
     id: ICoreId;
     givenname?: string;
     surname?: string;
+    pin?: string;
+    emailSchool?: string;
+    emailPrivate?: string;
     correspondingRelationshipTemplateId?: ICoreId;
     correspondingRelationshipId?: ICoreId;
 }
@@ -29,6 +35,18 @@ export class Student extends Serializable implements IStudent {
     @serialize()
     @validate({ nullable: true })
     public surname?: string;
+
+    @serialize()
+    @validate({ nullable: true })
+    public pin?: string;
+
+    @serialize()
+    @validate({ nullable: true })
+    public emailSchool?: string;
+
+    @serialize()
+    @validate({ nullable: true })
+    public emailPrivate?: string;
 
     @serialize()
     @validate({ nullable: true })
