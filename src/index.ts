@@ -1,7 +1,7 @@
 import { IDatabaseConnection } from "@js-soft/docdb-access-abstractions";
 import { MongoDbConnection } from "@js-soft/docdb-access-mongo";
 import { sleep } from "@js-soft/ts-utils";
-import { ConnectorRuntimeModule, ConnectorRuntimeModuleConfiguration } from "@nmshd/connector-types";
+import { ConnectorRuntimeModule, ConnectorRuntimeModuleBuildInformation, ConnectorRuntimeModuleConfiguration } from "@nmshd/connector-types";
 import { LocalAttributeJSON } from "@nmshd/consumption";
 import { DisplayNameJSON } from "@nmshd/content";
 import { CoreId } from "@nmshd/core-types";
@@ -12,6 +12,7 @@ import helmet from "helmet";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { StudentsController } from "./StudentsController";
+import { buildInformation } from "./buildInformation";
 
 const schoolModuleConfigurationSchema = z.object({
     database: z
@@ -163,5 +164,9 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
     public async stop(): Promise<void> {
         await this.#dbConnection?.close();
+    }
+
+    public override getBuildInformation(): ConnectorRuntimeModuleBuildInformation {
+        return buildInformation;
     }
 }

@@ -185,3 +185,13 @@ tasks:
       - "xh -b GET localhost:8099/students/{{.STUDENT_ID}}/log?verbose=true 'X-API-KEY: test' 'Accept: application/json' | jq"
     requires:
       vars: [STUDENT_ID]
+
+  support-info:
+    desc: Get the audit log for a student
+    cmds:
+      - "xh -b GET localhost:8099/monitoring/version 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' 'Accept: application/json' | jq"
+
+  school-version:
+    desc: Get the audit log for a student
+    cmds:
+      - "xh -b GET localhost:8099/students/version 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' 'Accept: application/json' | jq"

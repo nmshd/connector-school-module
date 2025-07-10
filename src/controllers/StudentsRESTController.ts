@@ -6,6 +6,7 @@ import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, P
 import express from "express";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
+import { buildInformation } from "../buildInformation";
 import { StudentsController } from "../StudentsController";
 import { Student, StudentAuditLog, StudentOnboardingDTO } from "../types";
 import {
@@ -22,6 +23,13 @@ import {
 export class StudentsRESTController extends BaseController {
     public constructor(@Inject private readonly studentsController: StudentsController) {
         super();
+    }
+
+    @GET
+    @Path("version")
+    @Accept("application/json")
+    public getVersion(): any {
+        return buildInformation;
     }
 
     @POST
