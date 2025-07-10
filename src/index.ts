@@ -8,7 +8,7 @@ import { CoreId } from "@nmshd/core-types";
 import { OutgoingRequestFromRelationshipCreationCreatedAndCompletedEvent, RelationshipChangedEvent, RelationshipStatus } from "@nmshd/runtime";
 import { Container, Scope } from "@nmshd/typescript-ioc";
 import { z } from "zod";
-import { fromError } from "zod-validation-error";
+import { fromError } from "zod-validation-error/v4";
 import { StudentsController } from "./StudentsController";
 import { buildInformation } from "./buildInformation";
 
