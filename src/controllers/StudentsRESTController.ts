@@ -19,8 +19,8 @@ export class StudentsRESTController extends BaseController {
     @GET
     @Path("version")
     @Accept("application/json")
-    public getVersion(): Envelope {
-        return this.ok(Result.ok(buildInformation));
+    public getVersion(): any {
+        return buildInformation;
     }
 
     @POST
