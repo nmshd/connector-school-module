@@ -1,6 +1,6 @@
 ARG CONNECTOR_VERSION=non-existing-default-tag
 
-FROM node:23.10.0 AS module-builder
+FROM node:24.4.0 AS module-builder
 
 WORKDIR /usr/app
 
