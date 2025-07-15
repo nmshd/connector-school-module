@@ -24,14 +24,14 @@ export const createStudentRequestSchema = z.object({
 export const createStudentOnboardingPDFSchema = z.object({
     logo: z
         .object({
-            bytes: z.string().base64().optional(),
+            bytes: z.base64().optional(),
             x: z.number().min(0).optional(),
             y: z.number().min(0).optional(),
             maxWidth: z.number().min(0).optional(),
             maxHeight: z.number().min(0).optional()
         })
         .optional(),
-    fields: z.record(z.string()).optional()
+    fields: z.record(z.string(), z.string()).optional()
 });
 
 export const sendMailRequestSchema = z.object({
@@ -50,7 +50,7 @@ export const sendFileRequestSchema = z.object({
 });
 
 export const sendAbiturzeugnisRequestSchema = z.object({
-    file: z.string().base64(),
+    file: z.base64(),
     title: z.string().min(5).max(255).optional(),
     filename: z.string().min(5).max(255).optional(),
     mimetype: z.string().optional(),
