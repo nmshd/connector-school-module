@@ -4,7 +4,7 @@ import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
 import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, POST, QueryParam } from "@nmshd/typescript-rest";
 import express from "express";
-import { fromError } from "zod-validation-error/v4";
+import { fromError } from "zod-validation-error";
 import { buildInformation } from "../buildInformation";
 import { StudentsController } from "../StudentsController";
 import { Student, StudentAuditLog, StudentOnboardingDTO } from "../types";
