@@ -273,7 +273,7 @@ export class StudentsRESTController extends BaseController {
     }
 
     @POST
-    @Path("SentCertificateNotifications")
+    @Path("SendCertificateNotifications")
     @Accept("application/json")
     public async sendCertificateNotifications(body: any): Promise<void> {
         const validationResult = z.object({ ids: z.array(z.string()).optional() }).safeParse(body);
