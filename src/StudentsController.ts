@@ -684,7 +684,7 @@ export class StudentsController {
             return Result.fail(new ApplicationError("error.schoolModule.noActiveRelationship", "One or more students have no active relationship."));
         }
 
-        const code = "test"; // "mbr.schoolModule.certificateNotification";
+        const code = "mbr.schoolModule.certificateNotification";
         const recipients = relationships.map((relationship) => relationship.peer);
 
         const result = await this.services.transportServices.backboneNotifications.sendBackboneNotification({ recipients, code });
