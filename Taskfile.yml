@@ -163,6 +163,11 @@ tasks:
     requires:
       vars: [STUDENT_ID]
 
+  send-certificate-notifications:
+    desc: Call the send-certificate-notifications endpoint
+    cmds:
+      - "echo -n '{}' | xh -b POST localhost:8099/students/SendCertificateNotifications X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq"
+
   audit-log:
     desc: Get the audit log for a student
     cmds:
