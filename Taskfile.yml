@@ -37,30 +37,30 @@ tasks:
   create-student:
     desc: Call the create-student endpoint
     cmds:
-      - 'echo -n ''{"id": "{{.STUDENT_ID}}", "pin": "1234", "givenname": "Max", "surname": "Mustermann", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:test | jq'
+      - 'echo -n ''{"id": "{{.STUDENT_ID}}", "pin": "1234", "givenname": "Max", "surname": "Mustermann", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
     requires:
       vars: [STUDENT_ID]
 
   create-students:
     desc: Call the create-student endpoint
     cmds:
-      - 'echo -n ''{"id": "101", "pin": "1234", "givenname": "Max1", "surname": "Mustermann1", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:test | jq'
-      - 'echo -n ''{"id": "102", "pin": "1234", "givenname": "Max2", "surname": "Mustermann2", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:test | jq'
-      - 'echo -n ''{"id": "103", "pin": "1234", "givenname": "Max3", "surname": "Mustermann3", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:test | jq'
-      - 'echo -n ''{"id": "104", "pin": "1234", "givenname": "Max4", "surname": "Mustermann4", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:test | jq'
-      - 'echo -n ''{"id": "105", "pin": "1234", "givenname": "Max5", "surname": "Mustermann5", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:test | jq'
+      - 'echo -n ''{"id": "101", "pin": "1234", "givenname": "Max1", "surname": "Mustermann1", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
+      - 'echo -n ''{"id": "102", "pin": "1234", "givenname": "Max2", "surname": "Mustermann2", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
+      - 'echo -n ''{"id": "103", "pin": "1234", "givenname": "Max3", "surname": "Mustermann3", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
+      - 'echo -n ''{"id": "104", "pin": "1234", "givenname": "Max4", "surname": "Mustermann4", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
+      - 'echo -n ''{"id": "105", "pin": "1234", "givenname": "Max5", "surname": "Mustermann5", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
 
   get-onboarding-pdf:
     desc: Gets the onboarding document as PDF
     cmds:
-      - "xh --download localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf 'X-API-KEY: test'"
+      - "xh --download localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'"
     requires:
       vars: [STUDENT_ID]
 
   create-onboarding-pdf-with-custom-png-logo:
     desc: Gets the onboarding document as PDF
     cmds:
-      - 'echo -n ''{"logo": {"bytes": "{{.LOGO_BASE64}}"}}'' | xh -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf X-API-KEY:test > {{ .STUDENT_ID }}_onboarding.pdf'
+      - 'echo -n ''{"logo": {"bytes": "{{.LOGO_BASE64}}"}}'' | xh -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ > {{ .STUDENT_ID }}_onboarding.pdf'
     requires:
       vars: [STUDENT_ID]
     vars:
@@ -70,7 +70,7 @@ tasks:
   create-onboarding-pdf-with-custom-values:
     desc: Gets the onboarding document as PDF
     cmds:
-      - 'echo -n ''{ "logo": { "bytes": "{{.LOGO_BASE64}}", "x": 15, "y": 15, "maxWidth": 50, "maxHeight": 50 }, "fields": { "salutation": "Moin {{"{{"}}student.givenname{{"}}"}}," } }'' | xh -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf X-API-KEY:test > {{ .STUDENT_ID }}_onboarding.pdf'
+      - 'echo -n ''{ "logo": { "bytes": "{{.LOGO_BASE64}}", "x": 15, "y": 15, "maxWidth": 50, "maxHeight": 50 }, "fields": { "salutation": "Moin {{"{{"}}student.givenname{{"}}"}}," } }'' | xh -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ > {{ .STUDENT_ID }}_onboarding.pdf'
     requires:
       vars: [STUDENT_ID]
     vars:
@@ -80,7 +80,7 @@ tasks:
   create-onboarding-pdf-with-custom-jpg-logo:
     desc: Gets the onboarding document as PDF
     cmds:
-      - 'echo -n ''{"logo": {"bytes": "{{.LOGO_BASE64}}"}}'' | xh -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf X-API-KEY:test > {{ .STUDENT_ID }}_onboarding.pdf'
+      - 'echo -n ''{"logo": {"bytes": "{{.LOGO_BASE64}}"}}'' | xh -b POST localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:application/pdf X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ > {{ .STUDENT_ID }}_onboarding.pdf'
     requires:
       vars: [STUDENT_ID]
     vars:
@@ -90,21 +90,21 @@ tasks:
   get-onboarding-png:
     desc: Gets the onboarding document as PNG
     cmds:
-      - "xh --download localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:image/png 'X-API-KEY: test'"
+      - "xh --download localhost:8099/students/{{ .STUDENT_ID }}/onboarding Accept:image/png 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+'"
     requires:
       vars: [STUDENT_ID]
 
   get-onboarding-link:
     desc: Gets the onboarding document as link
     cmds:
-      - "xh -b GET localhost:8099/students/{{ .STUDENT_ID }}/onboarding 'X-API-KEY: test' | jq -r .result.link"
+      - "xh -b GET localhost:8099/students/{{ .STUDENT_ID }}/onboarding 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq -r .result.link"
     requires:
       vars: [STUDENT_ID]
 
   get-onboarding-terminal:
     desc: Gets the onboarding document as a QR-Code in the terminal
     cmds:
-      - "xh -b GET localhost:8099/students/{{ .STUDENT_ID }}/onboarding 'X-API-KEY: test' | jq -r .result.link | qrencode -t ansiutf8"
+      - "xh -b GET localhost:8099/students/{{ .STUDENT_ID }}/onboarding 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq -r .result.link | qrencode -t ansiutf8"
     requires:
       vars: [STUDENT_ID]
 
@@ -119,31 +119,31 @@ tasks:
   get-student:
     desc: Call the get-student endpoint
     cmds:
-      - "xh -b GET localhost:8099/students/{{.STUDENT_ID}} 'X-API-KEY: test' | jq"
+      - "xh -b GET localhost:8099/students/{{.STUDENT_ID}} 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
     requires:
       vars: [STUDENT_ID]
 
   get-students:
     desc: Call the get-students endpoint
     cmds:
-      - "xh -b GET localhost:8099/students 'X-API-KEY: test' | jq"
+      - "xh -b GET localhost:8099/students 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
 
   delete-student:
     desc: Call the delete-student endpoint
     cmds:
-      - "xh -b DELETE localhost:8099/students/{{.STUDENT_ID}} 'X-API-KEY: test' | jq"
+      - "xh -b DELETE localhost:8099/students/{{.STUDENT_ID}} 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
 
   get-files:
     desc: Call the get-files endpoint
     cmds:
-      - "xh -b GET localhost:8099/students/{{.STUDENT_ID}}/files 'X-API-KEY: test' | jq"
+      - "xh -b GET localhost:8099/students/{{.STUDENT_ID}}/files 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' | jq"
     requires:
       vars: [STUDENT_ID]
 
   send-file:
     desc: Call the send-file endpoint
     cmds:
-      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "filename": "Abiturzeugnis.pdf", "title": "Abiturzeugnis", "mimetype": "application/pdf"}'' | xh -b POST localhost:8099/students/{{.STUDENT_ID}}/files X-API-KEY:test | jq'
+      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "filename": "Abiturzeugnis.pdf", "title": "Abiturzeugnis", "mimetype": "application/pdf"}'' | xh -b POST localhost:8099/students/{{.STUDENT_ID}}/files X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
     vars:
       FILE_BASE64:
         sh: "cat assets/Zeugnis.pdf | base64 -w 0"
@@ -153,7 +153,7 @@ tasks:
   send-degree:
     desc: Call the send-file endpoint
     cmds:
-      - 'echo -n ''{"file": "{{.FILE_BASE64}}"}'' | xh -b POST localhost:8099/students/{{.STUDENT_ID}}/files/abiturzeugnis X-API-KEY:test | jq'
+      - 'echo -n ''{"file": "{{.FILE_BASE64}}"}'' | xh -b POST localhost:8099/students/{{.STUDENT_ID}}/files/abiturzeugnis X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
     vars:
       FILE_BASE64:
         sh: "cat assets/Zeugnis.pdf | base64 -w 0"
@@ -163,7 +163,7 @@ tasks:
   send-degree-with-subject-and-body:
     desc: Call the send-file endpoint
     cmds:
-      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "messageSubject": "{{.SUBJECT}}", "messageBody": "{{.BODY}}"}'' | xh -b POST localhost:8099/students/{{.STUDENT_ID}}/files/abiturzeugnis X-API-KEY:test | jq'
+      - 'echo -n ''{"file": "{{.FILE_BASE64}}", "messageSubject": "{{.SUBJECT}}", "messageBody": "{{.BODY}}"}'' | xh -b POST localhost:8099/students/{{.STUDENT_ID}}/files/abiturzeugnis X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
     vars:
       FILE_BASE64:
         sh: "cat assets/Zeugnis.pdf | base64 -w 0"
@@ -180,14 +180,14 @@ tasks:
   audit-log:
     desc: Get the audit log for a student
     cmds:
-      - "xh -b GET localhost:8099/students/{{.STUDENT_ID}}/log 'X-API-KEY: test' 'Accept: test/plain'"
+      - "xh -b GET localhost:8099/students/{{.STUDENT_ID}}/log 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' 'Accept: test/plain'"
     requires:
       vars: [STUDENT_ID]
 
   audit-log-json:
     desc: Get the audit log for a student
     cmds:
-      - "xh -b GET localhost:8099/students/{{.STUDENT_ID}}/log?verbose=true 'X-API-KEY: test' 'Accept: application/json' | jq"
+      - "xh -b GET localhost:8099/students/{{.STUDENT_ID}}/log?verbose=true 'X-API-KEY: This_is_a_test_APIKEY_with_30_chars+' 'Accept: application/json' | jq"
     requires:
       vars: [STUDENT_ID]
 

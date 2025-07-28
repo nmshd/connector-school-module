@@ -34,13 +34,13 @@ To get started with development, follow these steps:
 1.  Clone the repository:
 
     ```bash
-    git clone git@github.com:js-soft/connector-ui-module.git
+    git clone git@github.com:nmshd/connector-school-module.git
     ```
 
 2.  Change into the repository directory:
 
     ```bash
-    cd connector-ui-module
+    cd connector-school-module
     ```
 
 3.  Prepare the environment:
