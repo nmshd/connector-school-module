@@ -664,7 +664,8 @@ export class StudentsController {
 
             students.push(...studentsWithPendingCertificateRequest);
         } else {
-            const recipients = (await Promise.all(data.ids.map((id) => this.getStudent(id)))).filter((recipient) => recipient !== undefined);
+            const idsWithoutDuplicates = Array.from(new Set(data.ids));
+            const recipients = (await Promise.all(idsWithoutDuplicates.map((id) => this.getStudent(id)))).filter((recipient) => recipient !== undefined);
             if (recipients.length !== data.ids.length) return Result.fail(new ApplicationError("error.schoolModule.studentNotFound", "One or more students were not found."));
 
             students.push(...recipients);
