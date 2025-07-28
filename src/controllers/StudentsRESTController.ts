@@ -4,7 +4,8 @@ import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
 import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, POST, QueryParam } from "@nmshd/typescript-rest";
 import express from "express";
-import { fromError } from "zod-validation-error/v4";
+import z from "zod";
+import { fromError } from "zod-validation-error";
 import { buildInformation } from "../buildInformation";
 import { StudentsController } from "../StudentsController";
 import { Student, StudentAuditLog, StudentOnboardingDTO } from "../types";
@@ -269,5 +270,17 @@ export class StudentsRESTController extends BaseController {
 
         const fileDTO = await this.studentsController.sendFile(student, data);
         return this.ok(Result.ok(fileDTO));
+    }
+
+    @POST
+    @Path("SendCertificateNotifications")
+    @Accept("application/json")
+    public async sendCertificateNotifications(body: any): Promise<void> {
+        const validationResult = z.object({ ids: z.array(z.string()).optional(), code: z.string().optional() }).safeParse(body);
+        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        const data = validationResult.data;
+
+        const result = await this.studentsController.sendCertificateNotifications(data);
+        return this.noContent(result);
     }
 }
