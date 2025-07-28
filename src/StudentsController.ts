@@ -656,7 +656,7 @@ export class StudentsController {
     public async sendCertificateNotifications(data: { ids?: string[]; code?: string }): Promise<Result<void>> {
         const students: Student[] = [];
 
-        if (data.ids?.length !== 0) {
+        if (!data.ids || data.ids.length === 0) {
             const studentsWithPendingCertificateRequest = await this.getStudentsWithPendingCertificateRequest();
             if (studentsWithPendingCertificateRequest.length === 0) {
                 return Result.fail(new ApplicationError("error.schoolModule.noPendingCertificateRequest", "There are no students with pending certificate requests."));
