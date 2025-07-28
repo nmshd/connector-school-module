@@ -895,4 +895,59 @@ export class StudentsController {
 
         return Result.ok(Buffer.from(await combinedPdf.save()));
     }
+
+    public async sendCertificateNotifications(data: { ids?: string[]; code?: string }): Promise<Result<void>> {
+        const students: Student[] = [];
+
+        if (!data.ids || data.ids.length === 0) {
+            const studentsWithPendingCertificateRequest = await this.getStudentsWithPendingCertificateRequest();
+            if (studentsWithPendingCertificateRequest.length === 0) {
+                return Result.fail(new ApplicationError("error.schoolModule.noPendingCertificateRequest", "There are no students with pending certificate requests."));
+            }
+
+            students.push(...studentsWithPendingCertificateRequest);
+        } else {
+            const idsWithoutDuplicates = Array.from(new Set(data.ids));
+            const recipients = (await Promise.all(idsWithoutDuplicates.map((id) => this.getStudent(id)))).filter((recipient) => recipient !== undefined);
+            if (recipients.length !== idsWithoutDuplicates.length) {
+                return Result.fail(new ApplicationError("error.schoolModule.studentNotFound", "One or more students were not found."));
+            }
+
+            students.push(...recipients);
+        }
+
+        if (students.some((student) => !student.correspondingRelationshipId)) {
+            return Result.fail(new ApplicationError("error.schoolModule.noRelationship", "You don't have a relationship to one or more students."));
+        }
+
+        const relationships = await Promise.all(
+            students.map(
+                async (recipient) => (await this.services.transportServices.relationships.getRelationship({ id: recipient.correspondingRelationshipId!.toString() })).value
+            )
+        );
+
+        if (relationships.some((relationship) => relationship.status !== RelationshipStatus.Active)) {
+            return Result.fail(new ApplicationError("error.schoolModule.noActiveRelationship", "You don't have an active relationship to one or more students."));
+        }
+
+        const code = data.code ?? "mbr.schoolModule.certificateNotification";
+        const recipients = relationships.map((relationship) => relationship.peer);
+
+        const result = await this.services.transportServices.backboneNotifications.sendBackboneNotification({ recipients, code });
+        return result;
+    }
+
+    private async getStudentsWithPendingCertificateRequest(): Promise<Student[]> {
+        const students = await this.getStudents();
+
+        const getStudentsWithPendingCertificateRequest = await Promise.all(
+            students.map(async (student) => {
+                const files = await this.getStudentFiles(student);
+                const hasPendingFileRequest = files.some((file) => file.status === "pending");
+                return hasPendingFileRequest ? student : undefined;
+            })
+        );
+
+        return getStudentsWithPendingCertificateRequest.filter((student) => student !== undefined);
+    }
 }

@@ -140,7 +140,6 @@ export default class Master extends BaseController {
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 MessageBox.error("Fehler beim Hinzufügen des Schülers.", {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                     details: error.response.data.error.message || "Unbekannter Fehler"
                 });
             }
@@ -261,7 +260,6 @@ export default class Master extends BaseController {
             console.error(error);
             if (axios.isAxiosError(error)) {
                 MessageBox.error("Während des Imports ist ein Fehler passiert.", {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                     details: error.response.data.error.message || "Unknown error"
                 });
                 return;
@@ -385,10 +383,10 @@ export default class Master extends BaseController {
 
     public onDeleteStudent(event: Button$PressEvent): void {
         MessageBox.confirm("Möchten Sie den Schüler wirklich löschen?", {
-            onClose: (action: string) => {
+            onClose: async (action: string) => {
                 if (action === "OK") {
                     const studentId = event.getSource().getBindingContext("studentModel").getProperty("id") as number;
-                    this.deleteStudent(studentId);
+                    await this.deleteStudent(studentId);
                 }
             }
         });

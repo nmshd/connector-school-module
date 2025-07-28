@@ -439,4 +439,16 @@ export class StudentsRESTController extends BaseController {
         const fileDTO = await this.studentsController.sendFile(student, data);
         return this.ok(Result.ok(fileDTO));
     }
+
+    @POST
+    @Path("SendCertificateNotifications")
+    @Accept("application/json")
+    public async sendCertificateNotifications(body: any): Promise<void> {
+        const validationResult = z.object({ ids: z.array(z.string()).optional(), code: z.string().optional() }).safeParse(body);
+        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        const data = validationResult.data;
+
+        const result = await this.studentsController.sendCertificateNotifications(data);
+        return this.noContent(result);
+    }
 }
