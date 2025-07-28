@@ -671,7 +671,7 @@ export class StudentsController {
         }
 
         if (students.some((student) => !student.correspondingRelationshipId)) {
-            return Result.fail(new ApplicationError("error.schoolModule.noRelationship", "One or more students have no relationship."));
+            return Result.fail(new ApplicationError("error.schoolModule.noRelationship", "You don't have a relationship to one or more students."));
         }
 
         const relationships = await Promise.all(
