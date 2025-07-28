@@ -276,7 +276,7 @@ export class StudentsRESTController extends BaseController {
     @Path("SendCertificateNotifications")
     @Accept("application/json")
     public async sendCertificateNotifications(body: any): Promise<void> {
-        const validationResult = z.object({ ids: z.array(z.string()).optional() }).safeParse(body);
+        const validationResult = z.object({ ids: z.array(z.string()).optional(), code: z.string().optional() }).safeParse(body);
         if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
         const data = validationResult.data;
 

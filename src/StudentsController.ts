@@ -653,7 +653,7 @@ export class StudentsController {
         };
     }
 
-    public async sendCertificateNotifications(data: { ids?: string[] }): Promise<Result<void>> {
+    public async sendCertificateNotifications(data: { ids?: string[]; code?: string }): Promise<Result<void>> {
         const students: Student[] = [];
 
         if (data.ids?.length !== 0) {
@@ -684,7 +684,7 @@ export class StudentsController {
             return Result.fail(new ApplicationError("error.schoolModule.noActiveRelationship", "One or more students have no active relationship."));
         }
 
-        const code = "mbr.schoolModule.certificateNotification";
+        const code = data.code ?? "mbr.schoolModule.certificateNotification";
         const recipients = relationships.map((relationship) => relationship.peer);
 
         const result = await this.services.transportServices.backboneNotifications.sendBackboneNotification({ recipients, code });
