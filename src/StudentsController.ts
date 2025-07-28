@@ -681,7 +681,7 @@ export class StudentsController {
         );
 
         if (relationships.some((relationship) => relationship.status !== RelationshipStatus.Active)) {
-            return Result.fail(new ApplicationError("error.schoolModule.noActiveRelationship", "One or more students have no active relationship."));
+            return Result.fail(new ApplicationError("error.schoolModule.noActiveRelationship", "You don't have an active relationship to one or more students."));
         }
 
         const code = data.code ?? "mbr.schoolModule.certificateNotification";
