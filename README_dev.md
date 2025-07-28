@@ -17,7 +17,6 @@
 
 The `Taskfile.yml` in this repository defines various tasks to help with the development and management of the custom Connector module. Here are the tasks defined:
 
-- **prepare**: Prepares the environment by installing necessary npm packages.
 - **build**: Builds the custom module after preparing the environment.
 - **watch**: Watches the custom module and rebuilds it on changes.
 - **up**: Starts the Connector using Docker Compose.
@@ -46,7 +45,7 @@ To get started with development, follow these steps:
 3.  Prepare the environment:
 
     ```bash
-    npm install
+    task build
     ```
 
     Copy the `.env.example` to `.env` and fill out the values
