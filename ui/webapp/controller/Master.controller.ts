@@ -374,8 +374,8 @@ export default class Master extends BaseController {
         });
     }
 
-    public onSendSelectedStudents(): void {
-        this.onOpenSelectMessageTemplateDialog();
+    public async onSendSelectedStudents(): Promise<void> {
+        await this.onOpenSelectMessageTemplateDialog();
     }
 
     public async onMessageTemplateSelected() {
