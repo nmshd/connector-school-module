@@ -55,6 +55,7 @@ export const batchOnboardingSchema = z.object({
             additionalConsents: z.array(z.object({ mustBeAccepted: z.boolean(), consent: z.string() }))
         }),
         sendDefaults: z.object({ messageBody: z.string() }),
+        messageTemplates: z.array(z.object({ templateKey: z.string(), templateName: z.string(), messageSubject: z.string(), messageBody: z.string() })),
         pdfDefaults: z.object({
             fields: z.object({
                 schoolname: z.string(),

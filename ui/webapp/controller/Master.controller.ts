@@ -5,6 +5,7 @@ import CheckBox from "sap/m/CheckBox";
 import Dialog from "sap/m/Dialog";
 import MessageBox from "sap/m/MessageBox";
 import Page from "sap/m/Page";
+import Select from "sap/m/Select";
 import DateFormat from "sap/ui/core/format/DateFormat";
 import Filter from "sap/ui/model/Filter";
 import FilterOperator from "sap/ui/model/FilterOperator";
@@ -22,6 +23,7 @@ import BaseController from "./BaseController";
 export default class Master extends BaseController {
     private addStudentsDialog: Dialog;
     private addStudentDialog: Dialog;
+    private selectMessageTemplateDialog: Dialog;
     private studentLogDialog: Dialog;
     private studentZeugnisDialog: Dialog;
     private studentQRDialog: Dialog;
@@ -49,7 +51,8 @@ export default class Master extends BaseController {
         this.setModel(
             new JSONModel({
                 selectedItemCount: 0,
-                globalFilter: ""
+                globalFilter: "",
+                messageTemplates: this.getModel("config").getProperty("/messageTemplates")
             }),
             "ui"
         );
@@ -169,6 +172,17 @@ export default class Master extends BaseController {
     public onCloseAddStudentDialog(): void {
         (this.addStudentDialog.getModel("addStudentModel") as JSONModel).setData({});
         (this.byId("addStudentDialog") as Dialog)?.close();
+    }
+
+    public async onOpenSelectMessageTemplateDialog(): Promise<void> {
+        this.selectMessageTemplateDialog ??= (await this.loadFragment({
+            name: "eu.enmeshed.connectorui.view.fragments.SelectMessageTemplateDialog"
+        })) as Dialog;
+        this.selectMessageTemplateDialog.open();
+    }
+
+    public onCloseSelectMessageTemplateDialog(): void {
+        (this.byId("selectMessageTemplateDialog") as Dialog)?.close();
     }
 
     public onCloseAddStudentsDialog(): void {
@@ -360,6 +374,45 @@ export default class Master extends BaseController {
         });
     }
 
+    public onSendSelectedStudents(): void {
+        this.onOpenSelectMessageTemplateDialog();
+    }
+
+    public async onMessageTemplateSelected() {
+        const messageTemplate = (this.byId("messageTemplateSelect") as Select).getSelectedKey();
+        if (!messageTemplate) {
+            MessageBox.error("Sie müssen eine Nachricht auswählen, die an die Schüler geschickt werden soll.");
+            return;
+        }
+        await this.sendMessageToSelectedStudents(messageTemplate);
+    }
+
+    public async sendMessageToSelectedStudents(messageTemplate: string) {
+        this.page.setBusy(true);
+        let count = 0;
+        try {
+            const table = this.byId("table") as Table;
+            const selectedIndices = table.getSelectedIndices();
+
+            const items = (table.getBinding() as ListBinding).getAllCurrentContexts();
+            for (const selectedIndex of selectedIndices) {
+                count = selectedIndices.length;
+                const item = items[selectedIndex];
+                if (!item) continue;
+                const studentId = item.getProperty("id");
+                await this.sendMessage(studentId, messageTemplate);
+            }
+            await this.loadStudents();
+            MessageBox.success(`${count} Nachrichten wurden erfolgreich versandt.`);
+        } catch (e: any) {
+            console.error(e);
+            MessageBox.error(`Beim Nachrichtversand zum Schülers ${e.studentId} ist ein Fehler aufgetreten.`);
+        } finally {
+            this.page.setBusy(false);
+            this.onCloseSelectMessageTemplateDialog();
+        }
+    }
+
     public async deleteSelectedStudents() {
         this.page.setBusy(true);
         try {
@@ -431,8 +484,36 @@ export default class Master extends BaseController {
                     resolve();
                 })
                 .catch((error) => {
-                    console.error("Error deleting student:", error);
-                    reject(error);
+                    console.error(`Error deleting student ${studentId}:`, error);
+                    reject({ studentId, error });
+                });
+        });
+    }
+
+    private async sendMessage(studentId: number, messageTemplate: string, reload: boolean = false): Promise<void> {
+        const templates = this.getModel("config").getProperty("/messageTemplates");
+        const templateContent = templates.find((x: any) => x.templateKey === messageTemplate);
+        return new Promise((resolve, reject) => {
+            axios
+                .post(
+                    `/students/${studentId}/mails`,
+                    {
+                        subject: templateContent.messageSubject,
+                        body: templateContent.messageBody
+                    },
+                    {
+                        headers: {
+                            "X-API-KEY": this.getOwnerComponent().getApiKey()
+                        }
+                    }
+                )
+                .then(async () => {
+                    if (reload) await this.loadStudents();
+                    resolve();
+                })
+                .catch((error) => {
+                    console.error(`Error sending message to student ${studentId}: `, error);
+                    reject({ studentId, messageTemplate, error });
                 });
         });
     }

@@ -87,6 +87,13 @@
                             press=".downloadStudents"
                         />
                         <Button
+                            icon="sap-icon://paper-plane"
+                            text="Nachricht schicken"
+                            press=".onSendSelectedStudents"
+                            tooltip="Sendet eine Nachricht an die selektierten Schüler"
+                            visible="{= ${ui>/selectedItemCount} > 0}"
+                        />
+                        <Button
                             icon="sap-icon://delete"
                             type="Reject"
                             text="Schüler löschen"
