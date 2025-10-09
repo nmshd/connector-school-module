@@ -45,24 +45,25 @@ To get started with development, follow these steps:
 
 3.  Copy the example.env file to .env and fill in the environment variables.
 
+4.  Prepare the environment:
 
     ```bash
     task prepare
     ```
 
-4.  Start the Connector:
+5.  Start the Connector:
 
     ```bash
     task up
     ```
 
-5.  Watch the custom module for changes:
+6.  Watch the custom module for changes:
 
     ```bash
     task watch
     ```
 
-6.  Make changes to the custom module and see the changes reflected in the Connector. Make sure to restart the Connector when finished:
+7.  Make changes to the custom module and see the changes reflected in the Connector. Make sure to restart the Connector when finished:
 
     ```bash
     task restart
