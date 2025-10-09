@@ -43,7 +43,7 @@ To get started with development, follow these steps:
     cd custom-connector-modules
     ```
 
-3.  Copy the example.env file to .env and fill in the environment variables.
+3.  Copy the `.env.example` file to `.env` and fill in the environment variables.
 
 4.  Prepare the environment:
 
