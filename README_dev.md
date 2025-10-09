@@ -43,7 +43,8 @@ To get started with development, follow these steps:
     cd custom-connector-modules
     ```
 
-3.  Prepare the environment:
+3.  Copy the example.env file to .env and fill in the environment variables.
+
 
     ```bash
     task prepare
