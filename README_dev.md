@@ -42,21 +42,21 @@ To get started with development, follow these steps:
     cd connector-school-module
     ```
 
-3.  Prepare the environment:
+3.  Copy the `.env.example` file to `.env` and fill in the environment variables.
+
+4.  Prepare the environment:
 
     ```bash
     task build
     ```
 
-    Copy the `.env.example` to `.env` and fill out the values
-
-4.  Start the Connector:
+5.  Start the Connector:
 
     ```bash
     task up
     ```
 
-5.  Watch the custom module for changes:
+6.  Watch the custom module for changes:
 
     ```bash
     task watch
@@ -64,7 +64,7 @@ To get started with development, follow these steps:
 
     this might already run when the vscode task extension is installed (check you console)
 
-6.  Start the ui
+7.  Start the ui
 
     ```bash
     cd ui
@@ -73,7 +73,7 @@ To get started with development, follow these steps:
 
     The ui is now running on "http://localhost:8080"
 
-7.  (Optional) Add students to you connector
+8.  (Optional) Add students to you connector
 
     To create one new student you can use:
 
