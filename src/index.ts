@@ -32,9 +32,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
         const dbConnection = await this.getOrCreateDbConnection();
 
-        const database = await dbConnection.getDatabase(
-            this.configuration.database?.dbName ?? `${this.runtime.runtimeConfig.database.dbNamePrefix}${this.runtime.runtimeConfig.database.dbName}`
-        );
+        const database = await dbConnection.getDatabase(this.configuration.database?.dbName ?? this.runtime.runtimeConfig.database.dbName);
 
         const displayName = await this.getOrCreateDisplayNameAttribute();
         this.#studentsController = await new StudentsController(
