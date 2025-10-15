@@ -1,0 +1,46 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:f="sap.ui.layout.form"
+>
+    <Dialog
+        id="selectMessageTemplateDialog"
+        title="Nachricht an Schüler senden"
+        class="sapUiContentPadding"
+    >
+        <content>
+            <Text
+                text="Bitte wählen Sie die Nachricht aus, die an die {ui>/selectedItemCount} Schüler gesendet werden soll."
+                class="sapUiNoMarginBottom" />
+            <f:SimpleForm
+                id="sendStudentForm"
+                editable="true"
+                layout="ResponsiveGridLayout"
+            >
+                <f:content>
+                    <Label text="Nachricht" />
+                    <Select id="messageTemplateSelect"
+                        forceSelection="false"
+                        items="{
+                            path: 'ui>/messageTemplates',
+                            sorter: { path: 'templateName' }
+                        }">
+                        <core:Item key="{ui>templateKey}" text="{ui>templateName}" />
+                    </Select>
+                </f:content>
+            </f:SimpleForm>
+        </content>
+        <beginButton>
+            <Button
+                text="Schließen"
+                press=".onCloseSelectMessageTemplateDialog"
+            />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Nachricht senden"
+                press=".onMessageTemplateSelected"
+            />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

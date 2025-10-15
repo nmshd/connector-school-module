@@ -41,6 +41,15 @@ tasks:
     requires:
       vars: [STUDENT_ID]
 
+  create-students:
+    desc: Call the create-student endpoint
+    cmds:
+      - 'echo -n ''{"id": "101", "pin": "1234", "givenname": "Max1", "surname": "Mustermann1", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
+      - 'echo -n ''{"id": "102", "pin": "1234", "givenname": "Max2", "surname": "Mustermann2", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
+      - 'echo -n ''{"id": "103", "pin": "1234", "givenname": "Max3", "surname": "Mustermann3", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
+      - 'echo -n ''{"id": "104", "pin": "1234", "givenname": "Max4", "surname": "Mustermann4", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
+      - 'echo -n ''{"id": "105", "pin": "1234", "givenname": "Max5", "surname": "Mustermann5", "additionalConsents": [{"consent": "A Consent Bla", "link": "https://example.com"}]}'' | xh -b POST localhost:8099/students X-API-KEY:This_is_a_test_APIKEY_with_30_chars+ | jq'
+
   get-onboarding-pdf:
     desc: Gets the onboarding document as PDF
     cmds:

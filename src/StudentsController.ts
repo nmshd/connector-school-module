@@ -15,13 +15,16 @@ import {
 } from "@nmshd/content";
 import { CoreDate, CoreId } from "@nmshd/core-types";
 import { LocalRequestDTO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
+import fontkit from "@pdf-lib/fontkit";
+import excelJS from "exceljs";
+import { json2csv } from "json-2-csv";
 import { DateTime } from "luxon";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
 import { PDFDocument, PDFImage } from "pdf-lib";
 import qrCodeLib from "qrcode";
-import { PDFLogoSettings, PDFSettings, SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
+import { PDFLogoSettings, PDFSettings, PDFSettingsWithStudentFilter, SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
 import { getFileTypeForBuffer } from "./utils/getFileTypeForBuffer";
 
 export class StudentsController {
@@ -46,7 +49,14 @@ export class StudentsController {
         givenname: string;
         surname: string;
         pin?: string;
-        additionalConsents: { mustBeAccepted?: boolean; consent: string; link?: string; linkDisplayText?: string }[];
+        emailSchool?: string;
+        emailPrivate?: string;
+        additionalConsents: {
+            mustBeAccepted?: boolean;
+            consent: string;
+            link?: string;
+            linkDisplayText?: string;
+        }[];
     }): Promise<Student> {
         const identityInfo = await this.services.transportServices.account.getIdentityInfo();
 
@@ -86,14 +96,34 @@ export class StudentsController {
                     items: [
                         {
                             "@type": "ProposeAttributeRequestItem",
-                            attribute: { "@type": "IdentityAttribute", owner: "", value: { "@type": "GivenName", value: data.givenname } },
-                            query: { "@type": "IdentityAttributeQuery", valueType: "GivenName" },
+                            attribute: {
+                                "@type": "IdentityAttribute",
+                                owner: "",
+                                value: {
+                                    "@type": "GivenName",
+                                    value: data.givenname
+                                }
+                            },
+                            query: {
+                                "@type": "IdentityAttributeQuery",
+                                valueType: "GivenName"
+                            },
                             mustBeAccepted: true
                         },
                         {
                             "@type": "ProposeAttributeRequestItem",
-                            attribute: { "@type": "IdentityAttribute", owner: "", value: { "@type": "Surname", value: data.surname } },
-                            query: { "@type": "IdentityAttributeQuery", valueType: "Surname" },
+                            attribute: {
+                                "@type": "IdentityAttribute",
+                                owner: "",
+                                value: {
+                                    "@type": "Surname",
+                                    value: data.surname
+                                }
+                            },
+                            query: {
+                                "@type": "IdentityAttributeQuery",
+                                valueType: "Surname"
+                            },
                             mustBeAccepted: true
                         }
                     ]
@@ -117,12 +147,29 @@ export class StudentsController {
 
         const template = await this.services.transportServices.relationshipTemplates.createOwnRelationshipTemplate({
             maxNumberOfAllocations: 1,
-            content: { "@type": "RelationshipTemplateContent", onNewRelationship: request } satisfies RelationshipTemplateContentJSON,
+            content: {
+                "@type": "RelationshipTemplateContent",
+                onNewRelationship: request
+            } satisfies RelationshipTemplateContentJSON,
             expiresAt: CoreDate.utc().add({ years: 1 }).toISOString(),
-            passwordProtection: data.pin ? { password: data.pin, passwordIsPin: true, passwordLocationIndicator: "Email" } : undefined
+            passwordProtection: data.pin
+                ? {
+                      password: data.pin,
+                      passwordIsPin: true,
+                      passwordLocationIndicator: "Email"
+                  }
+                : undefined
         });
 
-        const student = Student.from({ id: data.id, givenname: data.givenname, surname: data.surname, correspondingRelationshipTemplateId: template.value.id });
+        const student = Student.from({
+            id: data.id,
+            givenname: data.givenname,
+            surname: data.surname,
+            pin: data.pin,
+            emailPrivate: data.emailPrivate,
+            emailSchool: data.emailSchool,
+            correspondingRelationshipTemplateId: template.value.id
+        });
 
         await this.#studentsCollection.create(student.toJSON());
 
@@ -273,8 +320,14 @@ export class StudentsController {
             );
         }
 
+        const pathToFont = path.resolve("bundled_assets/NotoSans/NotoSans-Regular.ttf");
+        const fontBytes = await fs.promises.readFile(pathToFont);
+
         const formPdfBytes = await fs.promises.readFile(pathToPdf);
         const pdfDoc = await PDFDocument.load(formPdfBytes);
+
+        pdfDoc.registerFontkit(fontkit);
+        const formFont = await pdfDoc.embedFont(fontBytes);
 
         const qrImage = await pdfDoc.embedPng(pngAsBuffer);
         const form = pdfDoc.getForm();
@@ -302,6 +355,7 @@ export class StudentsController {
         await this.embedImage(pdfDoc, settings.logo);
 
         try {
+            form.updateFieldAppearances(formFont);
             form.flatten();
         } catch (error) {
             if (error instanceof Error && error.message.includes("WinAnsi cannot encode")) {
@@ -352,11 +406,15 @@ export class StudentsController {
     }
 
     private async getImage(pdfDoc: PDFDocument, schoolLogoBase64?: string) {
-        if (schoolLogoBase64 === undefined) return await this.getAssetImage(pdfDoc);
+        if (schoolLogoBase64 === undefined) {
+            return await this.getAssetImage(pdfDoc);
+        }
 
         const bytes = Buffer.from(schoolLogoBase64, "base64");
         const filetype = getFileTypeForBuffer(bytes);
-        if (!filetype) throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
+        if (!filetype) {
+            throw new ApplicationError("error.schoolModule.onboardingInvalidLogo", "The logo is not a valid PNG or JPG file. Please check the logo and try again.");
+        }
 
         switch (filetype) {
             case "png":
@@ -467,11 +525,18 @@ export class StudentsController {
     }
 
     public async getMails(student: Student): Promise<MessageDTO[]> {
-        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        if (!student.correspondingRelationshipId) {
+            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        }
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
         if (relationship.isError) throw relationship.error;
 
-        const result = await this.services.transportServices.messages.getMessages({ query: { participant: relationship.value.peer, "content.@type": "Mail" } });
+        const result = await this.services.transportServices.messages.getMessages({
+            query: {
+                participant: relationship.value.peer,
+                "content.@type": "Mail"
+            }
+        });
         return result.value;
     }
 
@@ -498,8 +563,12 @@ export class StudentsController {
     }
 
     public async sendMail(student: Student, rawSubject: string, rawBody: string, additionalData: any = {}): Promise<MessageDTO> {
-        if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
-        if (!student.correspondingRelationshipTemplateId) throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
+        if (!student.correspondingRelationshipId) {
+            throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+        }
+        if (!student.correspondingRelationshipTemplateId) {
+            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
+        }
 
         const subject = await this.fillTemplateStringWithStudentAndOrganizationData(student, rawSubject, additionalData);
         const body = await this.fillTemplateStringWithStudentAndOrganizationData(student, rawBody, additionalData);
@@ -508,7 +577,12 @@ export class StudentsController {
 
         const result = await this.services.transportServices.messages.sendMessage({
             recipients: [relationship.value.peer],
-            content: { "@type": "Mail", to: [relationship.value.peer], subject, body }
+            content: {
+                "@type": "Mail",
+                to: [relationship.value.peer],
+                subject,
+                body
+            }
         });
 
         return result.value;
@@ -538,6 +612,7 @@ export class StudentsController {
         data: { file: string; title: string; filename: string; mimetype: string; tags?: string[] | undefined; messageSubject?: string; messageBody?: string }
     ): Promise<SchoolFileDTO> {
         if (!student.correspondingRelationshipId) throw new ApplicationError("error.schoolModule.noRelationship", "The student has no relationship.");
+
         const relationship = await this.services.transportServices.relationships.getRelationship({ id: student.correspondingRelationshipId.toString() });
 
         const title = await this.fillTemplateStringWithStudentAndOrganizationData(student, data.title);
@@ -651,6 +726,174 @@ export class StudentsController {
             fileSentAt: request.createdAt,
             respondedAt: request.response?.createdAt
         };
+    }
+
+    public async getStudentPin(student: Student): Promise<string | undefined> {
+        if (!student.correspondingRelationshipTemplateId) {
+            throw new ApplicationError("error.schoolModule.studentAlreadyDeleted", "The student seems to be already deleted.");
+        }
+
+        const template = await this.services.transportServices.relationshipTemplates.getRelationshipTemplate({ id: student.correspondingRelationshipTemplateId.toString() });
+        if (template.isError) throw template.error;
+
+        return template.value.passwordProtection?.password;
+    }
+
+    public async getStudentsAsCSV(): Promise<string> {
+        const students = await this.getStudents();
+        const csvData = [];
+        for (const student of students) {
+            let pin = student.pin;
+            let link = "";
+
+            if (student.correspondingRelationshipId) {
+                pin = "";
+            } else if (student.correspondingRelationshipTemplateId) {
+                pin ??= await this.getStudentPin(student);
+                link = (await this.getOnboardingDataForStudent(student, {})).value.link;
+            } else {
+                pin = "";
+            }
+            const dto = await this.toStudentDTO(student);
+            csvData.push({ ...dto, pin, link });
+        }
+        const csv = json2csv(csvData, {
+            keys: [
+                { field: "givenname", title: "Vorname" },
+                { field: "surname", title: "Nachname" },
+                { field: "id", title: "Interne ID-Nummer" },
+                { field: "emailPrivate", title: "E-Mail (privat)" },
+                { field: "emailSchool", title: "E-Mail (schulisch)" },
+                { field: "status", title: "Status" },
+                { field: "pin", title: "PIN" },
+                { field: "link", title: "Onboarding Link" }
+            ]
+        });
+        return csv;
+    }
+
+    public async getStudentsAsXLSX(): Promise<Buffer> {
+        const students = await this.getStudents();
+        const csvData = [];
+        for (const student of students) {
+            let pin = student.pin;
+            let link = "";
+
+            if (student.correspondingRelationshipId) {
+                pin = "";
+            } else if (student.correspondingRelationshipTemplateId) {
+                pin ??= await this.getStudentPin(student);
+                link = (await this.getOnboardingDataForStudent(student, {})).value.link;
+            } else {
+                pin = "";
+            }
+            const dto = await this.toStudentDTO(student);
+            csvData.push({ ...dto, pin, link });
+        }
+
+        const workbook = new excelJS.Workbook();
+        workbook.creator = "Schul Modul";
+        workbook.lastModifiedBy = "Schul Modul";
+        workbook.created = new Date();
+        workbook.modified = new Date();
+
+        const csvDataAsArray = [];
+        for (const entry of csvData) {
+            csvDataAsArray.push([entry.givenname, entry.surname, entry.id, entry.emailPrivate, entry.emailSchool, entry.status, entry.pin, entry.link]);
+        }
+
+        const sheet = workbook.addWorksheet("Schüler", {
+            pageSetup: { paperSize: 9 }
+        });
+        sheet.columns = [{ width: 50 }, { width: 50 }, { width: 10 }, { width: 40 }, { width: 40 }, { width: 20 }, { width: 10 }, { width: 100 }];
+        sheet.addTable({
+            name: "Schüler",
+            ref: "A1",
+            headerRow: true,
+            totalsRow: false,
+            columns: [
+                { name: "Vorname", filterButton: true },
+                { name: "Nachname", filterButton: true },
+                { name: "Interne ID-Nummer", filterButton: true },
+                { name: "E-Mail (privat)", filterButton: true },
+                { name: "E-Mail (schulisch)", filterButton: true },
+                { name: "Status", filterButton: true },
+                { name: "PIN", filterButton: true },
+                { name: "Link", filterButton: true }
+            ],
+            rows: csvDataAsArray
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const newBuffer = Buffer.from(buffer);
+
+        return newBuffer;
+    }
+
+    public async createXLSXOutOfGivenStudents(students: any): Promise<Buffer> {
+        const workbook = new excelJS.Workbook();
+        workbook.creator = "Schul Modul";
+        workbook.lastModifiedBy = "Schul Modul";
+        workbook.created = new Date();
+        workbook.modified = new Date();
+
+        const csvDataAsArray = [];
+        for (const entry of students) {
+            csvDataAsArray.push([entry.givenname, entry.surname, entry.id, entry.emailPrivate, entry.emailSchool, entry.status, entry.pin, entry.link]);
+        }
+
+        const sheet = workbook.addWorksheet("Schüler", {
+            pageSetup: { paperSize: 9 }
+        });
+        sheet.columns = [{ width: 50 }, { width: 50 }, { width: 10 }, { width: 40 }, { width: 40 }, { width: 20 }, { width: 10 }, { width: 100 }];
+        sheet.addTable({
+            name: "Schüler",
+            ref: "A1",
+            headerRow: true,
+            totalsRow: false,
+            columns: [
+                { name: "Vorname", filterButton: true },
+                { name: "Nachname", filterButton: true },
+                { name: "Interne ID-Nummer", filterButton: true },
+                { name: "E-Mail (privat)", filterButton: true },
+                { name: "E-Mail schulisch)", filterButton: true },
+                { name: "Status", filterButton: true },
+                { name: "PIN", filterButton: true },
+                { name: "Link", filterButton: true }
+            ],
+            rows: csvDataAsArray
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const newBuffer = Buffer.from(buffer);
+
+        return newBuffer;
+    }
+
+    public async createOnboardingPDFForAllStudents(data: PDFSettingsWithStudentFilter): Promise<Result<Buffer<ArrayBuffer>>> {
+        const students = await this.getStudents();
+        const studentsInOnboardingStatus = students.filter((value) => {
+            if (value.correspondingRelationshipId || !value.correspondingRelationshipTemplateId) {
+                return false;
+            }
+            if (data.students && !data.students.includes(value.id.toString())) {
+                return false;
+            }
+            return true;
+        });
+        const pdfs = await Promise.all(studentsInOnboardingStatus.map((student) => this.getOnboardingDataForStudent(student, data).then((data) => data.value.pdf)));
+
+        const combinedPdf = await PDFDocument.create();
+
+        await Promise.all(
+            pdfs.map(async (pdfBuffer) => {
+                const pdfToCopy = await PDFDocument.load(pdfBuffer);
+                const copiedPages = await combinedPdf.copyPages(pdfToCopy, pdfToCopy.getPageIndices());
+                copiedPages.forEach((page) => combinedPdf.addPage(page));
+            })
+        );
+
+        return Result.ok(Buffer.from(await combinedPdf.save()));
     }
 
     public async sendCertificateNotifications(data: { ids?: string[]; code?: string }): Promise<Result<void>> {
