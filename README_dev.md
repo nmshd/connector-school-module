@@ -17,7 +17,6 @@
 
 The `Taskfile.yml` in this repository defines various tasks to help with the development and management of the custom Connector module. Here are the tasks defined:
 
-- **prepare**: Prepares the environment by installing necessary npm packages.
 - **build**: Builds the custom module after preparing the environment.
 - **watch**: Watches the custom module and rebuilds it on changes.
 - **up**: Starts the Connector using Docker Compose.
@@ -34,13 +33,13 @@ To get started with development, follow these steps:
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/nmshd/custom-connector-modules.git
+    git clone git@github.com:nmshd/connector-school-module.git
     ```
 
 2.  Change into the repository directory:
 
     ```bash
-    cd custom-connector-modules
+    cd connector-school-module
     ```
 
 3.  Copy the `.env.example` file to `.env` and fill in the environment variables.
@@ -48,7 +47,7 @@ To get started with development, follow these steps:
 4.  Prepare the environment:
 
     ```bash
-    task prepare
+    task build
     ```
 
 5.  Start the Connector:
@@ -63,8 +62,27 @@ To get started with development, follow these steps:
     task watch
     ```
 
-7.  Make changes to the custom module and see the changes reflected in the Connector. Make sure to restart the Connector when finished:
+    this might already run when the vscode task extension is installed (check you console)
+
+7.  Start the ui
 
     ```bash
-    task restart
+    cd ui
+    npm run start
+    ```
+
+    The ui is now running on "http://localhost:8080"
+
+8.  (Optional) Add students to you connector
+
+    To create one new student you can use:
+
+    ```
+    STUDENT_ID=<id> task create-student
+    ```
+
+    To create a batch of students with id 101-105
+
+    ```
+    task create-students
     ```

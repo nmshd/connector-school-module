@@ -1,0 +1,41 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:u="sap.ui.unified"
+    xmlns:l="sap.ui.layout.form"
+>
+    <Dialog
+        id="studentQRDialog"
+        title="Schüler QR-Code"
+        class="sapUiContentPadding"
+        resizable="true"
+    >
+        <content>
+            <VBox>
+                <l:SimpleForm>
+                    <Label text="Schüler ID" />
+                    <Text text="{appView>/student/id}" />
+                    <Label text="Schüler" />
+                    <Text text="{appView>/student/givenname} {appView>/student/surname}" />
+                    <Label text="PIN" />
+                    <Text text="{appView>/student/pin}" />
+                    <Label text="Link" />
+                    <Link text="Link" href="{appView>/studentLink}"
+                        target="_blank" />
+                    <Label text="QR Code" />
+                    <Image id="qrcode" src="{appView>/studentQR}" />
+                </l:SimpleForm>
+            </VBox>
+
+
+        </content>
+        <beginButton>
+            <Button
+                text="Schließen"
+                press=".onCloseStudentQRDialog"
+            />
+        </beginButton>
+        <endButton>
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

@@ -14,7 +14,9 @@ LABEL org.opencontainers.image.source="https://github.com/nmshd/connector-school
 
 ADD bundled.config.json /usr/app/bundled.config.json
 
-COPY --from=module-builder /usr/app/dist /usr/app/custom-modules/school-module/dist
+ADD bundled_assets /usr/app/bundled_assets
+
+# COPY --from=module-builder /usr/app/dist /usr/app/custom-modules/school-module/dist
 COPY --from=module-builder /usr/app/package.json /usr/app/custom-modules/school-module/package.json
 COPY --from=module-builder /usr/app/package-lock.json /usr/app/custom-modules/school-module/package-lock.json
 

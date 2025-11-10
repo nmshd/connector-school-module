@@ -1,0 +1,36 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:u="sap.ui.unified"
+>
+    <Dialog
+        id="idZeugnisDialog"
+        title="Zeugnis hochladen"
+        class="sapUiContentPadding"
+    >
+        <content>
+            <Text text="Hiermit können Sie das Zeugnis des Schülers hochladen."
+                class="sapUiSmallMarginBottom" />
+            <u:FileUploader
+                id="idZeugnisFileUploader"
+                name="myPDFFileUpload"
+                change=".onZeugnisFileChanged"
+                tooltip="Zeugnis des Schülers hochladen"
+                fileType="pdf"
+            />
+
+        </content>
+        <beginButton>
+            <Button
+                text="Schließen"
+                press=".onCloseZeugnisDialog"
+            />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Zeugnis versenden"
+                press=".onZeugnisUpload"
+            />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

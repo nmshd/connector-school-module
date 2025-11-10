@@ -4,12 +4,20 @@ import { RuntimeErrors } from "@nmshd/runtime";
 import { Inject } from "@nmshd/typescript-ioc";
 import { Accept, ContextAccept, ContextResponse, DELETE, GET, Path, PathParam, POST, QueryParam } from "@nmshd/typescript-rest";
 import express from "express";
-import z from "zod";
+import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { buildInformation } from "../buildInformation";
 import { StudentsController } from "../StudentsController";
 import { Student, StudentAuditLog, StudentOnboardingDTO } from "../types";
-import { createStudentOnboardingPDFSchema, createStudentRequestSchema, sendAbiturzeugnisRequestSchema, sendFileRequestSchema, sendMailRequestSchema } from "./schemas";
+import {
+    batchOnboardingSchema,
+    createStudentOnboardingPDFSchema,
+    createStudentRequestSchema,
+    createStudentsOnboardingPDFSchema,
+    sendAbiturzeugnisRequestSchema,
+    sendFileRequestSchema,
+    sendMailRequestSchema
+} from "./schemas";
 
 @Path("/students")
 export class StudentsRESTController extends BaseController {
@@ -28,7 +36,9 @@ export class StudentsRESTController extends BaseController {
     @Accept("application/json")
     public async createStudent(body: any): Promise<Envelope> {
         const validationResult = createStudentRequestSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
         const data = validationResult.data;
 
         if (await this.studentsController.existsStudent(data.id)) {
@@ -88,11 +98,131 @@ export class StudentsRESTController extends BaseController {
     }
 
     @POST
+    @Path("create/batch")
+    @Accept("application/json", "text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public async createStudentsAsBatch(@ContextAccept accept: string, @ContextResponse response: express.Response, body: any): Promise<Envelope | void> {
+        const validationResult = batchOnboardingSchema.safeParse(body);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
+        const data = validationResult.data;
+
+        let studentCSV = data.students.replaceAll("\r", "");
+
+        const studentCSVLines = studentCSV.split("\n");
+
+        if (studentCSVLines.length < 2) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", "The CSV file must contain at least one student.");
+        }
+
+        const studentCSVSchema = z.object({
+            firstName: z.string(),
+            lastName: z.string(),
+            id: z.number(),
+            emailPrivate: z.string(),
+            emailSchool: z.string(),
+            pin: z.string()
+        });
+
+        const studentsParsed = studentCSVLines
+            .slice(1)
+            .filter((line) => line.trim() !== "") // Filter out empty lines
+            .map((line) => {
+                const values = line.split(";");
+                return studentCSVSchema.safeParse({
+                    firstName: values[0] && JSON.parse(values[0]),
+                    lastName: values[1] && JSON.parse(values[1]),
+                    id: values[2] && JSON.parse(values[2]),
+                    emailPrivate: values[3] && JSON.parse(values[3]),
+                    emailSchool: values[4] && JSON.parse(values[4]),
+                    pin: (Math.floor(Math.random() * 10000) + 10000).toString().substring(1)
+                });
+            });
+        const errors = studentsParsed.filter((result) => !result.success).map((result) => fromError(result.error));
+        if (errors.length > 0) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The CSV file is invalid: ${errors.join(", ")}`);
+        }
+
+        const studentsToCreate = studentsParsed.map((result) => result.data).filter((student) => student !== undefined);
+
+        function updatePinInCSV(csv: string, studentId: string, status: string, pin: string, link: string): string {
+            const lines = csv.split("\n");
+            return lines
+                .map((line) => {
+                    const values = line.split(";");
+                    if (values[2] === studentId) {
+                        values[5] = JSON.stringify(pin);
+                        values[6] = JSON.stringify(status);
+                        values[7] = JSON.stringify(link);
+                    }
+                    return values.join(";");
+                })
+                .join("\n");
+        }
+
+        const studentsArray = [];
+        for (const studentToCreate of studentsToCreate) {
+            let student = await this.studentsController.getStudent(studentToCreate.id.toString());
+            let pin = undefined;
+            let status = "onboarding";
+            let link = "";
+            if (!student) {
+                student = await this.studentsController.createStudent({
+                    id: studentToCreate.id.toString(),
+                    givenname: studentToCreate.firstName,
+                    surname: studentToCreate.lastName,
+                    emailPrivate: studentToCreate.emailPrivate,
+                    emailSchool: studentToCreate.emailSchool,
+                    additionalConsents: data.options.createDefaults.additionalConsents,
+                    pin: studentToCreate.pin
+                });
+                pin = student.pin ?? "";
+                link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
+            } else if (student.correspondingRelationshipId) {
+                status = "active";
+                pin = "";
+            } else if (student.correspondingRelationshipTemplateId) {
+                pin = (await this.studentsController.getStudentPin(student)) ?? "";
+                link = (await this.studentsController.getOnboardingDataForStudent(student, {})).value.link;
+            } else {
+                status = "deleted";
+                pin = "";
+            }
+            studentCSV = updatePinInCSV(studentCSV, studentToCreate.id.toString(), status, pin, link);
+            studentsArray.push({
+                ...studentToCreate,
+                givenname: studentToCreate.firstName,
+                surname: studentToCreate.lastName,
+                status,
+                pin,
+                link
+            });
+        }
+        const csvSplit = studentCSV.split("\n");
+        csvSplit[0] = `${csvSplit[0]};"PIN";"Status";"Link"`;
+        studentCSV = csvSplit.join("\n");
+
+        switch (accept) {
+            case "application/json":
+                return this.ok(Result.ok(studentCSV));
+            case "text/csv":
+                response.status(200).send(studentCSV);
+                return;
+            case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                const xlsx = await this.studentsController.createXLSXOutOfGivenStudents(studentsArray);
+                response.status(200).send(xlsx);
+                return;
+        }
+    }
+
+    @POST
     @Path(":id/onboarding")
     @Accept("application/pdf")
     public async createStudentOnboardingPDF(@PathParam("id") id: string, @ContextResponse response: express.Response, body: any): Promise<Envelope | void> {
         const validationResult = createStudentOnboardingPDFSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
         const data = validationResult.data;
 
         const student = await this.studentsController.getStudent(id);
@@ -103,6 +233,28 @@ export class StudentsRESTController extends BaseController {
             result,
             (r) => r.value.pdf,
             () => `${id}_onboarding.pdf`,
+            () => Mimetype.pdf(),
+            response,
+            200
+        );
+    }
+
+    @POST
+    @Path("/onboarding")
+    @Accept("application/pdf")
+    public async createBatchOnboardingPDFsForStudents(@ContextResponse response: express.Response, body: any): Promise<Envelope | void> {
+        const validationResult = createStudentsOnboardingPDFSchema.safeParse(body);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
+        const data = validationResult.data;
+
+        const pdf = await this.studentsController.createOnboardingPDFForAllStudents(data);
+
+        this.file(
+            pdf,
+            (r) => r.value,
+            () => `onboarding.pdf`,
             () => Mimetype.pdf(),
             response,
             200
@@ -149,14 +301,24 @@ export class StudentsRESTController extends BaseController {
     }
 
     @GET
-    @Accept("application/json")
-    public async getStudents(): Promise<Envelope> {
+    @Accept("application/json", "text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public async getStudents(@ContextAccept accept: string, @ContextResponse response: express.Response): Promise<Envelope | undefined> {
         const students = await this.studentsController.getStudents();
 
         const dtoPromises = students.map((student) => this.studentsController.toStudentDTO(student));
-        const dtos = await Promise.all(dtoPromises);
-
-        return this.ok(Result.ok(dtos));
+        switch (accept) {
+            case "text/csv":
+                const csv = await this.studentsController.getStudentsAsCSV();
+                response.status(200).send(csv);
+                return;
+            case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                const xlsx = await this.studentsController.getStudentsAsXLSX();
+                response.status(200).send(xlsx);
+                return;
+            default:
+                const dtos = await Promise.all(dtoPromises);
+                return this.ok(Result.ok(dtos));
+        }
     }
 
     @POST
@@ -167,7 +329,9 @@ export class StudentsRESTController extends BaseController {
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
         const validationResult = sendMailRequestSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
         const data = validationResult.data;
 
         const mail = await this.studentsController.sendMail(student, data.subject, data.body);
@@ -215,7 +379,9 @@ export class StudentsRESTController extends BaseController {
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
         const validationResult = sendFileRequestSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
         const data = validationResult.data;
 
         const fileDTO = await this.studentsController.sendFile(student, data);
@@ -230,7 +396,9 @@ export class StudentsRESTController extends BaseController {
         if (!student) throw RuntimeErrors.general.recordNotFound(Student);
 
         const validationResult = sendAbiturzeugnisRequestSchema.safeParse(body);
-        if (!validationResult.success) throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        if (!validationResult.success) {
+            throw new ApplicationError("error.schoolModule.invalidRequest", `The request is invalid: ${fromError(validationResult.error)}`);
+        }
 
         const tags = new Set(validationResult.data.tags ?? []);
         tags.add("language:de");

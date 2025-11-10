@@ -8,6 +8,8 @@ LABEL org.opencontainers.image.source="https://github.com/nmshd/connector-school
 
 ADD bundled.config.json /usr/app/bundled.config.json
 
+ADD bundled_assets /usr/app/bundled_assets
+
 USER root
 
 RUN npm install --save-exact @nmshd/connector-school-module@${SCHOOL_MODULE_VERSION} --omit=dev

@@ -1,0 +1,37 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:u="sap.ui.unified"
+
+>
+    <Dialog
+        id="addStudentsDialog"
+        title="Schüler importieren"
+        class="sapUiContentPadding"
+    >
+        <content>
+            <Text text="Hiermit können aus SchILD exportierte Schüler importiert werden."
+                class="sapUiSmallMarginBottom" />
+            <u:FileUploader
+                id="csvFileUploader"
+                name="myCSVFileUpload"
+                change=".onCSVFileChanged"
+                tooltip="Upload your csv entry"
+                fileType="txt,csv"
+            />
+
+        </content>
+        <beginButton>
+            <Button
+                text="Schließen"
+                press=".onCloseAddStudentsDialog"
+            />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Schüler importieren"
+                press=".onUploadFiles"
+            />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>
