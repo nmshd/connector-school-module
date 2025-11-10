@@ -142,10 +142,53 @@
                                 visible="{=${studentModel>status} === 'onboarding'}" />
                         </t:template>
                     </t:Column>
-                    <t:Column id="status" width="15em" sortProperty="status">
+                    <t:Column id="status" width="15em" sortProperty="status"
+                        defaultFilterOperator="Contains"
+                        filterProperty="translatedStatus"
+                        filterType="sap.ui.model.type.String">
                         <Text text="Status" />
                         <t:template>
-                            <Text text="{path:'studentModel>status',formatter:'.formatStatus'}" />
+                            <Text
+                                text="{path:'studentModel>translatedStatus'}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column id="filesLength" width="6em" sortProperty="filesLength"
+                        defaultFilterOperator="EQ"
+                        filterProperty="filesLength"
+                        filterType="sap.ui.model.type.Integer">
+                        <Text text="An den Schüler gesendete Dateien" />
+                        <t:template>
+                            <Text text="{path:'studentModel>filesLength'}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column id="pendingDocsLength" width="8em" sortProperty="pendingDocsLength"
+                        defaultFilterOperator="EQ"
+                        filterProperty="pendingDocsLength"
+                        filterType="sap.ui.model.type.Integer">
+                        <Text text="Noch vom Schüler abzuholende Dateien" />
+                        <t:template>
+                            <Text
+                                text="{path:'studentModel>pendingFilesLength'}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column id="acceptedDocsLength" width="8em" sortProperty="acceptedDocsLength"
+                        defaultFilterOperator="EQ"
+                        filterProperty="acceptedDocsLength"
+                        filterType="sap.ui.model.type.Integer">
+                        <Text text="Vom Schüler abgeholte Dateien" />
+                        <t:template>
+                            <Text
+                                text="{path:'studentModel>acceptedFilesLength'}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column id="messages" width="8em" sortProperty="acceptedDocsLength"
+                        defaultFilterOperator="EQ"
+                        filterProperty="messagesLength"
+                        filterType="sap.ui.model.type.Integer">
+                        <Text text="Anzahl Nachrichten an Schüler" />
+                        <t:template>
+                            <Text
+                                text="{path:'studentModel>messagesLength'}" />
                         </t:template>
                     </t:Column>
                     <t:Column width="20em">

@@ -225,7 +225,7 @@ export default class Master extends BaseController {
                     new Filter("id", FilterOperator.Contains, sQuery),
                     new Filter("surname", FilterOperator.Contains, sQuery),
                     new Filter("givenname", FilterOperator.Contains, sQuery),
-                    new Filter("pin", FilterOperator.Contains, sQuery)
+                    new Filter("translatedStatus", FilterOperator.Contains, sQuery)
                 ],
                 false
             );
@@ -395,11 +395,16 @@ export default class Master extends BaseController {
             const selectedIndices = table.getSelectedIndices();
 
             const items = (table.getBinding() as ListBinding).getAllCurrentContexts();
+            let count = 0;
             for (const selectedIndex of selectedIndices) {
-                count = selectedIndices.length;
                 const item = items[selectedIndex];
                 if (!item) continue;
+                if (item.getProperty("status") !== "active") {
+                    continue;
+                }
+                count++;
                 const studentId = item.getProperty("id");
+
                 await this.sendMessage(studentId, messageTemplate);
             }
             await this.loadStudents();
@@ -532,7 +537,51 @@ export default class Master extends BaseController {
             }
         });
 
-        studentModel.setProperty("/students", studentsResponse.data.result);
+        const fetchedStudents = studentsResponse.data.result;
+        const students: any[] = [];
+        for (const fetchedStudent of fetchedStudents) {
+            const student: any = fetchedStudent;
+            if (student.status === "active") {
+                const studentResponse = await axios.get<any>(`/students/${student.id}/files`, {
+                    headers: {
+                        "X-API-KEY": apiKey
+                    }
+                });
+                const files: any[] = studentResponse.data.result;
+                student.files = files;
+                student.filesLength = files.length;
+                let pendingFilesLength = 0,
+                    acceptedFilesLength = 0,
+                    messagesLength = 0;
+                for (const doc of files) {
+                    if (doc.status === "pending") {
+                        pendingFilesLength++;
+                    } else if (doc.status === "accepted") {
+                        acceptedFilesLength++;
+                    }
+                }
+
+                student.pendingFilesLength = pendingFilesLength;
+                student.acceptedFilesLength = acceptedFilesLength;
+
+                const studentMailResponse = await axios.get<any>(`/students/${student.id}/mails`, {
+                    headers: {
+                        "X-API-KEY": apiKey
+                    }
+                });
+                const messages: any[] = studentMailResponse.data.result;
+                student.messagesLength = messages.length;
+            } else {
+                student.files = [];
+                student.filesLength = 0;
+                student.pendingFilesLength = 0;
+                student.acceptedFilesLength = 0;
+            }
+            student.translatedStatus = this.formatStatus(student);
+            students.push(student);
+        }
+
+        studentModel.setProperty("/students", students);
     }
 
     public async downloadStudents() {
@@ -575,16 +624,21 @@ export default class Master extends BaseController {
         }
     }
 
-    public formatStatus(value: string): string {
-        switch (value) {
+    public formatStatus(student: any): string {
+        switch (student.status) {
             case "onboarding":
-                return "Warten auf Schüler";
+                return "Inaktiv\n(Warten auf Schüler Einwilligung)";
             case "deleted":
-                return "Schüler hat sich gelöscht";
+                return "Inaktiv\n(Schüler hat sich gelöscht)";
             case "rejected":
-                return "Schüler hat Einwilligung abgelehnt";
+                return "Inaktiv\n(Schüler hat Einwilligung abgelehnt)";
             case "active":
-                return "Aktiv";
+                if (student.pendingFilesLength > 0) {
+                    return `Aktiv, warten auf Schüler\n(Schüler muss noch Dateien abholen)`;
+                } else if (student.acceptedFilesLength > 0) {
+                    return `Aktiv\n(Schüler hat alle Dateien abgeholt)`;
+                }
+                return "Aktiv\n(Keine Dateien vorhanden)";
         }
     }
 }
