@@ -389,7 +389,6 @@ export default class Master extends BaseController {
 
     public async sendMessageToSelectedStudents(messageTemplate: string) {
         this.page.setBusy(true);
-        let count = 0;
         try {
             const table = this.byId("table") as Table;
             const selectedIndices = table.getSelectedIndices();
@@ -408,6 +407,7 @@ export default class Master extends BaseController {
                 await this.sendMessage(studentId, messageTemplate);
             }
             await this.loadStudents();
+
             MessageBox.success(`${count} Nachrichten wurden erfolgreich versandt.`);
         } catch (e: any) {
             console.error(e);
@@ -551,8 +551,7 @@ export default class Master extends BaseController {
                 student.files = files;
                 student.filesLength = files.length;
                 let pendingFilesLength = 0,
-                    acceptedFilesLength = 0,
-                    messagesLength = 0;
+                    acceptedFilesLength = 0;
                 for (const doc of files) {
                     if (doc.status === "pending") {
                         pendingFilesLength++;
