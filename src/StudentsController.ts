@@ -1,6 +1,6 @@
-import { IDatabaseCollection, IDatabaseCollectionProvider } from "@js-soft/docdb-access-abstractions";
-import { ApplicationError, Result } from "@js-soft/ts-utils";
-import { LocalAttributeJSON } from "@nmshd/consumption";
+import {IDatabaseCollection, IDatabaseCollectionProvider} from "@js-soft/docdb-access-abstractions";
+import {ApplicationError, Result} from "@js-soft/ts-utils";
+import {LocalAttributeJSON} from "@nmshd/consumption";
 import {
     CreateAttributeRequestItemJSON,
     DisplayNameJSON,
@@ -13,16 +13,16 @@ import {
     TransferFileOwnershipAcceptResponseItemJSON,
     TransferFileOwnershipRequestItemJSON
 } from "@nmshd/content";
-import { CoreDate, CoreId } from "@nmshd/core-types";
-import { LocalRequestDTO, MessageDTO, RelationshipStatus, RuntimeServices } from "@nmshd/runtime";
-import { DateTime } from "luxon";
+import {CoreDate, CoreId} from "@nmshd/core-types";
+import {LocalRequestDTO, MessageDTO, RelationshipStatus, RuntimeServices} from "@nmshd/runtime";
+import {DateTime} from "luxon";
 import * as mustache from "mustache";
 import fs from "node:fs";
 import path from "path";
-import { PDFDocument, PDFImage } from "pdf-lib";
+import {PDFDocument, PDFImage} from "pdf-lib";
 import qrCodeLib from "qrcode";
-import { PDFLogoSettings, PDFSettings, SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus } from "./types";
-import { getFileTypeForBuffer } from "./utils/getFileTypeForBuffer";
+import {PDFLogoSettings, PDFSettings, SchoolFileDTO, Student, StudentAuditLog, StudentAuditLogEntry, StudentDTO, StudentStatus} from "./types";
+import {getFileTypeForBuffer} from "./utils/getFileTypeForBuffer";
 
 export class StudentsController {
     #studentsCollection: IDatabaseCollection;
@@ -61,7 +61,7 @@ export class StudentsController {
                         {
                             "@type": "ShareAttributeRequestItem",
                             attribute: this.displayName.content,
-                            sourceAttributeId: this.displayName.id,
+                            attributeId: this.displayName.id,
                             mustBeAccepted: true
                         } satisfies ShareAttributeRequestItemJSON,
                         {
@@ -508,7 +508,7 @@ export class StudentsController {
 
         const result = await this.services.transportServices.messages.sendMessage({
             recipients: [relationship.value.peer],
-            content: { "@type": "Mail", to: [relationship.value.peer], subject, body }
+            content: { "@type": "Mail", to: [relationship.value.peer], subject, body, bodyFormat: "PlainText" }
         });
 
         return result.value;
