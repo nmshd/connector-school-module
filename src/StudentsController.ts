@@ -61,7 +61,7 @@ export class StudentsController {
                         {
                             "@type": "ShareAttributeRequestItem",
                             attribute: this.displayName.content,
-                            sourceAttributeId: this.displayName.id,
+                            attributeId: this.displayName.id,
                             mustBeAccepted: true
                         } satisfies ShareAttributeRequestItemJSON,
                         {
@@ -508,7 +508,7 @@ export class StudentsController {
 
         const result = await this.services.transportServices.messages.sendMessage({
             recipients: [relationship.value.peer],
-            content: { "@type": "Mail", to: [relationship.value.peer], subject, body }
+            content: { "@type": "Mail", to: [relationship.value.peer], subject, body, bodyFormat: "PlainText" }
         });
 
         return result.value;

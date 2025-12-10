@@ -32,9 +32,7 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
 
         const dbConnection = await this.getOrCreateDbConnection();
 
-        const database = await dbConnection.getDatabase(
-            this.configuration.database?.dbName ?? `${this.runtime.runtimeConfig.database.dbNamePrefix}${this.runtime.runtimeConfig.database.dbName}`
-        );
+        const database = await dbConnection.getDatabase(this.configuration.database?.dbName ?? this.runtime.runtimeConfig.database.dbName);
 
         const displayName = await this.getOrCreateDisplayNameAttribute();
         this.#studentsController = await new StudentsController(
@@ -70,14 +68,14 @@ export default class SchoolModule extends ConnectorRuntimeModule<SchoolModuleCon
     private async getOrCreateDisplayNameAttribute(): Promise<LocalAttributeJSON> {
         const services = this.runtime.getServices();
 
-        const getAttributesResponse = await services.consumptionServices.attributes.getRepositoryAttributes({ query: { "content.value.@type": "DisplayName" } });
+        const getAttributesResponse = await services.consumptionServices.attributes.getOwnIdentityAttributes({ query: { "content.value.@type": "DisplayName" } });
 
         if (getAttributesResponse.isSuccess && getAttributesResponse.value.length > 0) {
             const attribute = getAttributesResponse.value.find((attribute) => (attribute.content.value as DisplayNameJSON).value === this.configuration.schoolName);
             if (attribute) return attribute;
         }
 
-        const createResponse = await services.consumptionServices.attributes.createRepositoryAttribute({
+        const createResponse = await services.consumptionServices.attributes.createOwnIdentityAttribute({
             content: { value: { "@type": "DisplayName", value: this.configuration.schoolName } }
         });
 
